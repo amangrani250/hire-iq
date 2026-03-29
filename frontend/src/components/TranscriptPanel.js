@@ -11,7 +11,17 @@ export default function TranscriptPanel({ messages, visible }) {
   const bottomRef = useRef(null);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const scrollRoot = bottomRef.current?.parentElement;
+    if (!scrollRoot) return;
+
+    const isNearBottom =
+      scrollRoot.scrollHeight - scrollRoot.scrollTop - scrollRoot.clientHeight < 120;
+
+    if (!isNearBottom && messages.length > 0) return;
+
+    requestAnimationFrame(() => {
+      scrollRoot.scrollTo({ top: scrollRoot.scrollHeight, behavior: 'smooth' });
+    });
   }, [messages]);
 
   if (!visible) return null;

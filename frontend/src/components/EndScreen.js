@@ -4,7 +4,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, RotateCcw, Sparkles, Download, ThumbsUp, AlertTriangle, ArrowUpRight } from 'lucide-react';
 import html2pdf from 'html2pdf.js';
 
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+const getApiBase = () => {
+  if (process.env.REACT_APP_API_URL) return process.env.REACT_APP_API_URL;
+  return window.location.hostname === 'localhost' 
+    ? 'http://localhost:8000' 
+    : 'https://hire-iq-backend-eight.vercel.app';
+};
+const API_BASE = getApiBase();
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },

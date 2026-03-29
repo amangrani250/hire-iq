@@ -7,7 +7,13 @@ import { useInterviewSocket } from '../hooks/useInterviewSocket';
 import { useAudioRecorder } from '../hooks/useAudioRecorder';
 import { Loader } from 'lucide-react';
 
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+const getApiBase = () => {
+  if (process.env.REACT_APP_API_URL) return process.env.REACT_APP_API_URL;
+  return window.location.hostname === 'localhost' 
+    ? 'http://localhost:8000' 
+    : 'https://hire-iq-backend-eight.vercel.app';
+};
+const API_BASE = getApiBase();
 
 /**
  * InterviewRoom — main interview screen with video tiles, transcript, and controls.
