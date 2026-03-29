@@ -4,11 +4,13 @@
   "private": true,
   "dependencies": {
     "framer-motion": "^12.38.0",
+    "html2pdf.js": "^0.14.0",
     "lucide-react": "^0.383.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.13.2",
     "react-scripts": "^5.0.1",
+    "react-use-websocket": "^4.13.0",
     "react-webcam": "^7.2.0"
   },
   "scripts": {

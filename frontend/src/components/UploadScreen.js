@@ -116,10 +116,9 @@ export default function UploadScreen() {
   const [loading, setLoading]     = useState(false);
   const [error, setError]         = useState('');
   const [analysis, setAnalysis]   = useState(null);   // { profile, ats }
-  const [startingInterview, setStartingInterview] = useState(false);
   const resultsRef = useRef(null);
 
-  const handleFile = useCallback((f) => {
+  const handleFile = async (f) => {
     if (!f) return;
     const isValid = f.type === 'application/pdf' || f.name.endsWith('.txt');
     if (!isValid) {
@@ -129,7 +128,8 @@ export default function UploadScreen() {
     setFile(f);
     setError('');
     setAnalysis(null);
-  }, []);
+    await handleAnalyze(f);
+  };
 
   const handleDrop = (e) => {
     e.preventDefault();
@@ -138,13 +138,14 @@ export default function UploadScreen() {
   };
 
   /* ── Analyze resume ──────────────────────────────────────────────────── */
-  const handleAnalyze = async () => {
-    if (!file) return;
+  async function handleAnalyze(fileObj) {
+    const targetFile = fileObj || file;
+    if (!targetFile) return;
     setLoading(true);
     setError('');
     try {
       const form = new FormData();
-      form.append('file', file);
+      form.append('file', targetFile);
       const res = await fetch(`${API_BASE}/api/analyze-resume`, {
         method: 'POST',
         body: form,
@@ -157,28 +158,16 @@ export default function UploadScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  /* ── Start interview (uses existing upload-resume endpoint) ──────────── */
+  /* ── Start interview (uses existing session id) ──────────── */
   const handleStartInterview = async () => {
-    if (!file) return;
-    setStartingInterview(true);
-    setError('');
-    try {
-      const form = new FormData();
-      form.append('file', file);
-      const res = await fetch(`${API_BASE}/api/upload-resume`, {
-        method: 'POST',
-        body: form,
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || 'Upload failed');
-      navigate('/interview', { state: { sessionId: data.session_id, candidate: data.candidate } });
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setStartingInterview(false);
+    if (!analysis || !analysis.session_id) {
+        setError('Analysis incomplete or session failed. Please refresh the page and upload your resume again.');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
     }
+    navigate('/interview', { state: { sessionId: analysis.session_id, candidate: analysis.candidate } });
   };
 
   /* Scroll to results when analysis is done */
@@ -292,28 +281,18 @@ export default function UploadScreen() {
           </motion.p>
         )}
 
-        {/* Analyze button */}
-        <motion.button
-          className="upload-btn"
-          variants={fadeUp}
-          custom={4}
-          onClick={handleAnalyze}
-          disabled={!file || loading}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-        >
-          {loading ? (
-            <>
-              <Loader size={18} className="spin" />
-              Analyzing resume…
-            </>
-          ) : (
-            <>
-              <Sparkles size={18} />
-              Analyze Resume
-            </>
-          )}
-        </motion.button>
+        {/* Loading Indicator */}
+        {loading && (
+          <motion.div
+            className="upload-btn"
+            style={{ cursor: 'default', opacity: 0.8 }}
+            variants={fadeUp}
+            custom={4}
+          >
+            <Loader size={18} className="spin" />
+            Analyzing resume automatically…
+          </motion.div>
+        )}
 
         <motion.p className="upload-hint" variants={fadeUp} custom={5}>
           Powered by Groq LLaMA-3 · Whisper · edge-tts
@@ -359,15 +338,10 @@ export default function UploadScreen() {
                 variants={scaleIn}
                 custom={2}
                 onClick={handleStartInterview}
-                disabled={startingInterview}
                 whileHover={{ scale: 1.04, boxShadow: '0 8px 32px rgba(79,142,247,0.35)' }}
                 whileTap={{ scale: 0.97 }}
               >
-                {startingInterview ? (
-                  <><Loader size={16} className="spin" /> Starting…</>
-                ) : (
-                  <><ArrowRight size={16} /> Start Interview</>
-                )}
+                <><ArrowRight size={16} /> Start Interview</>
               </motion.button>
             </motion.section>
 
@@ -593,15 +567,10 @@ export default function UploadScreen() {
               <motion.button
                 className="analysis-start-btn analysis-start-btn--lg"
                 onClick={handleStartInterview}
-                disabled={startingInterview}
                 whileHover={{ scale: 1.03, boxShadow: '0 8px 40px rgba(79,142,247,0.4)' }}
                 whileTap={{ scale: 0.97 }}
               >
-                {startingInterview ? (
-                  <><Loader size={18} className="spin" /> Starting interview…</>
-                ) : (
-                  <><Zap size={18} /> Start AI Interview Now</>
-                )}
+                <><Zap size={18} /> Start AI Interview Now</>
               </motion.button>
             </motion.div>
           </motion.div>

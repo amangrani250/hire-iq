@@ -30,10 +30,13 @@ export default function InterviewRoom() {
  * Inner component that holds all hooks (avoids conditional hook calls).
  */
 function InterviewRoomInner({ sessionId, candidate, navigate }) {
-  const onInterviewEnd = useCallback(() => {
-    navigate('/end', { state: { candidateName: candidate?.name } });
-  }, [navigate, candidate]);
   const [messages, setMessages]             = useState([]);
+  const messagesRef = React.useRef(messages);
+  useEffect(() => { messagesRef.current = messages; }, [messages]);
+
+  const onInterviewEnd = useCallback(() => {
+    navigate('/end', { state: { candidateName: candidate?.name, transcript: messagesRef.current } });
+  }, [navigate, candidate]);
   const [micOn, setMicOn]                   = useState(true);
   const [camOn, setCamOn]                   = useState(true);
   const [transcriptOpen, setTranscriptOpen] = useState(false);
@@ -48,7 +51,7 @@ function InterviewRoomInner({ sessionId, candidate, navigate }) {
   }, []);
 
   /* ── WebSocket for interview ────────────────────────────────────────── */
-  const { wsReady, interviewerSpeaking, sendCandidateMessage, endInterview } =
+  const { wsReady, interviewerSpeaking, isThinking, sendCandidateMessage, endInterview } =
     useInterviewSocket({ sessionId, onTranscript, onInterviewEnded: onInterviewEnd });
 
   useEffect(() => {
@@ -85,14 +88,14 @@ function InterviewRoomInner({ sessionId, candidate, navigate }) {
 
   /* Auto-start recording when interviewer finishes speaking */
   useEffect(() => {
-    if (!interviewerSpeaking && wsReady && micOn && !recording && !isTranscribing) {
+    if (!interviewerSpeaking && !isThinking && wsReady && micOn && !recording && !isTranscribing) {
       const t = setTimeout(() => startRecording(), 150);
       return () => clearTimeout(t);
     }
-    if (interviewerSpeaking && recording) {
+    if ((interviewerSpeaking || isThinking) && recording) {
       stopRecording();
     }
-  }, [interviewerSpeaking, wsReady, micOn, recording, isTranscribing]); // eslint-disable-line
+  }, [interviewerSpeaking, isThinking, wsReady, micOn, recording, isTranscribing]); // eslint-disable-line
 
   useEffect(() => {
     setCandidateSpeaking(recording);

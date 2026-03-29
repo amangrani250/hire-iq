@@ -1,52 +1,38 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
+import useWebSocket, { ReadyState } from 'react-use-websocket';
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 const WS_BASE  = API_BASE.replace(/^http/, 'ws');
 
-/** Max reconnect attempts before giving up. */
-const MAX_RECONNECT = 3;
-const RECONNECT_DELAY_MS = 1500;
-
 /**
- * useInterviewSocket — manages the WebSocket connection to the interview backend.
- *
- * Features:
- * - Auto-reconnect with exponential backoff (up to MAX_RECONNECT attempts)
- * - Sequential audio queue with proper cleanup
- * - Heartbeat ping to keep connection alive
- *
- * @param {{
- *   sessionId: string,
- *   onTranscript: (speaker: string, text: string) => void,
- *   onInterviewEnded: () => void,
- * }} opts
+ * Modernized socket implementation leveraging:
+ * 1. Standard HTML5 Audio for maximum cross-browser runtime compatibility.
+ * 2. react-use-websocket for native declarative reconnect logic and strict heartbeat timings.
  */
 export function useInterviewSocket({ sessionId, onTranscript, onInterviewEnded }) {
-  const wsRef          = useRef(null);
-  const audioQueueRef  = useRef([]);
-  const playingRef     = useRef(false);
-  const currentAudioRef = useRef(null);
-  const reconnectCount = useRef(0);
-  const heartbeatRef   = useRef(null);
-
-  const [wsReady, setWsReady] = useState(false);
   const [interviewerSpeaking, setInterviewerSpeaking] = useState(false);
+  const [isThinking, setIsThinking] = useState(false);
 
-  // Keep callbacks in refs to avoid re-creating the WS effect
+  /* ── React Refs for Audio Queue ── */
+  const audioQueueRef = useRef([]);
+  const isPlayingRef = useRef(false);
+  const currentAudioRef = useRef(null);
+  const intentionallyClosed = useRef(false);
+
   const onTranscriptRef = useRef(onTranscript);
   const onInterviewEndedRef = useRef(onInterviewEnded);
   useEffect(() => { onTranscriptRef.current = onTranscript; }, [onTranscript]);
   useEffect(() => { onInterviewEndedRef.current = onInterviewEnded; }, [onInterviewEnded]);
 
-  /** Play queued audio blobs sequentially. */
   const playNext = useCallback(() => {
     if (audioQueueRef.current.length === 0) {
-      playingRef.current = false;
+      isPlayingRef.current = false;
       currentAudioRef.current = null;
       setInterviewerSpeaking(false);
       return;
     }
-    playingRef.current = true;
+
+    isPlayingRef.current = true;
     setInterviewerSpeaking(true);
 
     const blob = audioQueueRef.current.shift();
@@ -60,154 +46,110 @@ export function useInterviewSocket({ sessionId, onTranscript, onInterviewEnded }
       playNext();
     };
     audio.onerror = () => {
+      console.error('HTML5 Audio play error');
       URL.revokeObjectURL(url);
       currentAudioRef.current = null;
       playNext();
     };
-    audio.play().catch(() => {
+    audio.play().catch((err) => {
+      console.error('Autoplay prevented:', err);
       currentAudioRef.current = null;
       playNext();
     });
   }, []);
 
-  /** Enqueue base64 MP3 for sequential playback. */
   const enqueueAudio = useCallback((base64mp3) => {
     try {
       const binaryStr = atob(base64mp3);
-      const bytes = new Uint8Array(binaryStr.length);
-      for (let i = 0; i < binaryStr.length; i++) {
+      const len = binaryStr.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
         bytes[i] = binaryStr.charCodeAt(i);
       }
+      
       const blob = new Blob([bytes], { type: 'audio/mp3' });
       audioQueueRef.current.push(blob);
-      if (!playingRef.current) playNext();
+      if (!isPlayingRef.current) {
+        playNext();
+      }
     } catch (err) {
-      console.error('Audio decode error:', err);
+      console.error('Audio format error:', err);
     }
   }, [playNext]);
 
-  /** Stop all currently playing and queued audio. */
   const stopAllAudio = useCallback(() => {
     audioQueueRef.current = [];
     if (currentAudioRef.current) {
       currentAudioRef.current.pause();
       currentAudioRef.current = null;
     }
-    playingRef.current = false;
+    isPlayingRef.current = false;
     setInterviewerSpeaking(false);
   }, []);
 
-  /** Start heartbeat ping to keep WS alive. */
-  const startHeartbeat = useCallback(() => {
-    if (heartbeatRef.current) clearInterval(heartbeatRef.current);
-    heartbeatRef.current = setInterval(() => {
-      if (wsRef.current?.readyState === WebSocket.OPEN) {
-        wsRef.current.send(JSON.stringify({ type: 'ping' }));
+  /* ── React-use-websocket Integration ── */
+  const socketUrl = sessionId ? `${WS_BASE}/ws/interview/${sessionId}` : null;
+  
+  const { sendJsonMessage, readyState } = useWebSocket(socketUrl, {
+    share: false,
+    shouldReconnect: () => !intentionallyClosed.current,
+    reconnectAttempts: 5,
+    reconnectInterval: 1500,
+    heartbeat: {
+      message: JSON.stringify({ type: 'ping' }),
+      interval: 25000,
+    },
+    onMessage: (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        switch (msg.type) {
+          case 'transcript':
+            onTranscriptRef.current?.(msg.speaker, msg.text);
+            break;
+          case 'audio':
+            setIsThinking(false);
+            enqueueAudio(msg.data);
+            break;
+          case 'interviewer_done':
+            setIsThinking(false);
+            break;
+          case 'interview_ended':
+            setIsThinking(false);
+            stopAllAudio();
+            onInterviewEndedRef.current?.();
+            break;
+          case 'error':
+            setIsThinking(false);
+            console.error('WebSocket Application error:', msg.message);
+            break;
+          default:
+            break;
+        }
+      } catch (err) {
+        console.error('Failed to parse WS payload:', err);
       }
-    }, 25000); // Every 25s
-  }, []);
-
-  const stopHeartbeat = useCallback(() => {
-    if (heartbeatRef.current) {
-      clearInterval(heartbeatRef.current);
-      heartbeatRef.current = null;
+    },
+    onClose: () => {
+      // Gracefully silence hardware if conn drops unpredictably
+      if (!intentionallyClosed.current) stopAllAudio();
     }
-  }, []);
-
-  // ── WebSocket lifecycle ──
-  useEffect(() => {
-    if (!sessionId) return;
-
-    let isMounted = true;
-
-    const connect = () => {
-      if (!isMounted) return;
-
-      const ws = new WebSocket(`${WS_BASE}/ws/interview/${sessionId}`);
-      wsRef.current = ws;
-
-      ws.onopen = () => {
-        if (!isMounted) return;
-        reconnectCount.current = 0;
-        setWsReady(true);
-        startHeartbeat();
-      };
-
-      ws.onclose = () => {
-        if (!isMounted) return;
-        setWsReady(false);
-        stopHeartbeat();
-
-        // Auto-reconnect if unexpected disconnect
-        if (reconnectCount.current < MAX_RECONNECT) {
-          reconnectCount.current += 1;
-          const delay = RECONNECT_DELAY_MS * reconnectCount.current;
-          console.log(`WS reconnecting in ${delay}ms (attempt ${reconnectCount.current})`);
-          setTimeout(connect, delay);
-        }
-      };
-
-      ws.onerror = (err) => {
-        console.error('WS error:', err);
-      };
-
-      ws.onmessage = (evt) => {
-        if (!isMounted) return;
-        try {
-          const msg = JSON.parse(evt.data);
-          switch (msg.type) {
-            case 'transcript':
-              onTranscriptRef.current?.(msg.speaker, msg.text);
-              break;
-            case 'audio':
-              enqueueAudio(msg.data);
-              break;
-            case 'interviewer_done':
-              break;
-            case 'interview_ended':
-              stopAllAudio();
-              onInterviewEndedRef.current?.();
-              break;
-            case 'pong':
-              break; // heartbeat response
-            case 'error':
-              console.error('Server error:', msg.message);
-              break;
-            default:
-              break;
-          }
-        } catch (parseErr) {
-          console.error('WS message parse error:', parseErr);
-        }
-      };
-    };
-
-    connect();
-
-    return () => {
-      isMounted = false;
-      stopHeartbeat();
-      stopAllAudio();
-      if (wsRef.current) {
-        wsRef.current.close();
-        wsRef.current = null;
-      }
-    };
-  }, [sessionId, enqueueAudio, startHeartbeat, stopHeartbeat, stopAllAudio]);
+  });
 
   const sendCandidateMessage = useCallback((text) => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({ type: 'candidate_message', text }));
+    if (readyState === ReadyState.OPEN) {
+      sendJsonMessage({ type: 'candidate_message', text });
+      setIsThinking(true);
     }
-  }, []);
+  }, [readyState, sendJsonMessage]);
 
   const endInterview = useCallback(() => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      // Stop reconnect attempts when ending intentionally
-      reconnectCount.current = MAX_RECONNECT;
-      wsRef.current.send(JSON.stringify({ type: 'end_interview' }));
+    if (readyState === ReadyState.OPEN) {
+      intentionallyClosed.current = true;
+      sendJsonMessage({ type: 'end_interview' });
     }
-  }, []);
+  }, [readyState, sendJsonMessage]);
 
-  return { wsReady, interviewerSpeaking, sendCandidateMessage, endInterview };
+  const wsReady = readyState === ReadyState.OPEN;
+
+  return { wsReady, interviewerSpeaking, isThinking, sendCandidateMessage, endInterview };
 }

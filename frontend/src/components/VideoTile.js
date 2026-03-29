@@ -1,5 +1,4 @@
-import React from 'react';
-import Webcam from 'react-webcam';
+import React, { useRef, useEffect } from 'react';
 import { MicOff, Volume2 } from 'lucide-react';
 
 const VIDEO_CONSTRAINTS = { facingMode: 'environment' };
@@ -29,38 +28,16 @@ export default function VideoTile({
   avatarChar,
   accentColor,
 }) {
-  const streamRef = React.useRef(null);
-
-  React.useEffect(() => {
-    if (!camOn && streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop());
-      streamRef.current = null;
-    }
-  }, [camOn]);
-
-  React.useEffect(() => {
-    return () => {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((t) => t.stop());
-      }
-    };
-  }, []);
-
   const color = accentColor || '#4f8ef7';
   const bg = role === 'interviewer' ? '#1a2236' : '#0f1520';
 
-  const rootClass = `tile-root ${large ? 'tile-root--large' : 'tile-root--small'}`;
+  const rootClass = `tile-root ${large ? 'tile-root--large' : 'tile-root--small'} ${speaking ? 'tile-speaking-active' : ''}`;
 
   return (
     <div className={rootClass}>
       <div className="tile-media" style={{ background: bg }}>
         {role === 'candidate' && camOn ? (
-          <Webcam
-            audio={false}
-            videoConstraints={VIDEO_CONSTRAINTS}
-            className="tile-video"
-            onUserMedia={(stream) => { streamRef.current = stream; }}
-          />
+          <NativeWebcam videoConstraints={VIDEO_CONSTRAINTS} />
         ) : (
           <AvatarDisplay
             char={avatarChar || name?.[0] || 'A'}
@@ -131,5 +108,64 @@ function AvatarDisplay({ char, color, speaking, role }) {
         </div>
       )}
     </div>
+  );
+}
+
+/** Custom Webcam element that aggressively manages track destruction */
+function NativeWebcam({ videoConstraints }) {
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
+
+  useEffect(() => {
+    let mounted = true;
+    const initCamera = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: videoConstraints || true,
+          audio: false,
+        });
+        if (!mounted) {
+          // If unmounted before stream resolves, stop it immediately
+          stream.getTracks().forEach((t) => t.stop());
+          return;
+        }
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      } catch (err) {
+        console.error('Failed to grab camera:', err);
+      }
+    };
+
+    initCamera();
+
+    // Aggressive cleanup on unmount
+    return () => {
+      mounted = false;
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
+      }
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
+    };
+  }, [videoConstraints]);
+
+  return (
+    <video
+      ref={videoRef}
+      autoPlay
+      playsInline
+      muted
+      className="tile-video"
+      style={{
+        width: '100%',
+        height: '100%',
+        objectFit: 'cover',
+        transform: 'scaleX(-1)' // Mirroring typical of webcam UI
+      }}
+    />
   );
 }
