@@ -40,21 +40,13 @@ const stagger = {
 /* ── Floating Orb component ─────────────────────────────────────────────────── */
 function FloatingOrb({ color, size, top, left, delay = 0 }) {
   return (
-    <motion.div
+    <div
       className="landing-orb"
       style={{
         width: size, height: size, top, left,
         background: `radial-gradient(circle, ${color}30, ${color}05)`,
         border: `1px solid ${color}15`,
-      }}
-      animate={{
-        y: [0, -20, 0, 15, 0],
-        x: [0, 10, -10, 5, 0],
-        scale: [1, 1.05, 0.95, 1.02, 1],
-      }}
-      transition={{
-        duration: 8, repeat: Infinity, delay,
-        ease: 'easeInOut',
+        animationDelay: `${delay}s`,
       }}
     />
   );
@@ -274,19 +266,14 @@ export default function LandingPage() {
               <div className="landing-mock-interviewer">
                 <div className="landing-mock-avatar">
                   <span>A</span>
-                  <motion.div
-                    className="landing-mock-ring"
-                    animate={{ scale: [1, 1.4, 1], opacity: [0.6, 0, 0.6] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                  />
+                  <div className="landing-mock-ring" />
                 </div>
                 <div className="landing-mock-wave">
                   {[0, 1, 2, 3, 4].map(i => (
-                    <motion.div
+                    <div
                       key={i}
                       className="landing-mock-bar"
-                      animate={{ scaleY: [0.3, 1, 0.3] }}
-                      transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.12 }}
+                      style={{ animationDelay: `${i * 0.12}s` }}
                     />
                   ))}
                 </div>
@@ -315,13 +302,9 @@ export default function LandingPage() {
         </motion.div>
 
         {/* Scroll indicator */}
-        <motion.div
-          className="landing-scroll-hint"
-          animate={{ y: [0, 8, 0] }}
-          transition={{ duration: 2, repeat: Infinity }}
-        >
+        <div className="landing-scroll-hint">
           <ChevronDown size={20} />
-        </motion.div>
+        </div>
       </motion.section>
 
       {/* ════════════ FEATURES ════════════ */}
@@ -502,10 +485,7 @@ export default function LandingPage() {
           viewport={{ once: true, margin: '-60px' }}
           variants={stagger}
         >
-          <motion.div className="landing-cta-glow" aria-hidden="true"
-            animate={{ scale: [1, 1.15, 1], opacity: [0.3, 0.5, 0.3] }}
-            transition={{ duration: 4, repeat: Infinity }}
-          />
+          <div className="landing-cta-glow" aria-hidden="true" />
           <motion.h2 className="landing-cta-title" variants={fadeUp}>
             Ready to ace your next interview?
           </motion.h2>

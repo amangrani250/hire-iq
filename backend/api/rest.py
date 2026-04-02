@@ -290,3 +290,100 @@ async def get_interview_feedback(req: FeedbackRequest):
             "bad_points": "Unable to perform deep analysis at this time due to high server load.",
             "improvements": "Practice breaking down your thoughts systematically."
         }
+
+class InterviewMessageRequest(BaseModel):
+    session_id: str
+    text: str | None = None
+
+@router.post("/api/interview/respond")
+async def interview_respond_rest(req: InterviewMessageRequest):
+    """
+    REST fallback for interview dialogue. 
+    Mirrors the logic in ws.py but returns transcript and audio in a single response.
+    """
+    session_id = req.session_id
+    user_text = req.text
+
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Session not found.")
+
+    session = sessions[session_id]
+    from services.llm_service import SYSTEM_PROMPT
+    from services.audio_service import text_to_speech_bytes
+    import base64
+
+    system_msg = {
+        "role": "system",
+        "content": f"{SYSTEM_PROMPT}\n\n--- CANDIDATE RESUME ---\n{session['resume_text']}",
+    }
+
+    try:
+        messages = [system_msg] + session["history"]
+        if user_text:
+            messages.append({"role": "user", "content": user_text})
+
+        # Call LLM
+        ai_text = await call_llm(messages)
+        
+        # Update history
+        if user_text:
+            session["history"].append({"role": "user", "content": user_text})
+        session["history"].append({"role": "assistant", "content": ai_text})
+        session["question_count"] += 1
+        
+        # Trim history
+        if len(session["history"]) > 40:
+            session["history"] = session["history"][-40:]
+
+        # Call TTS
+        audio_bytes = await text_to_speech_bytes(ai_text)
+        audio_b64 = base64.b64encode(audio_bytes).decode() if audio_bytes else None
+
+        return {
+            "type": "interview_response",
+            "speaker": "interviewer",
+            "text": ai_text,
+            "audio": audio_b64,
+            "format": "mp3"
+        }
+
+    except Exception as e:
+        log.error("REST interview response error: %s", e)
+        raise HTTPException(status_code=500, detail="Error generating interviewer response.")
+
+@router.post("/api/interview/end")
+async def interview_end_rest(req: InterviewMessageRequest):
+    """REST endpoint to end interview and get closing message."""
+    session_id = req.session_id
+    if session_id not in sessions:
+        return {"status": "ok"} # Graceful
+
+    session = sessions[session_id]
+    from services.llm_service import SYSTEM_PROMPT
+    from services.audio_service import text_to_speech_bytes
+    import base64
+
+    feedback_prompt = (
+        "Based on this interview conversation, provide a brief, warm closing "
+        "message (2-3 sentences) telling the candidate what went well and next steps. "
+        "Sound like a real human interviewer wrapping up a call."
+    )
+    
+    system_msg = {
+        "role": "system",
+        "content": f"{SYSTEM_PROMPT}\n\n--- CANDIDATE RESUME ---\n{session['resume_text']}",
+    }
+    
+    messages = [system_msg] + session["history"] + [{"role": "user", "content": feedback_prompt}]
+    
+    try:
+        closing = await call_llm(messages)
+        audio = await text_to_speech_bytes(closing)
+        audio_b64 = base64.b64encode(audio).decode() if audio else None
+        
+        return {
+            "text": closing,
+            "audio": audio_b64
+        }
+    except Exception:
+        return {"text": "Thank you for the interview today. We will be in touch soon.", "audio": None}

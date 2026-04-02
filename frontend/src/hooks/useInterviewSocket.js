@@ -3,23 +3,19 @@ import useWebSocket, { ReadyState } from 'react-use-websocket';
 
 const getApiBase = () => {
   if (process.env.REACT_APP_API_URL) return process.env.REACT_APP_API_URL;
-  return window.location.hostname === 'localhost' 
-    ? 'http://localhost:8000' 
-    : 'https://hire-iq-backend-eight.vercel.app';
+  // If we are on Vercel, the API is usually at the same domain
+  return window.location.origin.includes('localhost')
+    ? 'http://localhost:8000'
+    : window.location.origin;
 };
 const API_BASE = getApiBase();
 const WS_BASE  = API_BASE.replace(/^http/, 'ws');
 
-/**
- * Modernized socket implementation leveraging:
- * 1. Standard HTML5 Audio for maximum cross-browser runtime compatibility.
- * 2. react-use-websocket for native declarative reconnect logic and strict heartbeat timings.
- */
 export function useInterviewSocket({ sessionId, onTranscript, onInterviewEnded }) {
   const [interviewerSpeaking, setInterviewerSpeaking] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
+  const [useRestFallback, setUseRestFallback] = useState(false);
 
-  /* ── React Refs for Audio Queue ── */
   const audioQueueRef = useRef([]);
   const isPlayingRef = useRef(false);
   const currentAudioRef = useRef(null);
@@ -37,7 +33,6 @@ export function useInterviewSocket({ sessionId, onTranscript, onInterviewEnded }
       setInterviewerSpeaking(false);
       return;
     }
-
     isPlayingRef.current = true;
     setInterviewerSpeaking(true);
 
@@ -51,20 +46,14 @@ export function useInterviewSocket({ sessionId, onTranscript, onInterviewEnded }
       currentAudioRef.current = null;
       playNext();
     };
-    audio.onerror = () => {
-      console.error('HTML5 Audio play error');
-      URL.revokeObjectURL(url);
-      currentAudioRef.current = null;
-      playNext();
-    };
-    audio.play().catch((err) => {
-      console.error('Autoplay prevented:', err);
+    audio.play().catch(() => {
       currentAudioRef.current = null;
       playNext();
     });
   }, []);
 
   const enqueueAudio = useCallback((base64mp3) => {
+    if (!base64mp3) return;
     try {
       const binaryStr = atob(base64mp3);
       const len = binaryStr.length;
@@ -72,14 +61,11 @@ export function useInterviewSocket({ sessionId, onTranscript, onInterviewEnded }
       for (let i = 0; i < len; i++) {
         bytes[i] = binaryStr.charCodeAt(i);
       }
-      
       const blob = new Blob([bytes], { type: 'audio/mp3' });
       audioQueueRef.current.push(blob);
-      if (!isPlayingRef.current) {
-        playNext();
-      }
+      if (!isPlayingRef.current) playNext();
     } catch (err) {
-      console.error('Audio format error:', err);
+      console.error('Audio error:', err);
     }
   }, [playNext]);
 
@@ -93,69 +79,94 @@ export function useInterviewSocket({ sessionId, onTranscript, onInterviewEnded }
     setInterviewerSpeaking(false);
   }, []);
 
-  /* ── React-use-websocket Integration ── */
-  const socketUrl = sessionId ? `${WS_BASE}/ws/interview/${sessionId}` : null;
-  
+  /* ── WebSocket ── */
+  const socketUrl = (sessionId && !useRestFallback) ? `${WS_BASE}/ws/interview/${sessionId}` : null;
   const { sendJsonMessage, readyState } = useWebSocket(socketUrl, {
     share: false,
-    shouldReconnect: () => !intentionallyClosed.current,
-    reconnectAttempts: 5,
-    reconnectInterval: 1500,
-    heartbeat: {
-      message: JSON.stringify({ type: 'ping' }),
-      interval: 25000,
-    },
+    shouldReconnect: () => !intentionallyClosed.current && !useRestFallback,
+    reconnectAttempts: 3,
     onMessage: (event) => {
       try {
         const msg = JSON.parse(event.data);
-        switch (msg.type) {
-          case 'transcript':
-            onTranscriptRef.current?.(msg.speaker, msg.text);
-            break;
-          case 'audio':
-            setIsThinking(false);
-            enqueueAudio(msg.data);
-            break;
-          case 'interviewer_done':
-            setIsThinking(false);
-            break;
-          case 'interview_ended':
-            setIsThinking(false);
-            stopAllAudio();
-            onInterviewEndedRef.current?.();
-            break;
-          case 'error':
-            setIsThinking(false);
-            console.error('WebSocket Application error:', msg.message);
-            break;
-          default:
-            break;
-        }
-      } catch (err) {
-        console.error('Failed to parse WS payload:', err);
-      }
+        if (msg.type === 'transcript') onTranscriptRef.current?.(msg.speaker, msg.text);
+        else if (msg.type === 'audio') { setIsThinking(false); enqueueAudio(msg.data); }
+        else if (msg.type === 'interviewer_done') setIsThinking(false);
+        else if (msg.type === 'interview_ended') { setIsThinking(false); stopAllAudio(); onInterviewEndedRef.current?.(); }
+      } catch (err) {}
     },
-    onClose: () => {
-      // Gracefully silence hardware if conn drops unpredictably
-      if (!intentionallyClosed.current) stopAllAudio();
-    }
+    onError: () => {
+      console.warn("WebSocket error, falling back to REST...");
+      setUseRestFallback(true);
+    },
+    onClose: () => { if (!intentionallyClosed.current) stopAllAudio(); }
   });
-
-  const sendCandidateMessage = useCallback((text) => {
-    if (readyState === ReadyState.OPEN) {
-      sendJsonMessage({ type: 'candidate_message', text });
-      setIsThinking(true);
-    }
-  }, [readyState, sendJsonMessage]);
-
-  const endInterview = useCallback(() => {
-    if (readyState === ReadyState.OPEN) {
-      intentionallyClosed.current = true;
-      sendJsonMessage({ type: 'end_interview' });
-    }
-  }, [readyState, sendJsonMessage]);
 
   const wsReady = readyState === ReadyState.OPEN;
 
-  return { wsReady, interviewerSpeaking, isThinking, sendCandidateMessage, endInterview };
+  /* ── REST Handlers ── */
+  const handleRestResponse = useCallback(async (text = null) => {
+    setIsThinking(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/interview/respond`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: sessionId, text })
+      });
+      const data = await res.json();
+      if (data.text) {
+        onTranscriptRef.current?.(data.speaker, data.text);
+        enqueueAudio(data.audio);
+      }
+    } catch (err) {
+      console.error("REST Interview Error:", err);
+    } finally {
+      setIsThinking(false);
+    }
+  }, [sessionId, enqueueAudio]);
+
+  /* Start interview if using REST */
+  useEffect(() => {
+    if (useRestFallback && sessionId) {
+      handleRestResponse();
+    }
+  }, [useRestFallback, sessionId]); // eslint-disable-line
+
+  const sendCandidateMessage = useCallback((text) => {
+    if (wsReady) {
+      sendJsonMessage({ type: 'candidate_message', text });
+      setIsThinking(true);
+    } else {
+      handleRestResponse(text);
+    }
+  }, [wsReady, sendJsonMessage, handleRestResponse]);
+
+  const endInterview = useCallback(async () => {
+    intentionallyClosed.current = true;
+    if (wsReady) {
+      sendJsonMessage({ type: 'end_interview' });
+    } else {
+      try {
+        const res = await fetch(`${API_BASE}/api/interview/end`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ session_id: sessionId })
+        });
+        const data = await res.json();
+        if (data.text) {
+          onTranscriptRef.current?.('interviewer', data.text);
+          enqueueAudio(data.audio);
+        }
+      } catch (err) {}
+      onInterviewEndedRef.current?.();
+    }
+  }, [wsReady, sendJsonMessage, sessionId, enqueueAudio]);
+
+  return { 
+    wsReady: wsReady || useRestFallback, 
+    interviewerSpeaking, 
+    isThinking, 
+    sendCandidateMessage, 
+    endInterview 
+  };
 }
+
