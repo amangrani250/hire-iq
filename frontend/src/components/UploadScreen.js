@@ -12,7 +12,7 @@ const getApiBase = () => {
   if (process.env.REACT_APP_API_URL) return process.env.REACT_APP_API_URL;
   return window.location.hostname === 'localhost' 
     ? 'http://localhost:8000' 
-    : window.location.origin;
+    : 'https://hire-iq-backend-eight.vercel.app';
 };
 const API_BASE = getApiBase();
 
