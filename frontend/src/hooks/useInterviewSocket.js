@@ -3,10 +3,9 @@ import useWebSocket, { ReadyState } from 'react-use-websocket';
 
 const getApiBase = () => {
   if (process.env.REACT_APP_API_URL) return process.env.REACT_APP_API_URL;
-  // If we are on Vercel, the API is usually at the same domain
-  return window.location.origin.includes('localhost')
-    ? 'http://localhost:8000'
-    : window.location.origin;
+  return window.location.hostname === 'localhost' 
+    ? 'http://localhost:8000' 
+    : 'https://hire-iq-backend-eight.vercel.app';
 };
 const API_BASE = getApiBase();
 const WS_BASE  = API_BASE.replace(/^http/, 'ws');
