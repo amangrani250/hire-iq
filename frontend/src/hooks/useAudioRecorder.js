@@ -140,8 +140,12 @@ export function useAudioRecorder({ onResult, silenceMs = 1200 }) {
   // Release all resources on unmount
   useEffect(() => {
     return () => {
-      stopRecording();
-      // Kill the persistent stream on unmount
+      // Ensure all resources are cleaned up
+      try {
+        stopRecording();
+      } catch (e) {
+        // ignore
+      }
       if (persistentStreamRef.current) {
         persistentStreamRef.current.getTracks().forEach((t) => t.stop());
         persistentStreamRef.current = null;
@@ -152,7 +156,26 @@ export function useAudioRecorder({ onResult, silenceMs = 1200 }) {
     };
   }, [stopRecording]);
 
-  return { recording, startRecording, stopRecording };
+  /**
+   * release — aggressive release of all audio resources (Mic + AudioContext).
+   * Useful when navigating away or closing the app to ensure mic is freed.
+   */
+  const release = useCallback(() => {
+    try {
+      stopRecording();
+    } catch (e) {
+      // ignore
+    }
+    if (persistentStreamRef.current) {
+      persistentStreamRef.current.getTracks().forEach((t) => t.stop());
+      persistentStreamRef.current = null;
+    }
+    if (ctxRef.current && ctxRef.current.state !== 'closed') {
+      ctxRef.current.close().catch(() => {});
+    }
+  }, [stopRecording]);
+
+  return { recording, startRecording, stopRecording, release };
 }
 
 function getSupportedMimeType() {

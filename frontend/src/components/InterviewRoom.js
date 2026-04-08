@@ -89,7 +89,7 @@ function InterviewRoomInner({ sessionId, candidate, navigate }) {
     }
   }, [micOn, sendCandidateMessage]);
 
-  const { recording, startRecording, stopRecording } =
+  const { recording, startRecording, stopRecording, release } =
     useAudioRecorder({ onResult: handleAudioResult, silenceMs: 1200 });
 
   /* Auto-start recording when interviewer finishes speaking */
@@ -110,6 +110,8 @@ function InterviewRoomInner({ sessionId, candidate, navigate }) {
   /* ── Handlers ───────────────────────────────────────────────────────── */
   const handleEndCall = () => {
     stopRecording();
+    try { release(); } catch (e) {}
+    try { stopAllMediaTracks(); } catch (e) {}
     endInterview();
     onInterviewEnd();
   };
@@ -119,7 +121,51 @@ function InterviewRoomInner({ sessionId, candidate, navigate }) {
     if (recording) stopRecording();
   };
 
-  const handleToggleCam = () => setCamOn((v) => !v);
+  const handleToggleCam = () => {
+    setCamOn((v) => {
+      const next = !v;
+      if (!next) {
+        // If turning camera off, aggressively stop any video tracks.
+        try { stopAllMediaTracks(); } catch (e) {}
+      }
+      return next;
+    });
+  };
+
+  // Ensure media is released when user closes or reloads the page, or when
+  // this component unmounts (navigation). This guarantees mic/camera freed.
+  useEffect(() => {
+    const handleUnload = () => {
+      try { stopRecording(); } catch (e) {}
+      try { release(); } catch (e) {}
+      try { stopAllMediaTracks(); } catch (e) {}
+    };
+    window.addEventListener('beforeunload', handleUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleUnload);
+      try { stopRecording(); } catch (e) {}
+      try { release(); } catch (e) {}
+      try { stopAllMediaTracks(); } catch (e) {}
+    };
+  }, []);
+  
+  // Stop all video/audio tracks attached to any <video> elements on the page.
+  const stopAllMediaTracks = () => {
+    try {
+      const videos = document.querySelectorAll('video');
+      videos.forEach((v) => {
+        const s = v.srcObject;
+        if (s && typeof s.getTracks === 'function') {
+          s.getTracks().forEach((t) => {
+            try { t.stop(); } catch (e) {}
+          });
+        }
+        try { v.srcObject = null; } catch (e) {}
+      });
+    } catch (e) {
+      // ignore
+    }
+  };
   const handleToggleTranscript = () => setTranscriptOpen((v) => !v);
 
   const candidateName = candidate?.name || 'You';
