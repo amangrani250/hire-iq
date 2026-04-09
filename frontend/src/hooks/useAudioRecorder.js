@@ -41,7 +41,6 @@ export function useAudioRecorder({ onResult, silenceMs = 1200 }) {
         echoCancellation: true,
         noiseSuppression: true,
         autoGainControl: true,
-        sampleRate: 16000,
       },
       video: false,
     });
@@ -83,10 +82,10 @@ export function useAudioRecorder({ onResult, silenceMs = 1200 }) {
 
       chunksRef.current = [];
       const mimeType = getSupportedMimeType();
-      const mr = new MediaRecorder(stream, {
-        mimeType,
-        audioBitsPerSecond: 32000,
-      });
+      const options = {};
+      if (mimeType) options.mimeType = mimeType;
+      
+      const mr = new MediaRecorder(stream, options);
       mediaRef.current = mr;
 
       mr.ondataavailable = (e) => {
@@ -179,11 +178,12 @@ export function useAudioRecorder({ onResult, silenceMs = 1200 }) {
 }
 
 function getSupportedMimeType() {
+  if (typeof MediaRecorder === 'undefined') return '';
   const types = [
     'audio/webm;codecs=opus',
     'audio/webm',
-    'audio/ogg;codecs=opus',
     'audio/mp4',
+    'audio/ogg;codecs=opus',
   ];
   return types.find((t) => MediaRecorder.isTypeSupported(t)) || '';
 }
