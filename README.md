@@ -10,7 +10,7 @@ Upload your resume → get a personalized technical interview → hear a realist
 | Feature | How it works |
 |---|---|
 | **Resume parsing** | PDF/TXT extracted server-side (PyPDF2) |
-| **AI Interviewer "Alex"** | Groq LLaMA-3 70B (free) or OpenAI GPT-4o-mini |
+| **AI Interviewer "Aira"** | Groq LLaMA-3 70B (free) or OpenAI GPT-4o-mini |
 | **Realistic voice** | ElevenLabs → OpenAI TTS → edge-tts (all free fallbacks) |
 | **Speech-to-text** | Groq Whisper-large-v3 (free) or OpenAI Whisper |
 | **Real-time comms** | WebSocket (FastAPI) |

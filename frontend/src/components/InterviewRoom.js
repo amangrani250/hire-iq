@@ -169,7 +169,7 @@ function InterviewRoomInner({ sessionId, candidate, navigate }) {
   const handleToggleTranscript = () => setTranscriptOpen((v) => !v);
 
   const candidateName = candidate?.name || 'You';
-  const interviewerName = 'Alex';
+  const interviewerName = 'Aira';
 
   return (
     <div className="room-root">
@@ -271,11 +271,11 @@ function LiveTimer() {
   return <span>{mm}:{ss}</span>;
 }
 
-/* ── Typing indicator ("Alex is typing…") ─────────────────────────────────── */
+/* ── Typing indicator ("Aira is typing…") ─────────────────────────────────── */
 function TypingDots() {
   return (
     <div className="typing-dots">
-      <span className="typing-dots__label">Alex is typing</span>
+      <span className="typing-dots__label">Aira is typing</span>
       <div className="typing-dots__group">
         {[0, 1, 2].map((i) => (
           <div

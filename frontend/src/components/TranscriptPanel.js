@@ -64,7 +64,7 @@ export default function TranscriptPanel({ messages, visible }) {
             </div>
             <div className="transcript-bubble">
               <span className="transcript-speaker">
-                {m.speaker === 'interviewer' ? 'Alex (AI)' : 'You'}
+                {m.speaker === 'interviewer' ? 'Aira (AI)' : 'You'}
               </span>
               <p className="transcript-text">{m.text}</p>
             </div>

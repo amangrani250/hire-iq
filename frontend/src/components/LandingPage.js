@@ -134,7 +134,7 @@ export default function LandingPage() {
 
   const steps = [
     { num: '01', icon: <Upload size={28} />, title: 'Upload Resume', desc: 'Drop your PDF or TXT resume — our backend parses it instantly using PyPDF2.' },
-    { num: '02', icon: <Bot size={28} />, title: 'Meet Your Interviewer', desc: 'AI interviewer "Alex" opens with a personalized greeting based on your background.' },
+    { num: '02', icon: <Bot size={28} />, title: 'Meet Your Interviewer', desc: 'AI interviewer "Aira" opens with a personalized greeting based on your background.' },
     { num: '03', icon: <Mic size={28} />, title: 'Speak Naturally', desc: 'Auto voice detection captures your answers — no buttons to press. Just talk.' },
     { num: '04', icon: <Star size={28} />, title: 'Get Feedback', desc: 'Review the full transcript and receive AI feedback on your interview performance.' },
   ];
@@ -172,6 +172,7 @@ export default function LandingPage() {
             <span className="landing-nav-logo-text">HireIQ</span>
           </div>
           <div className="landing-nav-links">
+            <span onClick={() => navigate('/builder')} className="landing-nav-link" style={{ cursor: 'pointer' }}>Resume Builder</span>
             <a href="#features" className="landing-nav-link">Features</a>
             <a href="#how-it-works" className="landing-nav-link">How it Works</a>
             <a href="#advantages" className="landing-nav-link">Why HireIQ</a>

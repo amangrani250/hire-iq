@@ -1,7 +1,49 @@
-/* ═══════════════════════════════════════════════════════════════════════════════
-   HireIQ — Global Styles & Design Tokens
+﻿@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    @apply bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center gap-2 px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-medium rounded-xl transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 font-medium rounded-xl border border-gray-200 dark:border-gray-700 transition-all duration-200 active:scale-95;
+  }
+  .input-field {
+    @apply w-full px-3.5 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all duration-200;
+  }
+  .card {
+    @apply bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm;
+  }
+  .section-label {
+    @apply text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3;
+  }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { @apply bg-gray-200 dark:bg-gray-700 rounded-full; }
+
+/* Resume print styles */
+@media print {
+  .no-print { display: none !important; }
+  body { background: white !important; }
+}
+
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   HireIQ â€” Global Styles & Design Tokens
    Production-ready CSS with mobile-first responsive breakpoints
-   ═══════════════════════════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 *,
 *::before,
@@ -84,7 +126,7 @@ textarea {
   font-family: inherit;
 }
 
-/* ── Keyframes ────────────────────────────────────────────────────────────────── */
+/* â”€â”€ Keyframes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 @keyframes pulse-ring {
   0% {
     transform: scale(1);
@@ -168,9 +210,9 @@ textarea {
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    Upload Screen
-   ═══════════════════════════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 .upload-root {
   min-height: 100vh;
   display: flex;
@@ -344,9 +386,9 @@ textarea {
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    Interview Room
-   ═══════════════════════════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 .room-root {
   height: 100vh;
   height: 100dvh;
@@ -356,7 +398,7 @@ textarea {
   overflow: hidden;
 }
 
-/* ── Header ── */
+/* â”€â”€ Header â”€â”€ */
 .room-header {
   display: flex;
   align-items: center;
@@ -444,7 +486,7 @@ textarea {
   }
 }
 
-/* ── Main content area ── */
+/* â”€â”€ Main content area â”€â”€ */
 .room-main {
   flex: 1;
   display: flex;
@@ -459,7 +501,7 @@ textarea {
   }
 }
 
-/* ── Video area ── */
+/* â”€â”€ Video area â”€â”€ */
 .room-video-area {
   flex: 1;
   padding: 8px;
@@ -477,7 +519,7 @@ textarea {
   }
 }
 
-/* ── Small tile (candidate) positioning ── */
+/* â”€â”€ Small tile (candidate) positioning â”€â”€ */
 .room-small-tiles {
   position: absolute;
   bottom: 12px;
@@ -495,7 +537,7 @@ textarea {
   }
 }
 
-/* ── Status overlay ── */
+/* â”€â”€ Status overlay â”€â”€ */
 .room-status-overlay {
   position: absolute;
   bottom: 130px;
@@ -544,7 +586,7 @@ textarea {
   animation: pulse-ring 1s ease-out infinite;
 }
 
-/* ── Typing dots ── */
+/* â”€â”€ Typing dots â”€â”€ */
 .typing-dots {
   display: flex;
   align-items: center;
@@ -574,9 +616,9 @@ textarea {
   animation: typing-dot 1.2s ease infinite;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    Video Tile
-   ═══════════════════════════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 .tile-root {
   position: relative;
   border-radius: 12px;
@@ -701,7 +743,7 @@ textarea {
   }
 }
 
-/* ── Avatar ── */
+/* â”€â”€ Avatar â”€â”€ */
 .avatar-root {
   display: flex;
   flex-direction: column;
@@ -789,9 +831,9 @@ textarea {
   transform-origin: bottom;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    Control Bar
-   ═══════════════════════════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 .ctrl-bar {
   display: flex;
   align-items: center;
@@ -934,9 +976,9 @@ textarea {
   animation: pulse-ring 1s ease-out infinite;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    Transcript Panel
-   ═══════════════════════════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 .transcript-panel {
   width: 100%;
   flex-shrink: 0;
@@ -1074,9 +1116,9 @@ textarea {
   word-break: break-word;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    End Screen
-   ═══════════════════════════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 .end-root {
   min-height: 100vh;
   display: flex;
@@ -1364,14 +1406,14 @@ textarea {
   font-size: 14px;
 }
 
-/* ── Utility ── */
+/* â”€â”€ Utility â”€â”€ */
 .spin {
   animation: spin 1s linear infinite;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    Landing Page
-   ═══════════════════════════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 .landing-root {
   min-height: 100vh;
   background: var(--bg-deep);
@@ -1382,7 +1424,7 @@ textarea {
 
 /* Note: class-based scroll containers are used instead of :has fallback. */
 
-/* ── Background ── */
+/* â”€â”€ Background â”€â”€ */
 .landing-grid {
   position: fixed;
   inset: 0;
@@ -1427,7 +1469,7 @@ textarea {
   }
 }
 
-/* ── Navbar ── */
+/* â”€â”€ Navbar â”€â”€ */
 .landing-nav {
   position: fixed;
   top: 0;
@@ -1514,7 +1556,7 @@ textarea {
   }
 }
 
-/* ── Hero ── */
+/* â”€â”€ Hero â”€â”€ */
 .landing-hero {
   min-height: 100vh;
   display: flex;
@@ -1721,7 +1763,7 @@ textarea {
   background: var(--border-lit);
 }
 
-/* ── Hero Visual (Mock interview card) ── */
+/* â”€â”€ Hero Visual (Mock interview card) â”€â”€ */
 .landing-hero-visual {
   position: relative;
   z-index: 1;
@@ -1905,7 +1947,7 @@ textarea {
   }
 }
 
-/* ── Sections ── */
+/* â”€â”€ Sections â”€â”€ */
 .landing-section {
   padding: 80px 20px;
   position: relative;
@@ -1965,7 +2007,7 @@ textarea {
   max-width: 520px;
 }
 
-/* ── Features grid ── */
+/* â”€â”€ Features grid â”€â”€ */
 .landing-features-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -2019,7 +2061,7 @@ textarea {
   line-height: 1.65;
 }
 
-/* ── Steps / How it works ── */
+/* â”€â”€ Steps / How it works â”€â”€ */
 .landing-steps {
   display: grid;
   grid-template-columns: 1fr;
@@ -2100,7 +2142,7 @@ textarea {
   line-height: 1.6;
 }
 
-/* ── Advantages ── */
+/* â”€â”€ Advantages â”€â”€ */
 .landing-advantages-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -2156,7 +2198,7 @@ textarea {
   line-height: 1.6;
 }
 
-/* ── Tech stack chips ── */
+/* â”€â”€ Tech stack chips â”€â”€ */
 .landing-tech-grid {
   display: flex;
   flex-wrap: wrap;
@@ -2195,7 +2237,7 @@ textarea {
   color: var(--text-3);
 }
 
-/* ── CTA section ── */
+/* â”€â”€ CTA section â”€â”€ */
 .landing-cta-section {
   padding: 60px 20px 80px;
   position: relative;
@@ -2292,7 +2334,7 @@ textarea {
   color: var(--green);
 }
 
-/* ── Footer ── */
+/* â”€â”€ Footer â”€â”€ */
 .landing-footer {
   border-top: 1px solid var(--border);
   padding: 28px 20px;
@@ -2323,9 +2365,9 @@ textarea {
 }
 
 
-/* ═══════════════════════════════════════════════════════════════════════════════
-   Upload Screen V2 — with Analysis Results
-   ═══════════════════════════════════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   Upload Screen V2 â€” with Analysis Results
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 .upload-root-v2,
 .landing-root,
 .room-root,
@@ -2350,7 +2392,7 @@ textarea {
 
 /* Note: class-based scroll containers are used instead of :has fallback. */
 
-/* ── Analysis Root ── */
+/* â”€â”€ Analysis Root â”€â”€ */
 .analysis-root {
   width: 100%;
   max-width: 800px;
@@ -2359,7 +2401,7 @@ textarea {
   gap: 20px;
 }
 
-/* ── Profile Header ── */
+/* â”€â”€ Profile Header â”€â”€ */
 .analysis-profile {
   display: flex;
   align-items: center;
@@ -2455,7 +2497,7 @@ textarea {
   font-size: 16px;
 }
 
-/* ── Section ── */
+/* â”€â”€ Section â”€â”€ */
 .analysis-section {
   padding: 24px;
   background: var(--bg-card);
@@ -2491,7 +2533,7 @@ textarea {
   line-height: 1.7;
 }
 
-/* ── Experience Timeline ── */
+/* â”€â”€ Experience Timeline â”€â”€ */
 .timeline {
   display: flex;
   flex-direction: column;
@@ -2575,7 +2617,7 @@ textarea {
   border-radius: var(--radius-sm);
 }
 
-/* ── Skills ── */
+/* â”€â”€ Skills â”€â”€ */
 .skills-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -2623,7 +2665,7 @@ textarea {
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
-/* ── Education ── */
+/* â”€â”€ Education â”€â”€ */
 .education-list {
   display: flex;
   flex-direction: column;
@@ -2662,7 +2704,7 @@ textarea {
   margin-top: 2px;
 }
 
-/* ── ATS Score ── */
+/* â”€â”€ ATS Score â”€â”€ */
 .analysis-ats {
   overflow: visible;
 }
@@ -2810,7 +2852,7 @@ textarea {
   margin-top: 3px;
 }
 
-/* ── Bottom CTA ── */
+/* â”€â”€ Bottom CTA â”€â”€ */
 .analysis-bottom-cta {
   display: flex;
   flex-direction: column;
@@ -2830,7 +2872,7 @@ textarea {
   letter-spacing: -0.3px;
 }
 
-/* ── Upload error with icon ── */
+/* â”€â”€ Upload error with icon â”€â”€ */
 .upload-error {
   display: flex;
   align-items: center;
