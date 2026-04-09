@@ -5,7 +5,7 @@ import {
   Zap, Upload, Mic, Brain, MessageSquare, Shield,
   Clock, Sparkles, ArrowRight, ChevronDown, Bot,
   FileText, Volume2, Eye, BarChart3, Globe, Star,
-  CheckCircle, Play, Users, Cpu
+  CheckCircle, Play, Users, Cpu, Code, Layers
 } from 'lucide-react';
 
 /* ── Animation helpers ──────────────────────────────────────────────────────── */
@@ -86,57 +86,57 @@ export default function LandingPage() {
 
   const features = [
     {
-      icon: <Brain size={24} />,
-      title: 'AI-Powered Questions',
-      desc: 'Groq LLaMA-3 70B generates tailored technical questions from your actual resume — no generic Q&A.',
+      icon: <Layers size={24} />,
+      title: 'AI Resume Builder',
+      desc: 'Build, refine, and export ATS-optimized resumes using our built-in AI tools. Generate professional layouts instantly.',
       color: 'var(--accent)',
     },
     {
-      icon: <Volume2 size={24} />,
-      title: 'Realistic Voice',
-      desc: 'Natural human-sounding voice via ElevenLabs, OpenAI TTS, or free edge-tts fallback.',
+      icon: <Code size={24} />,
+      title: 'Custom Tech Interviews',
+      desc: 'Select specific programming languages and adjust difficulty for a hardcore technical evaluation.',
+      color: 'var(--amber)',
+    },
+    {
+      icon: <Brain size={24} />,
+      title: 'Resume-Based Q&A',
+      desc: 'Aira extracts skills and experiences from your resume to dive deep into your unique background.',
       color: 'var(--green)',
     },
     {
-      icon: <Mic size={24} />,
-      title: 'Voice Activity Detection',
-      desc: 'Automatic silence detection starts and stops recording — speak naturally like a real call.',
+      icon: <Volume2 size={24} />,
+      title: 'Realistic Voice AI',
+      desc: 'Natural human-sounding interactions with automatic silence detection — just speak naturally.',
       color: 'var(--accent-2)',
     },
     {
       icon: <MessageSquare size={24} />,
       title: 'Live Transcript',
-      desc: 'Real-time captions of your entire conversation — review how you answered every question.',
-      color: 'var(--amber)',
-    },
-    {
-      icon: <Eye size={24} />,
-      title: 'Zoom-Style UI',
-      desc: 'Familiar video-call layout with avatar tiles, controls, and an interactive transcript panel.',
+      desc: 'Real-time captions of your entire conversation — review how you answered every question easily.',
       color: '#e06cf5',
     },
     {
       icon: <Cpu size={24} />,
-      title: 'Groq Whisper STT',
-      desc: 'Lightning-fast speech-to-text with Groq Whisper-large-v3 for accurate real-time transcription.',
+      title: 'Lightning Fast LLMs',
+      desc: 'Powered by Groq LLaMA-3 and Whisper v3 for virtually zero latency in your mock sessions.',
       color: '#f56c6c',
     },
   ];
 
   const advantages = [
-    { icon: <Clock size={20} />, title: '24/7 Availability', desc: 'Practice interviews anytime — no scheduling, no waiting for a human interviewer.' },
-    { icon: <Shield size={20} />, title: 'Zero Judgement', desc: 'Build confidence in a private, pressure-free environment before the real thing.' },
-    { icon: <Sparkles size={20} />, title: 'Personalized to You', desc: 'Questions are extracted from YOUR resume — skills, projects, and experience.' },
-    { icon: <Globe size={20} />, title: 'Completely Free', desc: 'Runs on free Groq API + free edge-tts. No subscription, no credit card required.' },
-    { icon: <BarChart3 size={20} />, title: 'Instant Feedback', desc: 'AI provides closing feedback at the end of every session so you know where to improve.' },
-    { icon: <Users size={20} />, title: 'Multi-Role Support', desc: 'Auto-detects your target role from your resume and tailors the interview accordingly.' },
+    { icon: <Clock size={20} />, title: 'All-in-One Platform', desc: 'From crafting the perfect resume to practicing the final interview, everything is in one unified workflow.' },
+    { icon: <Shield size={20} />, title: 'Zero Judgement', desc: 'Build confidence in a private, pressure-free environment before facing the real hiring manager.' },
+    { icon: <Sparkles size={20} />, title: 'Tailored to You', desc: 'Interviews adapt dynamically to your resume context or the custom technical framework you choose.' },
+    { icon: <Globe size={20} />, title: 'Completely Free', desc: 'Built on top of powerful open APIs. No subscriptions, no credits, completely unrestricted practice.' },
+    { icon: <BarChart3 size={20} />, title: 'Instant Feedback', desc: 'AI provides immediate closing feedback at the end of every session so you know exactly where to improve.' },
+    { icon: <Users size={20} />, title: 'Multi-Role Support', desc: 'Auto-detects your target role from your resume or tech stack to simulate front-end, back-end, or full-stack.' },
   ];
 
   const steps = [
-    { num: '01', icon: <Upload size={28} />, title: 'Upload Resume', desc: 'Drop your PDF or TXT resume — our backend parses it instantly using PyPDF2.' },
-    { num: '02', icon: <Bot size={28} />, title: 'Meet Your Interviewer', desc: 'AI interviewer "Aira" opens with a personalized greeting based on your background.' },
-    { num: '03', icon: <Mic size={28} />, title: 'Speak Naturally', desc: 'Auto voice detection captures your answers — no buttons to press. Just talk.' },
-    { num: '04', icon: <Star size={28} />, title: 'Get Feedback', desc: 'Review the full transcript and receive AI feedback on your interview performance.' },
+    { num: '01', icon: <FileText size={28} />, title: 'Build or Upload', desc: 'Use our AI Builder to craft a perfect resume from scratch, or drop your existing PDF/TXT instantly.' },
+    { num: '02', icon: <Code size={28} />, title: 'Choose Mode', desc: 'Opt for a holistic resume-based interview, or configure a customized technical-only screen.' },
+    { num: '03', icon: <Mic size={28} />, title: 'Speak Naturally', desc: 'Auto voice detection captures your answers — no buttons to press. Just talk naturally with Aira.' },
+    { num: '04', icon: <Star size={28} />, title: 'Get Feedback', desc: 'Review the live transcript and receive structured AI evaluation to hone your interview skills.' },
   ];
 
   const techStack = [
@@ -172,6 +172,7 @@ export default function LandingPage() {
             <span className="landing-nav-logo-text">HireIQ</span>
           </div>
           <div className="landing-nav-links">
+            <span onClick={() => navigate('/tech-interview')} className="landing-nav-link" style={{ cursor: 'pointer' }}>Tech Interview</span>
             <span onClick={() => navigate('/builder')} className="landing-nav-link" style={{ cursor: 'pointer' }}>Resume Builder</span>
             <a href="#features" className="landing-nav-link">Features</a>
             <a href="#how-it-works" className="landing-nav-link">How it Works</a>

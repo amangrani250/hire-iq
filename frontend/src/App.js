@@ -11,6 +11,7 @@ import InterviewRoom from './components/InterviewRoom';
 import EndScreen from './components/EndScreen';
 import BuilderPage from './pages/BuilderPage';
 import SavedPage from './pages/SavedPage';
+import TechInterviewSetup from './pages/TechInterviewSetup';
 
 /* ── Page transition wrapper ─────────────────────────────────────────────── */
 const pageTransition = {
@@ -39,7 +40,7 @@ function AnimatedPage({ children }) {
  */
 export default function App() {
   const location = useLocation();
-  const showNavbar = location.pathname.startsWith('/builder') || location.pathname.startsWith('/saved');
+  const showNavbar = location.pathname.startsWith('/builder') || location.pathname.startsWith('/saved') || location.pathname.startsWith('/tech-interview');
 
   return (
     <ThemeProvider>
@@ -53,6 +54,7 @@ export default function App() {
             <Route path="/end" element={<AnimatedPage><EndScreen /></AnimatedPage>} />
             <Route path="/builder" element={<AnimatedPage><BuilderPage /></AnimatedPage>} />
             <Route path="/saved" element={<AnimatedPage><SavedPage /></AnimatedPage>} />
+            <Route path="/tech-interview" element={<AnimatedPage><TechInterviewSetup /></AnimatedPage>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </AnimatePresence>

@@ -1,6 +1,7 @@
 import os
 import asyncio
 import tempfile
+import re
 from fastapi import HTTPException
 from core.config import settings, log
 from services.http_client import get_http_client
@@ -116,6 +117,16 @@ async def transcribe_audio_bytes(audio_bytes: bytes, content_type: str = "") -> 
         raise HTTPException(status_code=500, detail="No STT API key configured.")
 
     # Filter out common Whisper hallucinations during silence/noise
+    # 1. Background noise enclosed in brackets/asterisks (e.g. *soft murmurs*, [silence])
+    filtered_text = re.sub(r'\*[^\*]+\*', '', text)
+    filtered_text = re.sub(r'\[[^\]]+\]', '', filtered_text)
+    filtered_text = re.sub(r'\([^\)]+\)', '', filtered_text)
+    
+    # If the remaining text has no alphanumeric characters, it was purely noise.
+    meaningful = re.sub(r'[^a-zA-Z0-9]', '', filtered_text).strip()
+    if not meaningful:
+        return ""
+        
     lower_text = text.lower().replace(".", "").replace("!", "").replace("?", "").strip()
     hallucinations = [
         "thank you", "thanks", "thanks for watching", "thank you for watching", 

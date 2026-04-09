@@ -54,6 +54,7 @@ async def upload_resume(file: UploadFile = File(...)):
         "question_count": 0,
         "last_active": time.time(),
         "created_at": time.time(),
+        "interview_type": "resume"
     }
 
     log.info("Session created: %s (resume: %d chars)", session_id[:8], len(resume_text))
@@ -218,6 +219,7 @@ async def analyze_resume(file: UploadFile = File(...)):
         "question_count": 0,
         "last_active": time.time(),
         "created_at": time.time(),
+        "interview_type": "resume"
     }
 
     log.info("Session created from analysis: %s (resume: %d chars)", session_id[:8], len(trimmed))
@@ -246,6 +248,40 @@ async def transcribe_audio(file: UploadFile = File(...)):
     audio_bytes = await file.read()
     text = await transcribe_audio_bytes(audio_bytes, file.content_type or "")
     return {"transcript": text}
+
+class TechInterviewRequest(BaseModel):
+    languages: List[str]
+    complexity: str
+
+@router.post("/api/setup-tech-interview")
+async def setup_tech_interview(req: TechInterviewRequest):
+    session_id = str(uuid.uuid4())
+    
+    sessions[session_id] = {
+        "resume_text": "",
+        "languages": req.languages,
+        "complexity": req.complexity,
+        "history": [
+            {"role": "user", "content": f"Hi, I'm ready for the technical interview. I want {req.complexity} complexity questions on {', '.join(req.languages)}."}
+        ],
+        "stage": "greeting",
+        "question_count": 0,
+        "last_active": time.time(),
+        "created_at": time.time(),
+        "interview_type": "tech"
+    }
+    
+    log.info("Tech interview session created: %s", session_id[:8])
+    
+    return {
+        "session_id": session_id,
+        "candidate": {
+            "name": "Candidate",
+            "role": f"{req.complexity.title()} Level Engineer",
+            "skills": req.languages,
+            "years": ""
+        }
+    }
 
 class TranscriptMessage(BaseModel):
     speaker: str
@@ -308,13 +344,18 @@ async def interview_respond_rest(req: InterviewMessageRequest):
         raise HTTPException(status_code=404, detail="Session not found.")
 
     session = sessions[session_id]
-    from services.llm_service import SYSTEM_PROMPT
+    from services.llm_service import SYSTEM_PROMPT, TECH_SYSTEM_PROMPT
     from services.audio_service import text_to_speech_bytes
     import base64
 
+    if session.get("interview_type") == "tech":
+        system_msg_content = f"{TECH_SYSTEM_PROMPT}\n\n--- INTERVIEW PARAMETERS ---\nLanguages: {', '.join(session.get('languages', []))}\nComplexity: {session.get('complexity', 'medium')}"
+    else:
+        system_msg_content = f"{SYSTEM_PROMPT}\n\n--- CANDIDATE RESUME ---\n{session.get('resume_text', '')}"
+
     system_msg = {
         "role": "system",
-        "content": f"{SYSTEM_PROMPT}\n\n--- CANDIDATE RESUME ---\n{session['resume_text']}",
+        "content": system_msg_content,
     }
 
     try:
@@ -359,7 +400,7 @@ async def interview_end_rest(req: InterviewMessageRequest):
         return {"status": "ok"} # Graceful
 
     session = sessions[session_id]
-    from services.llm_service import SYSTEM_PROMPT
+    from services.llm_service import SYSTEM_PROMPT, TECH_SYSTEM_PROMPT
     from services.audio_service import text_to_speech_bytes
     import base64
 
@@ -369,9 +410,14 @@ async def interview_end_rest(req: InterviewMessageRequest):
         "Sound like a real human interviewer wrapping up a call."
     )
     
+    if session.get("interview_type") == "tech":
+        system_msg_content = f"{TECH_SYSTEM_PROMPT}\n\n--- INTERVIEW PARAMETERS ---\nLanguages: {', '.join(session.get('languages', []))}\nComplexity: {session.get('complexity', 'medium')}"
+    else:
+        system_msg_content = f"{SYSTEM_PROMPT}\n\n--- CANDIDATE RESUME ---\n{session.get('resume_text', '')}"
+
     system_msg = {
         "role": "system",
-        "content": f"{SYSTEM_PROMPT}\n\n--- CANDIDATE RESUME ---\n{session['resume_text']}",
+        "content": system_msg_content,
     }
     
     messages = [system_msg] + session["history"] + [{"role": "user", "content": feedback_prompt}]

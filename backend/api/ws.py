@@ -5,7 +5,7 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException
 import orjson
 from core.config import settings, log
 from core.session import sessions, touch_session
-from services.llm_service import call_llm, SYSTEM_PROMPT
+from services.llm_service import call_llm, SYSTEM_PROMPT, TECH_SYSTEM_PROMPT
 from services.audio_service import text_to_speech_bytes
 from utils.pdf_extractor import sanitize_text
 
@@ -23,9 +23,14 @@ async def interview_websocket(websocket: WebSocket, session_id: str):
     session = sessions[session_id]
     touch_session(session_id)
 
+    if session.get("interview_type") == "tech":
+        system_msg_content = f"{TECH_SYSTEM_PROMPT}\n\n--- INTERVIEW PARAMETERS ---\nLanguages: {', '.join(session.get('languages', []))}\nComplexity: {session.get('complexity', 'medium')}"
+    else:
+        system_msg_content = f"{SYSTEM_PROMPT}\n\n--- CANDIDATE RESUME ---\n{session.get('resume_text', '')}"
+
     system_msg = {
         "role": "system",
-        "content": f"{SYSTEM_PROMPT}\n\n--- CANDIDATE RESUME ---\n{session['resume_text']}",
+        "content": system_msg_content,
     }
 
     async def safe_send(data: dict):

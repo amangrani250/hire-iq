@@ -10,6 +10,7 @@ export default function Navbar() {
 
   const links = [
     { to: '/', label: 'Home' },
+    { to: '/tech-interview', label: 'Tech Interview' },
     { to: '/builder', label: 'Builder' },
     { to: '/saved', label: 'Saved' },
   ]
