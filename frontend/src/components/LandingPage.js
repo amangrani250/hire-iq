@@ -5,7 +5,7 @@ import {
   Zap, Upload, Mic, Brain, MessageSquare, Shield,
   Clock, Sparkles, ArrowRight, ChevronDown, Bot,
   FileText, Volume2, Eye, BarChart3, Globe, Star,
-  CheckCircle, Play, Users, Cpu, Code, Layers
+  CheckCircle, Play, Users, Cpu, Code, Layers, Menu, X
 } from 'lucide-react';
 
 /* ── Animation helpers ──────────────────────────────────────────────────────── */
@@ -80,6 +80,7 @@ function AnimatedStat({ value, suffix = '', label }) {
 /* ── Main Landing Page ──────────────────────────────────────────────────────── */
 export default function LandingPage() {
   const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
   const { scrollYProgress } = useScroll();
   const heroY = useTransform(scrollYProgress, [0, 0.3], [0, -80]);
   const heroOpacity = useTransform(scrollYProgress, [0, 0.25], [1, 0]);
@@ -179,14 +180,38 @@ export default function LandingPage() {
             <a href="#advantages" className="landing-nav-link">Why HireIQ</a>
           </div>
           <motion.button
-            className="landing-nav-cta"
+            className="landing-nav-cta hidden md:flex"
             onClick={() => navigate('/upload')}
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.96 }}
           >
             Start Interview
           </motion.button>
+          
+          <button 
+            className="md:hidden text-white ml-auto"
+            onClick={() => setMenuOpen(!menuOpen)}
+          >
+            {menuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
         </div>
+
+        {/* Mobile Dropdown Menu */}
+        {menuOpen && (
+          <div className="md:hidden bg-gray-900 border-t border-gray-800 absolute top-full left-0 w-full p-4 flex flex-col gap-3 shadow-xl">
+            <span onClick={() => { navigate('/tech-interview'); setMenuOpen(false); }} className="text-gray-200 font-medium py-2">Tech Interview</span>
+            <span onClick={() => { navigate('/builder'); setMenuOpen(false); }} className="text-gray-200 font-medium py-2">Resume Builder</span>
+            <a href="#features" onClick={() => setMenuOpen(false)} className="text-gray-200 font-medium py-2">Features</a>
+            <a href="#how-it-works" onClick={() => setMenuOpen(false)} className="text-gray-200 font-medium py-2">How it Works</a>
+            <a href="#advantages" onClick={() => setMenuOpen(false)} className="text-gray-200 font-medium py-2">Why HireIQ</a>
+            <button
+              className="mt-2 w-full py-3 rounded-lg bg-brand-600 text-white font-semibold"
+              onClick={() => { navigate('/upload'); setMenuOpen(false); }}
+            >
+              Start Interview
+            </button>
+          </div>
+        )}
       </motion.nav>
 
       {/* ════════════ HERO ════════════ */}

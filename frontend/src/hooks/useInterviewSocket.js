@@ -141,6 +141,7 @@ export function useInterviewSocket({ sessionId, onTranscript, onInterviewEnded }
 
   const endInterview = useCallback(async () => {
     intentionallyClosed.current = true;
+    stopAllAudio();
     if (wsReady) {
       sendJsonMessage({ type: 'end_interview' });
     } else {
@@ -159,6 +160,12 @@ export function useInterviewSocket({ sessionId, onTranscript, onInterviewEnded }
       onInterviewEndedRef.current?.();
     }
   }, [wsReady, sendJsonMessage, sessionId, enqueueAudio]);
+
+  useEffect(() => {
+    return () => {
+      stopAllAudio();
+    };
+  }, [stopAllAudio]);
 
   return { 
     wsReady: wsReady || useRestFallback, 

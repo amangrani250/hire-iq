@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import { MicOff, Volume2 } from 'lucide-react';
 
-const VIDEO_CONSTRAINTS = { facingMode: 'environment' };
+const VIDEO_CONSTRAINTS = { facingMode: 'user' };
 
 /**
  * VideoTile — a single participant tile in the interview room.
