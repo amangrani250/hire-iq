@@ -12,6 +12,8 @@ import EndScreen from './components/EndScreen';
 import BuilderPage from './pages/BuilderPage';
 import SavedPage from './pages/SavedPage';
 import TechInterviewSetup from './pages/TechInterviewSetup';
+import JobPrepPage from './pages/JobPrepPage';
+import JobRoadmapPage from './pages/JobRoadmapPage';
 
 /* ── Page transition wrapper ─────────────────────────────────────────────── */
 const pageTransition = {
@@ -36,11 +38,12 @@ function AnimatedPage({ children }) {
 
 /**
  * App — root component managing route-based navigation with Framer Motion transitions.
- * Routes: / (landing) → /upload → /interview → /end
  */
 export default function App() {
   const location = useLocation();
-  const showNavbar = location.pathname.startsWith('/builder') || location.pathname.startsWith('/saved') || location.pathname.startsWith('/tech-interview');
+  const showNavbar = location.pathname.startsWith('/builder')
+    || location.pathname.startsWith('/saved')
+    || location.pathname.startsWith('/tech-interview');
 
   return (
     <ThemeProvider>
@@ -55,6 +58,8 @@ export default function App() {
             <Route path="/builder" element={<AnimatedPage><BuilderPage /></AnimatedPage>} />
             <Route path="/saved" element={<AnimatedPage><SavedPage /></AnimatedPage>} />
             <Route path="/tech-interview" element={<AnimatedPage><TechInterviewSetup /></AnimatedPage>} />
+            <Route path="/job-prep" element={<AnimatedPage><JobPrepPage /></AnimatedPage>} />
+            <Route path="/job-roadmap" element={<AnimatedPage><JobRoadmapPage /></AnimatedPage>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </AnimatePresence>

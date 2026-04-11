@@ -1,16 +1,20 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Terminal, Code, Cpu, ArrowRight, X, AlertCircle } from 'lucide-react';
+import { Terminal, Code, Cpu, ArrowRight, X, AlertCircle, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const getApiBase = () => {
   if (process.env.REACT_APP_API_URL) return process.env.REACT_APP_API_URL;
-  return window.location.hostname === 'localhost' 
-    ? 'http://localhost:8000' 
+  return window.location.hostname === 'localhost'
+    ? 'http://localhost:8000'
     : 'https://hire-iq-backend-eight.vercel.app';
 };
 const API_BASE = getApiBase();
+
+const POPULAR_LANGUAGES = [
+  'JavaScript', 'Python', 'Java', 'TypeScript', 'C++', 'C#', 'Go', 'Rust', 'React', 'Node.js',
+];
 
 export default function TechInterviewSetup() {
   const navigate = useNavigate();
@@ -20,41 +24,72 @@ export default function TechInterviewSetup() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  /** Commit whatever is in the input box as a tag */
+  const commitInput = (value = inputValue) => {
+    const newLang = value.trim();
+    if (newLang && !languages.includes(newLang)) {
+      setLanguages(prev => [...prev, newLang]);
+    }
+    setInputValue('');
+  };
+
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault();
-      const newLang = inputValue.trim();
-      if (newLang && !languages.includes(newLang)) {
-        setLanguages([...languages, newLang]);
-      }
-      setInputValue('');
+      commitInput();
     }
+    // Clear error as user starts typing
+    if (error) setError('');
+  };
+
+  const handleBlur = () => {
+    if (inputValue.trim()) {
+      commitInput();
+    }
+  };
+
+  const togglePopular = (lang) => {
+    if (languages.includes(lang)) {
+      setLanguages(prev => prev.filter(l => l !== lang));
+    } else {
+      setLanguages(prev => [...prev, lang]);
+    }
+    if (error) setError('');
   };
 
   const removeLanguage = (langToRemove) => {
-    setLanguages(languages.filter(lang => lang !== langToRemove));
+    setLanguages(prev => prev.filter(lang => lang !== langToRemove));
   };
 
   const startInterview = async () => {
-    if (languages.length === 0) {
+    // Commit any partially typed language first
+    let finalLanguages = [...languages];
+    const typedLang = inputValue.trim();
+    if (typedLang && !finalLanguages.includes(typedLang)) {
+      finalLanguages.push(typedLang);
+      setLanguages(finalLanguages);
+      setInputValue('');
+    }
+
+    if (finalLanguages.length === 0) {
       setError('Please add at least one programming language.');
       return;
     }
-    
+
     setLoading(true);
     setError('');
-    
+
     try {
       const res = await fetch(`${API_BASE}/api/setup-tech-interview`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ languages, complexity }),
+        body: JSON.stringify({ languages: finalLanguages, complexity }),
       });
-      
+
       if (!res.ok) {
         throw new Error('Failed to setup interview');
       }
-      
+
       const data = await res.json();
       navigate('/interview', {
         state: { sessionId: data.session_id, candidate: data.candidate }
@@ -86,10 +121,14 @@ export default function TechInterviewSetup() {
           </div>
 
           {error && (
-            <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg flex items-center gap-2">
+            <motion.div
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg flex items-center gap-2"
+            >
               <AlertCircle size={18} />
               <span className="text-sm font-medium">{error}</span>
-            </div>
+            </motion.div>
           )}
 
           <div className="space-y-8">
@@ -98,17 +137,47 @@ export default function TechInterviewSetup() {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
                 <Code size={16} /> Programming Languages
               </label>
-              <div className="relative">
+
+              {/* Popular quick-select chips */}
+              <div className="flex flex-wrap gap-2 mb-3">
+                {POPULAR_LANGUAGES.map(lang => (
+                  <button
+                    key={lang}
+                    type="button"
+                    onClick={() => togglePopular(lang)}
+                    className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${
+                      languages.includes(lang)
+                        ? 'bg-brand-500 text-white border-brand-500'
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-brand-400 hover:text-brand-600 dark:hover:text-brand-400'
+                    }`}
+                  >
+                    {languages.includes(lang) ? '✓ ' : '+ '}{lang}
+                  </button>
+                ))}
+              </div>
+
+              {/* Custom input */}
+              <div className="flex gap-2">
                 <input
                   type="text"
                   value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
+                  onChange={(e) => { setInputValue(e.target.value); if (error) setError(''); }}
                   onKeyDown={handleKeyDown}
-                  placeholder="e.g. JavaScript, Python, React (Press Enter to add)"
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 transition-shadow outline-none text-sm"
+                  onBlur={handleBlur}
+                  placeholder="Or type a custom language and press Enter…"
+                  className="flex-1 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 transition-shadow outline-none text-sm"
                 />
+                <button
+                  type="button"
+                  onClick={() => commitInput()}
+                  className="px-3 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:bg-brand-50 dark:hover:bg-brand-900/20 text-gray-500 hover:text-brand-600 dark:hover:text-brand-400 transition-all"
+                  title="Add language"
+                >
+                  <Plus size={18} />
+                </button>
               </div>
-              
+
+              {/* Added language tags */}
               <div className="flex flex-wrap gap-2 mt-4">
                 {languages.map((lang, i) => (
                   <motion.div
@@ -127,7 +196,9 @@ export default function TechInterviewSetup() {
                   </motion.div>
                 ))}
                 {languages.length === 0 && (
-                  <span className="text-sm text-gray-400 dark:text-gray-500 italic mt-1 inline-block">No languages added yet.</span>
+                  <span className="text-sm text-gray-400 dark:text-gray-500 italic mt-1 inline-block">
+                    No languages selected yet — click a chip above or type below.
+                  </span>
                 )}
               </div>
             </div>
@@ -153,7 +224,7 @@ export default function TechInterviewSetup() {
                 ))}
               </div>
             </div>
-            
+
             <div className="pt-4 flex justify-end">
               <button
                 onClick={startInterview}

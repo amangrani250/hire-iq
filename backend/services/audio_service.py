@@ -116,23 +116,56 @@ async def transcribe_audio_bytes(audio_bytes: bytes, content_type: str = "") -> 
     else:
         raise HTTPException(status_code=500, detail="No STT API key configured.")
 
-    # Filter out common Whisper hallucinations during silence/noise
-    # 1. Background noise enclosed in brackets/asterisks (e.g. *soft murmurs*, [silence])
-    filtered_text = re.sub(r'\*[^\*]+\*', '', text)
-    filtered_text = re.sub(r'\[[^\]]+\]', '', filtered_text)
-    filtered_text = re.sub(r'\([^\)]+\)', '', filtered_text)
-    
-    # If the remaining text has no alphanumeric characters, it was purely noise.
-    meaningful = re.sub(r'[^a-zA-Z0-9]', '', filtered_text).strip()
-    if not meaningful:
-        return ""
-        
-    lower_text = text.lower().replace(".", "").replace("!", "").replace("?", "").strip()
-    hallucinations = [
-        "thank you", "thanks", "thanks for watching", "thank you for watching", 
-        "please subscribe", "subscribe", "bye", "bye bye", "amén", "amen"
-    ]
-    if lower_text in hallucinations:
+    # ── Post-processing: filter Whisper noise hallucinations ─────────────────
+    #
+    # Whisper commonly hallucinates when given silence or background noise:
+    # - Enclosed text: [Music], *applause*, (sound of wind)
+    # - YouTube-style closers: "Thanks for watching", "Subscribe"
+    # - Repetitive filler: "..."
+    # - Non-English hallucinations (common with noise-only audio)
+
+    # 1. Strip bracketed/parenthesized/asterisked noise annotations
+    filtered = re.sub(r'\*[^*]+\*', '', text)
+    filtered = re.sub(r'\[[^\]]+\]', '', filtered)
+    filtered = re.sub(r'\([^)]+\)', '', filtered)
+    # 2. Strip ellipses-only content and multiple dots
+    filtered = re.sub(r'\.{2,}', '', filtered)
+    # 3. Strip lone punctuation and whitespace
+    filtered = re.sub(r'[^\w\s]', ' ', filtered)
+    filtered = filtered.strip()
+
+    # If no alphanumeric content remains, it was pure noise
+    meaningful_chars = re.sub(r'[^a-zA-Z0-9]', '', filtered).strip()
+    if not meaningful_chars:
         return ""
 
-    return text
+    # Require at least 2 meaningful words (single-word noise like "Hmm", "Yeah" alone filtered)
+    words = [w for w in filtered.split() if len(re.sub(r'[^a-zA-Z]', '', w)) >= 2]
+    if len(words) < 2:
+        return ""
+
+    # Common Whisper hallucinations — exact phrase matches on lowercased, stripped text
+    normalized = text.lower().strip().rstrip('.,!?').strip()
+    hallucinations = {
+        # YouTube/media closers
+        "thank you", "thanks", "thanks for watching", "thank you for watching",
+        "please subscribe", "subscribe", "don't forget to subscribe",
+        "like and subscribe", "bye", "bye bye", "goodbye", "see you next time",
+        # Filler hallucinations
+        "hmm", "uh", "um", "ah", "oh", "okay", "ok", "yes", "no", "yeah", "yep",
+        # Religious/ambient
+        "amen", "amén", "om", "aum",
+        # Music/sound labels
+        "music", "applause", "laughter", "silence", "background noise",
+        # Common noise-triggered phrases
+        "you", "the", "i", "a", "an",
+    }
+    if normalized in hallucinations:
+        return ""
+
+    # If the transcript is suspiciously short (< 3 chars of actual content), reject
+    if len(meaningful_chars) < 3:
+        return ""
+
+    return text.strip()
+

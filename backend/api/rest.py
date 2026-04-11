@@ -350,6 +350,14 @@ async def interview_respond_rest(req: InterviewMessageRequest):
 
     if session.get("interview_type") == "tech":
         system_msg_content = f"{TECH_SYSTEM_PROMPT}\n\n--- INTERVIEW PARAMETERS ---\nLanguages: {', '.join(session.get('languages', []))}\nComplexity: {session.get('complexity', 'medium')}"
+    elif session.get("interview_type") == "job_roadmap":
+        # Use the per-session custom prompt which contains the exact studied topics
+        system_msg_content = session.get("custom_system_prompt") or (
+            f"You are Aira, a technical interviewer.\n"
+            f"Job: {session.get('job_title', '')} ({session.get('experience_level', '')})\n"
+            f"Topics studied: {', '.join(session.get('topics_studied', []))}\n"
+            f"ASK ONLY about the topics listed above."
+        )
     else:
         system_msg_content = f"{SYSTEM_PROMPT}\n\n--- CANDIDATE RESUME ---\n{session.get('resume_text', '')}"
 
@@ -412,6 +420,14 @@ async def interview_end_rest(req: InterviewMessageRequest):
     
     if session.get("interview_type") == "tech":
         system_msg_content = f"{TECH_SYSTEM_PROMPT}\n\n--- INTERVIEW PARAMETERS ---\nLanguages: {', '.join(session.get('languages', []))}\nComplexity: {session.get('complexity', 'medium')}"
+    elif session.get("interview_type") == "job_roadmap":
+        # Use the per-session custom prompt which contains the exact studied topics
+        system_msg_content = session.get("custom_system_prompt") or (
+            f"You are Aira, a technical interviewer.\n"
+            f"Job: {session.get('job_title', '')} ({session.get('experience_level', '')})\n"
+            f"Topics studied: {', '.join(session.get('topics_studied', []))}\n"
+            f"ASK ONLY about the topics listed above."
+        )
     else:
         system_msg_content = f"{SYSTEM_PROMPT}\n\n--- CANDIDATE RESUME ---\n{session.get('resume_text', '')}"
 

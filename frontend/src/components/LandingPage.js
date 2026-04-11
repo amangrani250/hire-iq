@@ -100,9 +100,10 @@ export default function LandingPage() {
     },
     {
       icon: <Brain size={24} />,
-      title: 'Resume-Based Q&A',
-      desc: 'Aira extracts skills and experiences from your resume to dive deep into your unique background.',
-      color: 'var(--green)',
+      title: 'Job Interview Roadmap',
+      desc: 'Pick a target job, get a day-by-day AI study plan, complete all tasks, then face a tailored AI interview.',
+      color: '#10b981',
+      action: () => navigate('/job-prep'),
     },
     {
       icon: <Volume2 size={24} />,
@@ -173,10 +174,10 @@ export default function LandingPage() {
             <span className="landing-nav-logo-text">HireIQ</span>
           </div>
           <div className="landing-nav-links">
+            <span onClick={() => navigate('/job-prep')} className="landing-nav-link" style={{ cursor: 'pointer' }}>Job Prep</span>
             <span onClick={() => navigate('/tech-interview')} className="landing-nav-link" style={{ cursor: 'pointer' }}>Tech Interview</span>
             <span onClick={() => navigate('/builder')} className="landing-nav-link" style={{ cursor: 'pointer' }}>Resume Builder</span>
             <a href="#features" className="landing-nav-link">Features</a>
-            <a href="#how-it-works" className="landing-nav-link">How it Works</a>
             <a href="#advantages" className="landing-nav-link">Why HireIQ</a>
           </div>
           <motion.button
@@ -199,10 +200,10 @@ export default function LandingPage() {
         {/* Mobile Dropdown Menu */}
         {menuOpen && (
           <div className="md:hidden bg-gray-900 border-t border-gray-800 absolute top-full left-0 w-full p-4 flex flex-col gap-3 shadow-xl">
+            <span onClick={() => { navigate('/job-prep'); setMenuOpen(false); }} className="text-gray-200 font-medium py-2">🗺️ Job Prep Roadmap</span>
             <span onClick={() => { navigate('/tech-interview'); setMenuOpen(false); }} className="text-gray-200 font-medium py-2">Tech Interview</span>
             <span onClick={() => { navigate('/builder'); setMenuOpen(false); }} className="text-gray-200 font-medium py-2">Resume Builder</span>
             <a href="#features" onClick={() => setMenuOpen(false)} className="text-gray-200 font-medium py-2">Features</a>
-            <a href="#how-it-works" onClick={() => setMenuOpen(false)} className="text-gray-200 font-medium py-2">How it Works</a>
             <a href="#advantages" onClick={() => setMenuOpen(false)} className="text-gray-200 font-medium py-2">Why HireIQ</a>
             <button
               className="mt-2 w-full py-3 rounded-lg bg-brand-600 text-white font-semibold"
@@ -369,12 +370,17 @@ export default function LandingPage() {
               variants={scaleIn}
               custom={i}
               whileHover={{ y: -6, boxShadow: `0 12px 40px ${f.color}15` }}
+              onClick={f.action || undefined}
+              style={f.action ? { cursor: 'pointer' } : {}}
             >
               <div className="landing-feature-icon" style={{ background: `${f.color}15`, color: f.color }}>
                 {f.icon}
               </div>
               <h3 className="landing-feature-title">{f.title}</h3>
               <p className="landing-feature-desc">{f.desc}</p>
+              {f.action && (
+                <div className="mt-3 text-xs font-semibold" style={{ color: f.color }}>Try It →</div>
+              )}
             </motion.div>
           ))}
         </motion.div>

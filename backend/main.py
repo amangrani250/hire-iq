@@ -10,6 +10,7 @@ from services.http_client import get_http_client, close_http_client
 from api.rest import router as rest_router
 from api.ws import router as ws_router
 from api.resume.resume import router as resume_router
+from api.job_roadmap import router as job_roadmap_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -43,3 +44,4 @@ app.add_middleware(
 app.include_router(rest_router)
 app.include_router(ws_router)
 app.include_router(resume_router, prefix="/api", tags=["resume"])
+app.include_router(job_roadmap_router)
