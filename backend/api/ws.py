@@ -1,15 +1,16 @@
-import json
 import time
 import base64
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException
 import orjson
-from core.config import settings, log
+from core.config import log
 from core.session import sessions, touch_session
-from services.llm_service import call_llm, SYSTEM_PROMPT, TECH_SYSTEM_PROMPT
+from services.llm_service import call_llm
 from services.audio_service import text_to_speech_bytes
 from utils.pdf_extractor import sanitize_text
+from utils.system_msg import build_system_message
 
 router = APIRouter()
+
 
 @router.websocket("/ws/interview/{session_id}")
 async def interview_websocket(websocket: WebSocket, session_id: str):
@@ -22,29 +23,10 @@ async def interview_websocket(websocket: WebSocket, session_id: str):
 
     session = sessions[session_id]
     touch_session(session_id)
-
-    if session.get("interview_type") == "tech":
-        system_msg_content = f"{TECH_SYSTEM_PROMPT}\n\n--- INTERVIEW PARAMETERS ---\nLanguages: {', '.join(session.get('languages', []))}\nComplexity: {session.get('complexity', 'medium')}"
-    elif session.get("interview_type") == "job_roadmap":
-        # Use the per-session custom prompt containing exact studied topics
-        system_msg_content = session.get("custom_system_prompt") or (
-            f"You are Aira, a technical interviewer.\n"
-            f"Job: {session.get('job_title', '')} ({session.get('experience_level', '')})\n"
-            f"Topics studied: {', '.join(session.get('topics_studied', []))}\n"
-            f"ASK ONLY about the topics listed above."
-        )
-    else:
-        system_msg_content = f"{SYSTEM_PROMPT}\n\n--- CANDIDATE RESUME ---\n{session.get('resume_text', '')}"
-
-    system_msg = {
-        "role": "system",
-        "content": system_msg_content,
-    }
+    system_msg = build_system_message(session)
 
     async def safe_send(data: dict):
         try:
-            # Using orjson to serialize then send as text instead of standard JSON is faster,
-            # but websocket.send_text doesn't natively use orjson so we encode manually
             await websocket.send_text(orjson.dumps(data).decode('utf-8'))
         except Exception:
             pass
@@ -97,12 +79,10 @@ async def interview_websocket(websocket: WebSocket, session_id: str):
             await safe_send({"type": "error", "message": "Something went wrong processing your response."})
             await safe_send({"type": "interviewer_done"})
 
-    # Greet the candidate
     await interviewer_respond()
 
     try:
         while True:
-            # use receive_text and orjson to decode for speed
             raw = await websocket.receive_text()
             try:
                 data = orjson.loads(raw)

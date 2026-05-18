@@ -1,27 +1,6 @@
-import os
-import json
-import re
-from openai import AsyncOpenAI
-from dotenv import load_dotenv
 from models.resume import ResumeData, GenerateResumeResponse, ImproveSectionResponse
-
-load_dotenv()
-
-client = AsyncOpenAI(
-    api_key=os.getenv("GROQ_API_KEY", os.getenv("OPENAI_API_KEY", "your-api-key-here")),
-    base_url=os.getenv("AI_BASE_URL", "https://api.groq.com/openai/v1"),
-)
-
-MODEL = os.getenv("AI_MODEL", "llama-3.3-70b-versatile")
-
-
-def _extract_json(text: str) -> dict:
-    """Extract JSON from model output, stripping markdown fences if present."""
-    text = text.strip()
-    # Remove ```json ... ``` or ``` ... ``` fences
-    text = re.sub(r"^```(?:json)?\s*", "", text)
-    text = re.sub(r"\s*```$", "", text)
-    return json.loads(text)
+from utils.json_utils import safe_json
+from services.llm_service import call_llm
 
 
 async def generate_resume(raw_input: str, job_role: str = "") -> GenerateResumeResponse:
@@ -95,15 +74,9 @@ Rules:
 - ats_score should be 0-100 based on keyword richness and structure
 - Return ONLY the JSON, no markdown, no explanation"""
 
-    response = await client.chat.completions.create(
-        model=MODEL,
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.3,
-        max_tokens=2000,
-    )
-
-    content = response.choices[0].message.content
-    data = _extract_json(content)
+    messages = [{"role": "user", "content": prompt}]
+    raw = await call_llm(messages, max_tokens=2000, temperature=0.3)
+    data = safe_json(raw, {})
 
     resume_data = ResumeData(
         personal_info=data.get("personal_info", {}),
@@ -146,15 +119,9 @@ Rules:
 - Keep it concise and ATS-friendly
 - Return ONLY JSON, no markdown"""
 
-    response = await client.chat.completions.create(
-        model=MODEL,
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.4,
-        max_tokens=800,
-    )
-
-    content_resp = response.choices[0].message.content
-    data = _extract_json(content_resp)
+    messages = [{"role": "user", "content": prompt}]
+    raw = await call_llm(messages, max_tokens=800, temperature=0.4)
+    data = safe_json(raw, {})
 
     return ImproveSectionResponse(
         improved_content=data.get("improved_content", content),

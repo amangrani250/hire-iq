@@ -76,7 +76,7 @@ Use contractions, natural pauses ("…"), and conversational fillers.
 Keep each message under 90 words unless explanation needs more.
 Do NOT use markdown formatting, bullet points, or numbered lists."""
 
-async def call_llm(messages: list[dict], retries: int = 2, max_tokens: int = 800) -> str:
+async def call_llm(messages: list[dict], retries: int = 2, max_tokens: int = 800, temperature: float = 0.8) -> str:
     """Call Groq or OpenAI chat completion with retry logic."""
     client = await get_http_client()
     last_error = None
@@ -93,7 +93,7 @@ async def call_llm(messages: list[dict], retries: int = 2, max_tokens: int = 800
                     json={
                         "model": settings.GROQ_MODEL,
                         "messages": messages,
-                        "temperature": 0.8,
+                        "temperature": temperature,
                         "max_tokens": max_tokens,
                     },
                 )
@@ -115,7 +115,7 @@ async def call_llm(messages: list[dict], retries: int = 2, max_tokens: int = 800
                     json={
                         "model": settings.OPENAI_CHAT_MODEL,
                         "messages": messages,
-                        "temperature": 0.8,
+                        "temperature": temperature,
                         "max_tokens": max_tokens,
                     },
                 )

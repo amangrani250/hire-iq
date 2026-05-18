@@ -4,21 +4,19 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import ORJSONResponse
 from pydantic import BaseModel
 from typing import List, Optional
-import orjson
 
 from core.config import settings, log
 from core.session import sessions
 from services.llm_service import call_llm
+from utils.json_utils import extract_json
 
 router = APIRouter(default_response_class=ORJSONResponse)
 
 
-# ─── Pydantic models ────────────────────────────────────────────────────────
-
 class RoadmapRequest(BaseModel):
     job_title: str
-    experience_level: str  # "fresher" | "mid" | "senior"
-    duration_days: int = 7  # 7, 14, or 30
+    experience_level: str
+    duration_days: int = 7
 
 
 class JobInterviewRequest(BaseModel):
@@ -29,12 +27,8 @@ class JobInterviewRequest(BaseModel):
     studied_specific_topics: Optional[List[str]] = None
 
 
-# ─── Endpoints ──────────────────────────────────────────────────────────────
-
 @router.post("/api/job-roadmap")
 async def generate_job_roadmap(req: RoadmapRequest):
-    """Generate a day-by-day learning roadmap for a specific job role."""
-
     prompt = [
         {
             "role": "system",
@@ -84,27 +78,27 @@ async def generate_job_roadmap(req: RoadmapRequest):
 
     try:
         raw = await call_llm(prompt, max_tokens=4000)
-        raw = raw.strip().lstrip("```json").lstrip("```").rstrip("```").strip()
-        data = orjson.loads(raw)
+        data = extract_json(raw)
+        if data is None:
+            raise HTTPException(status_code=500, detail="Failed to parse roadmap. Please try again.")
         log.info("Roadmap generated for: %s (%s)", req.job_title, req.experience_level)
         return data
-    except orjson.JSONDecodeError as e:
-        log.error("Roadmap JSON parse error: %s | raw: %s", e, raw[:300])
-        raise HTTPException(status_code=500, detail="Failed to parse roadmap. Please try again.")
+    except HTTPException:
+        raise
     except Exception as e:
         log.error("Roadmap generation error: %s", e)
         raise HTTPException(status_code=500, detail="Failed to generate roadmap. Please try again.")
 
 
+COMPLEXITY_MAP = {"fresher": "low", "mid": "medium", "senior": "high"}
+
+
 @router.post("/api/job-interview-session")
 async def create_job_interview_session(req: JobInterviewRequest):
-    """Create an AI interview session scoped to exactly what the candidate studied."""
-
     topics_str = ", ".join(req.topics_studied) if req.topics_studied else req.job_title
     themes_str = ", ".join(req.studied_day_themes) if req.studied_day_themes else ""
     specific_str = ", ".join(req.studied_specific_topics) if req.studied_specific_topics else ""
 
-    # Build a concrete, forbidden-topics-aware system prompt
     custom_system_prompt = f"""You are Aira, a warm, experienced senior technical interviewer at a top-tier tech company.
 You are conducting a STRICTLY SCOPED interview for a {req.job_title} position ({req.experience_level} level).
 
@@ -133,8 +127,6 @@ Interview flow:
 CRITICAL: You have been given the exact list of topics. There is no excuse to ask anything outside that list.
 Keep responses under 90 words. No markdown, no bullet points. Speak naturally like a human interviewer."""
 
-    complexity_map = {"fresher": "low", "mid": "medium", "senior": "high"}
-
     session_id = str(uuid.uuid4())
     sessions[session_id] = {
         "resume_text": "",
@@ -144,16 +136,12 @@ Keep responses under 90 words. No markdown, no bullet points. Speak naturally li
         "studied_day_themes": req.studied_day_themes or [],
         "studied_specific_topics": req.studied_specific_topics or [],
         "languages": req.topics_studied,
-        "complexity": complexity_map.get(req.experience_level, "medium"),
-        # Store the fully rendered system prompt directly on the session
+        "complexity": COMPLEXITY_MAP.get(req.experience_level, "medium"),
         "custom_system_prompt": custom_system_prompt,
         "history": [
             {
                 "role": "user",
-                "content": (
-                    f"Hi, I'm ready for my {req.job_title} interview. "
-                    f"I studied the following topics: {topics_str}."
-                ),
+                "content": f"Hi, I'm ready for my {req.job_title} interview. I studied the following topics: {topics_str}.",
             }
         ],
         "stage": "greeting",
@@ -179,4 +167,3 @@ Keep responses under 90 words. No markdown, no bullet points. Speak naturally li
             "years": req.experience_level,
         },
     }
-

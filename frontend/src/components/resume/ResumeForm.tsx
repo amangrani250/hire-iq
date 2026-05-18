@@ -1,0 +1,303 @@
+import { useState, useCallback } from 'react';
+import { Plus, Trash2, Wand2, ChevronDown, ChevronUp } from 'lucide-react';
+import { useResume } from '../../contexts/ResumeContext';
+import { improveSection } from '../../services/api';
+import { generateResume } from '../../services/api';
+import VoiceButton from '../ui/VoiceButton';
+import { useVoiceInput } from '../../hooks/useVoiceInput';
+import toast from 'react-hot-toast';
+
+function Section({ title, defaultOpen = false, children }: { title: string; defaultOpen?: boolean; children: React.ReactNode }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="card overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+      >
+        <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">{title}</span>
+        {open ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
+      </button>
+      {open && <div className="px-4 pb-4 space-y-3 border-t border-gray-100 dark:border-gray-800 pt-3">{children}</div>}
+    </div>
+  );
+}
+
+function ImprovableTextarea({
+  label, value, onChange, sectionName, jobRole, rows = 3, placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  sectionName: string;
+  jobRole: string;
+  rows?: number;
+  placeholder?: string;
+}) {
+  const [improving, setImproving] = useState(false);
+
+  const handleImprove = async () => {
+    if (!value.trim()) return toast.error('Add some content first');
+    setImproving(true);
+    try {
+      const { data } = await improveSection(sectionName, value, jobRole);
+      onChange(data.improved_content);
+      toast.success('Section improved!');
+    } catch {
+      toast.error('Improvement failed. Check your API key.');
+    } finally {
+      setImproving(false);
+    }
+  };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1.5">
+        <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{label}</label>
+        <button
+          type="button"
+          onClick={handleImprove}
+          disabled={improving}
+          className="flex items-center gap-1 text-xs text-brand-600 hover:text-brand-700 disabled:opacity-50 transition-colors"
+        >
+          <Wand2 size={12} />
+          {improving ? 'Improving\u2026' : 'AI Improve'}
+        </button>
+      </div>
+      <textarea
+        rows={rows}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="input-field resize-none"
+      />
+    </div>
+  );
+}
+
+export default function ResumeForm({ jobRole }: { jobRole: string }) {
+  const { resume, updateField, updatePersonal, setGenerating, setResume, setAts, isGenerating } = useResume();
+
+  const [rawInput, setRawInput] = useState('');
+
+  const handleVoiceResult = useCallback((text: string) => setRawInput(text), []);
+  const { listening, supported, toggle } = useVoiceInput(handleVoiceResult);
+
+  const pi = resume.personal_info || {};
+  const setPI = (key: string, val: string) => updatePersonal({ [key]: val });
+
+  const castArr = (field: keyof typeof resume): Record<string, string>[] =>
+    resume[field] as unknown as Record<string, string>[];
+
+  const addItem = (field: keyof typeof resume, empty: Record<string, string>) =>
+    updateField(field, [...(castArr(field) || []), empty]);
+  const removeItem = (field: keyof typeof resume, i: number) =>
+    updateField(field, castArr(field).filter((_, idx) => idx !== i));
+  const updateItem = (field: keyof typeof resume, i: number, key: string, val: string) => {
+    const arr = [...castArr(field)];
+    arr[i] = { ...arr[i], [key]: val };
+    updateField(field, arr);
+  };
+
+  const handleGenerate = async () => {
+    if (!rawInput.trim()) return toast.error('Please describe yourself or your experience');
+    setGenerating(true);
+    try {
+      const { data } = await generateResume(rawInput, jobRole);
+      setResume(data.resume_data);
+      setAts(data.ats_score, data.suggestions);
+      toast.success('Resume generated!');
+    } catch (e) {
+      toast.error((e as Error).message || 'Generation failed');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="card p-4">
+        <p className="section-label">AI Generate</p>
+        <div className="flex gap-2 mb-2">
+          <textarea
+            rows={4}
+            value={rawInput}
+            onChange={(e) => setRawInput(e.target.value)}
+            placeholder="Describe your background, skills, and experience in plain text or speak using the mic\u2026"
+            className="input-field resize-none flex-1"
+          />
+          <VoiceButton listening={listening} supported={supported} onToggle={toggle} className="self-start mt-0.5" />
+        </div>
+        <button
+          type="button"
+          onClick={handleGenerate}
+          disabled={isGenerating}
+          className="btn-primary w-full justify-center text-sm"
+        >
+          <Wand2 size={16} />
+          {isGenerating ? 'Generating\u2026' : 'Generate with AI'}
+        </button>
+      </div>
+
+      <Section title="Personal Info" defaultOpen>
+        <div className="grid grid-cols-2 gap-2">
+          {([
+            ['Full Name', 'full_name'], ['Job Title', 'title'],
+            ['Email', 'email'], ['Phone', 'phone'],
+            ['Location', 'location'], ['LinkedIn', 'linkedin'],
+            ['Website', 'website'],
+          ] as const).map(([label, key]) => (
+            <div key={key} className={key === 'full_name' || key === 'title' ? 'col-span-2' : ''}>
+              <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">{label}</label>
+              <input
+                type="text"
+                value={(pi as unknown as Record<string, string>)[key] || ''}
+                onChange={(e) => setPI(key, e.target.value)}
+                className="input-field"
+                placeholder={label}
+              />
+            </div>
+          ))}
+        </div>
+      </Section>
+
+      <Section title="Professional Summary">
+        <ImprovableTextarea
+          label="Summary"
+          value={resume.summary || ''}
+          onChange={(v) => updateField('summary', v)}
+          sectionName="summary"
+          jobRole={jobRole}
+          rows={4}
+          placeholder="A compelling professional summary that highlights your expertise\u2026"
+        />
+      </Section>
+
+      <Section title="Skills">
+        <div>
+          <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Skills (comma-separated)</label>
+          <textarea
+            rows={3}
+            value={(resume.skills || []).join(', ')}
+            onChange={(e) => updateField('skills', e.target.value.split(',').map((s) => s.trim()).filter(Boolean))}
+            className="input-field resize-none"
+            placeholder="React, Node.js, Python, SQL, Docker\u2026"
+          />
+        </div>
+      </Section>
+
+      <Section title="Experience">
+        {(resume.experience || []).map((exp, i) => (
+          <div key={i} className="border border-gray-100 dark:border-gray-800 rounded-xl p-3 space-y-2 relative">
+            <button type="button" onClick={() => removeItem('experience', i)}
+              className="absolute top-2 right-2 text-gray-300 hover:text-red-400 transition-colors">
+              <Trash2 size={14} />
+            </button>
+            <div className="grid grid-cols-2 gap-2">
+              {([['Company', 'company'], ['Role', 'role'], ['Start', 'start_date'], ['End', 'end_date']] as const).map(([label, key]) => (
+                <div key={key}>
+                  <label className="text-xs text-gray-400 mb-1 block">{label}</label>
+                  <input type="text" value={(exp as unknown as Record<string, string>)[key] || ''} onChange={(e) => updateItem('experience', i, key, e.target.value)}
+                    className="input-field" placeholder={label} />
+                </div>
+              ))}
+            </div>
+            <ImprovableTextarea
+              label="Description"
+              value={exp.description || ''}
+              onChange={(v) => updateItem('experience', i, 'description', v)}
+              sectionName="experience"
+              jobRole={jobRole}
+              rows={3}
+              placeholder="\u2022 Led team of 5 engineers to deliver\u2026&#10;\u2022 Improved performance by 40%\u2026"
+            />
+          </div>
+        ))}
+        <button type="button" onClick={() => addItem('experience', { company: '', role: '', start_date: '', end_date: '', description: '' })}
+          className="btn-secondary w-full justify-center text-sm py-2">
+          <Plus size={14} /> Add Experience
+        </button>
+      </Section>
+
+      <Section title="Projects">
+        {(resume.projects || []).map((proj, i) => (
+          <div key={i} className="border border-gray-100 dark:border-gray-800 rounded-xl p-3 space-y-2 relative">
+            <button type="button" onClick={() => removeItem('projects', i)}
+              className="absolute top-2 right-2 text-gray-300 hover:text-red-400 transition-colors">
+              <Trash2 size={14} />
+            </button>
+            {([['Name', 'name'], ['Tech Stack', 'tech_stack'], ['Link', 'link']] as const).map(([label, key]) => (
+              <div key={key}>
+                <label className="text-xs text-gray-400 mb-1 block">{label}</label>
+                <input type="text" value={(proj as unknown as Record<string, string>)[key] || ''} onChange={(e) => updateItem('projects', i, key, e.target.value)}
+                  className="input-field" placeholder={label} />
+              </div>
+            ))}
+            <ImprovableTextarea
+              label="Description"
+              value={proj.description || ''}
+              onChange={(v) => updateItem('projects', i, 'description', v)}
+              sectionName="project"
+              jobRole={jobRole}
+              rows={2}
+              placeholder="Built a full-stack app that\u2026"
+            />
+          </div>
+        ))}
+        <button type="button" onClick={() => addItem('projects', { name: '', description: '', tech_stack: '', link: '' })}
+          className="btn-secondary w-full justify-center text-sm py-2">
+          <Plus size={14} /> Add Project
+        </button>
+      </Section>
+
+      <Section title="Education">
+        {(resume.education || []).map((edu, i) => (
+          <div key={i} className="border border-gray-100 dark:border-gray-800 rounded-xl p-3 space-y-2 relative">
+            <button type="button" onClick={() => removeItem('education', i)}
+              className="absolute top-2 right-2 text-gray-300 hover:text-red-400 transition-colors">
+              <Trash2 size={14} />
+            </button>
+            <div className="grid grid-cols-2 gap-2">
+              {([['Institution', 'institution'], ['Degree', 'degree'], ['Field', 'field'], ['Year', 'year'], ['GPA', 'gpa']] as const).map(([label, key]) => (
+                <div key={key} className={key === 'institution' ? 'col-span-2' : ''}>
+                  <label className="text-xs text-gray-400 mb-1 block">{label}</label>
+                  <input type="text" value={(edu as unknown as Record<string, string>)[key] || ''} onChange={(e) => updateItem('education', i, key, e.target.value)}
+                    className="input-field" placeholder={label} />
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+        <button type="button" onClick={() => addItem('education', { institution: '', degree: '', field: '', year: '', gpa: '' })}
+          className="btn-secondary w-full justify-center text-sm py-2">
+          <Plus size={14} /> Add Education
+        </button>
+      </Section>
+
+      <Section title="Certifications">
+        {(resume.certifications || []).map((cert, i) => (
+          <div key={i} className="border border-gray-100 dark:border-gray-800 rounded-xl p-3 space-y-2 relative">
+            <button type="button" onClick={() => removeItem('certifications', i)}
+              className="absolute top-2 right-2 text-gray-300 hover:text-red-400 transition-colors">
+              <Trash2 size={14} />
+            </button>
+            <div className="grid grid-cols-3 gap-2">
+              {([['Name', 'name'], ['Issuer', 'issuer'], ['Year', 'year']] as const).map(([label, key]) => (
+                <div key={key} className={key === 'name' ? 'col-span-3' : ''}>
+                  <label className="text-xs text-gray-400 mb-1 block">{label}</label>
+                  <input type="text" value={(cert as unknown as Record<string, string>)[key] || ''} onChange={(e) => updateItem('certifications', i, key, e.target.value)}
+                    className="input-field" placeholder={label} />
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+        <button type="button" onClick={() => addItem('certifications', { name: '', issuer: '', year: '' })}
+          className="btn-secondary w-full justify-center text-sm py-2">
+          <Plus size={14} /> Add Certification
+        </button>
+      </Section>
+    </div>
+  );
+}

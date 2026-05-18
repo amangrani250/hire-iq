@@ -1,0 +1,98 @@
+{
+  "$schema": "https://opencode.ai/schemas/agents.json",
+  "version": "1.0.0",
+  "project": "HireIQ - AI Interview Platform",
+  "memory": {
+    "sources": [
+      ".opencode/memory/project-context.md",
+      ".opencode/memory/frontend-structure.md",
+      ".opencode/memory/backend-structure.md",
+      ".opencode/memory/decisions.md",
+      ".opencode/memory/dependencies.md"
+    ],
+    "autoUpdate": true,
+    "updateCommand": "powershell -ExecutionPolicy Bypass -File .opencode/scripts/update-project-memory.ps1"
+  },
+  "agents": {
+    "frontend": {
+      "description": "React/TypeScript frontend development agent",
+      "module": "frontend/",
+      "skills": [
+        ".opencode/skills/frontend/react-optimization.md",
+        ".opencode/skills/shared/responsive-design.md",
+        ".opencode/skills/shared/accessibility.md"
+      ],
+      "parallel": true,
+      "watch": ["frontend/src/**/*.ts", "frontend/src/**/*.tsx", "frontend/src/**/*.css"],
+      "validate": ["npm run build --prefix frontend"],
+      "prompt": ".opencode/prompts/agents/frontend-agent.md"
+    },
+    "backend": {
+      "description": "Python/FastAPI backend development agent",
+      "module": "backend/",
+      "skills": [
+        ".opencode/skills/backend/python-best-practices.md",
+        ".opencode/skills/backend/api-security.md",
+        ".opencode/skills/backend/performance.md"
+      ],
+      "parallel": true,
+      "watch": ["backend/**/*.py"],
+      "validate": ["python -m py_compile backend/main.py"],
+      "prompt": ".opencode/prompts/agents/backend-agent.md"
+    },
+    "responsiveUX": {
+      "description": "Device responsiveness and cross-platform UX agent",
+      "module": "frontend/",
+      "skills": [".opencode/skills/shared/responsive-design.md"],
+      "parallel": true,
+      "watch": ["frontend/src/**/*.tsx", "frontend/src/**/*.css"],
+      "validate": []
+    },
+    "accessibility": {
+      "description": "WCAG 2.1 AA compliance and inclusive design agent",
+      "module": "frontend/",
+      "skills": [".opencode/skills/shared/accessibility.md"],
+      "parallel": true,
+      "watch": ["frontend/src/**/*.tsx"],
+      "validate": []
+    },
+    "security": {
+      "description": "Application security and vulnerability prevention agent",
+      "module": "all",
+      "skills": [".opencode/skills/shared/security-audit.md"],
+      "parallel": true,
+      "watch": ["frontend/src/**/*", "backend/**/*"],
+      "validate": []
+    },
+    "codeReview": {
+      "description": "Code quality gate, SOLID principles, and best practices enforcer",
+      "module": "all",
+      "skills": [
+        ".opencode/skills/shared/code-review.md",
+        ".opencode/skills/shared/solid-principles.md"
+      ],
+      "parallel": false,
+      "dependsOn": ["frontend", "backend"],
+      "watch": ["frontend/src/**/*", "backend/**/*"],
+      "validate": ["npm run build --prefix frontend"],
+      "prompt": ".opencode/prompts/agents/code-review-agent.md"
+    },
+    "performance": {
+      "description": "Bundle optimization, code splitting, and build performance agent",
+      "module": "frontend/",
+      "skills": [".opencode/skills/frontend/bundle-optimization.md"],
+      "parallel": true,
+      "watch": ["frontend/package.json", "frontend/src/**/*"],
+      "validate": []
+    }
+  },
+  "hooks": {
+    "preCommit": [
+      "powershell -ExecutionPolicy Bypass -File .opencode/scripts/update-project-memory.ps1",
+      "npm run build --prefix frontend"
+    ],
+    "postChange": [
+      "powershell -ExecutionPolicy Bypass -File .opencode/scripts/update-project-memory.ps1"
+    ]
+  }
+}
