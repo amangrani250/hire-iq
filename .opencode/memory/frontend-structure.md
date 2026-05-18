@@ -1,8 +1,8 @@
-﻿# Frontend Structure (Auto-generated: 2026-05-18 14.18)
+﻿# Frontend Structure (Auto-generated: 2026-05-18 14.47)
 
 ## Summary
-- **Files**: 48 source files
-- **Lines of code**: 7158
+- **Files**: 49 source files
+- **Lines of code**: 7266
 - **Framework**: React 18 + TypeScript 6 + Tailwind CSS
 
 ## File Tree
@@ -19,6 +19,7 @@ frontend/src/
   +-- components/TranscriptPanel.tsx
     +-- components/ui/AtsScore.tsx
     +-- components/ui/TemplateSelector.tsx
+    +-- components/ui/ThemeToggle.tsx
     +-- components/ui/VoiceButton.tsx
   +-- components/UploadScreen.tsx
   +-- components/VideoTile.tsx

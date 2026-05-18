@@ -6,8 +6,10 @@ import {
   Clock, Sparkles, ArrowRight, ChevronDown, Bot,
   FileText, Volume2, Eye, BarChart3, Globe, Star,
   CheckCircle, Play, Users, Cpu, Code, Layers, Menu, X,
+  Sun, Moon,
 } from 'lucide-react';
 import { useDocumentMeta } from '../hooks/useDocumentMeta';
+import { useTheme } from '../contexts/ThemeContext';
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
@@ -106,6 +108,7 @@ interface TechItem {
 
 export default function LandingPage() {
   useDocumentMeta(undefined, 'AI-powered interview coach and resume builder. Practice with a realistic AI interviewer.');
+  const { dark, toggle } = useTheme();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const { scrollYProgress } = useScroll();
@@ -172,18 +175,36 @@ export default function LandingPage() {
             <a href="#features" className="landing-nav-link">Features</a>
             <a href="#advantages" className="landing-nav-link">Why HireIQ</a>
           </div>
-          <motion.button
-            className="landing-nav-cta hidden md:flex"
-            onClick={() => navigate('/upload')}
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.96 }}
-          >
-            Start Interview
-          </motion.button>
+          <div className="hidden md:flex items-center gap-2">
+            <button
+              onClick={toggle}
+              aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+              className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-all"
+            >
+              {dark ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+            <motion.button
+              className="landing-nav-cta"
+              onClick={() => navigate('/upload')}
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.96 }}
+            >
+              Start Interview
+            </motion.button>
+          </div>
 
-          <button className="md:hidden text-white ml-auto" onClick={() => setMenuOpen(!menuOpen)}>
-            {menuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
+          <div className="md:hidden flex items-center gap-1">
+            <button
+              onClick={toggle}
+              aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+              className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:text-white transition-all"
+            >
+              {dark ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+            <button onClick={() => setMenuOpen(!menuOpen)} className="text-white">
+              {menuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
         </div>
 
         {menuOpen && (

@@ -32,7 +32,7 @@
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { @apply bg-gray-200 dark:bg-gray-700 rounded-full; }
+::-webkit-scrollbar-thumb { background: var(--border-lit); border-radius: 99px; }
 
 /* Resume print styles */
 @media print {
@@ -41,8 +41,8 @@
 }
 
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   HireIQ â€” Global Styles & Design Tokens
-   Production-ready CSS with mobile-first responsive breakpoints
+   HireIQ â€” Design Tokens & Theme System
+   Light mode (default on :root) + Dark mode (.dark)
    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 *,
@@ -53,32 +53,99 @@
   padding: 0;
 }
 
+/* Transition only color/border/bg/shadow — not transforms or sizes — for smooth theme switches */
+* {
+  transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
+}
+
+/* =============================================
+   LIGHT MODE (default)
+   Warm, clean palette optimized for readability
+   ============================================= */
 :root {
-  /* Colors */
-  --bg-deep: #0a0c10;
-  --bg-card: #10141c;
-  --bg-elevated: #161b26;
-  --bg-hover: #1e2535;
-  --border: rgba(255, 255, 255, 0.07);
-  --border-lit: rgba(255, 255, 255, 0.14);
-  --accent: #4f8ef7;
-  --accent-glow: rgba(79, 142, 247, 0.3);
+  color-scheme: light;
+
+  /* Surface colors */
+  --bg-deep: #f3f4f8;
+  --bg-card: #ffffff;
+  --bg-elevated: #f8f9fc;
+  --bg-hover: #eef0f5;
+  --bg-input: #ffffff;
+  --bg-overlay: rgba(0, 0, 0, 0.35);
+
+  /* Border colors */
+  --border: rgba(0, 0, 0, 0.07);
+  --border-lit: rgba(0, 0, 0, 0.13);
+
+  /* Text colors */
+  --text-1: #1a1d27;
+  --text-2: #6b7285;
+  --text-3: #9ca3b3;
+
+  /* Accent colors */
+  --accent: #4f6ef7;
+  --accent-glow: rgba(79, 110, 247, 0.25);
   --accent-2: #7c6af5;
-  --green: #30d986;
-  --red: #f75050;
-  --amber: #f5a623;
-  --text-1: #e8eaf0;
-  --text-2: #8b92a8;
-  --text-3: #555e72;
+  --green: #10b981;
+  --red: #ef4444;
+  --amber: #f59e0b;
 
   /* Typography */
-  --font-sans: 'DM Sans', system-ui, -apple-system, sans-serif;
-  --font-mono: 'DM Mono', ui-monospace, monospace;
+  --font-sans: 'DM Sans', 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'DM Mono', 'JetBrains Mono', ui-monospace, monospace;
 
   /* Spacing & Radius */
   --radius: 14px;
   --radius-sm: 8px;
+
+  /* Shadows */
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-elevated: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-accent: 0 4px 20px rgba(79, 110, 247, 0.20);
+}
+
+/* =============================================
+   DARK MODE (activated via .dark on <html>)
+   Deep, low-contrast palette reduced eye strain
+   ============================================= */
+.dark {
+  color-scheme: dark;
+
+  /* Surface colors */
+  --bg-deep: #0a0c10;
+  --bg-card: #10141c;
+  --bg-elevated: #161b26;
+  --bg-hover: #1e2535;
+  --bg-input: #1a1f2e;
+  --bg-overlay: rgba(0, 0, 0, 0.65);
+
+  /* Border colors */
+  --border: rgba(255, 255, 255, 0.07);
+  --border-lit: rgba(255, 255, 255, 0.14);
+
+  /* Text colors */
+  --text-1: #e8eaf0;
+  --text-2: #8b92a8;
+  --text-3: #555e72;
+
+  /* Accent colors */
+  --accent: #4f8ef7;
+  --accent-glow: rgba(79, 142, 247, 0.30);
+  --accent-2: #7c6af5;
+  --green: #30d986;
+  --red: #f75050;
+  --amber: #f5a623;
+
+  /* Shadows */
   --shadow-card: 0 4px 32px rgba(0, 0, 0, 0.45);
+  --shadow-elevated: 0 8px 40px rgba(0, 0, 0, 0.50);
+  --shadow-accent: 0 4px 24px rgba(79, 142, 247, 0.30);
+}
+
+/* Ensure <html> itself also transitions cleanly */
+html {
+  background-color: var(--bg-deep);
+  color: var(--text-1);
 }
 
 html,
@@ -562,7 +629,7 @@ textarea {
   gap: 7px;
   font-size: 12px;
   font-weight: 500;
-  background: rgba(16, 20, 28, 0.85);
+  background: var(--bg-elevated);
   backdrop-filter: blur(8px);
   border-radius: 20px;
   padding: 6px 12px;
@@ -591,7 +658,7 @@ textarea {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: rgba(16, 20, 28, 0.85);
+  background: var(--bg-elevated);
   backdrop-filter: blur(8px);
   border-radius: 20px;
   padding: 8px 14px;
@@ -1961,7 +2028,7 @@ textarea {
 }
 
 .landing-section--alt {
-  background: linear-gradient(180deg, rgba(22, 27, 38, 0.4) 0%, transparent 100%);
+  background: linear-gradient(180deg, var(--bg-elevated) 0%, transparent 100%);
 }
 
 .landing-section-header {
@@ -2220,7 +2287,7 @@ textarea {
 }
 
 .landing-tech-chip:hover {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-elevated);
 }
 
 .landing-tech-emoji {

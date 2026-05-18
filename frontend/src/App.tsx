@@ -5,6 +5,7 @@ import { lazy, Suspense, type ReactNode, type LazyExoticComponent, type Componen
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ResumeProvider } from './contexts/ResumeContext';
 import Navbar from './components/layout/Navbar';
+import { FloatingThemeToggle } from './components/ui/ThemeToggle';
 
 const LandingPage = lazy(() => import('./components/LandingPage'));
 const UploadScreen = lazy(() => import('./components/UploadScreen'));
@@ -58,12 +59,15 @@ export default function App() {
   const location = useLocation();
   const showNavbar = location.pathname.startsWith('/builder')
     || location.pathname.startsWith('/saved')
-    || location.pathname.startsWith('/tech-interview');
+    || location.pathname.startsWith('/tech-interview')
+    || location.pathname.startsWith('/job-prep')
+    || location.pathname.startsWith('/job-roadmap');
 
   return (
     <ThemeProvider>
       <ResumeProvider>
         {showNavbar && <Navbar />}
+        <FloatingThemeToggle />
         <AnimatePresence mode="wait">
           <Routes location={location} key={location.pathname}>
             <Route path="/" element={<Suspense fallback={<PageSkeleton />}><LandingPage /></Suspense>} />
