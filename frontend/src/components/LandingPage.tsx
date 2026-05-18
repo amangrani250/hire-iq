@@ -5,11 +5,9 @@ import {
   Zap, Upload, Mic, Brain, MessageSquare, Shield,
   Clock, Sparkles, ArrowRight, ChevronDown, Bot,
   FileText, Volume2, Eye, BarChart3, Globe, Star,
-  CheckCircle, Play, Users, Cpu, Code, Layers, Menu, X,
-  Sun, Moon,
+  CheckCircle, Play, Users, Cpu, Layers,
 } from 'lucide-react';
 import { useDocumentMeta } from '../hooks/useDocumentMeta';
-import { useTheme } from '../contexts/ThemeContext';
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
@@ -100,53 +98,36 @@ interface Step {
   desc: string;
 }
 
-interface TechItem {
-  name: string;
-  desc: string;
-  icon: string;
-}
-
 export default function LandingPage() {
   useDocumentMeta(undefined, 'AI-powered interview coach and resume builder. Practice with a realistic AI interviewer.');
-  const { dark, toggle } = useTheme();
   const navigate = useNavigate();
-  const [menuOpen, setMenuOpen] = useState(false);
   const { scrollYProgress } = useScroll();
   const heroY = useTransform(scrollYProgress, [0, 0.3], [0, -80]);
   const heroOpacity = useTransform(scrollYProgress, [0, 0.25], [1, 0]);
 
   const features: Feature[] = [
-    { icon: <Layers size={24} />, title: 'AI Resume Builder', desc: 'Build, refine, and export ATS-optimized resumes using our built-in AI tools. Generate professional layouts instantly.', color: 'var(--accent)' },
-    { icon: <Code size={24} />, title: 'Custom Tech Interviews', desc: 'Select specific programming languages and adjust difficulty for a hardcore technical evaluation.', color: 'var(--amber)' },
-    { icon: <Brain size={24} />, title: 'Job Interview Roadmap', desc: 'Pick a target job, get a day-by-day AI study plan, complete all tasks, then face a tailored AI interview.', color: '#10b981', action: () => navigate('/job-prep') },
-    { icon: <Volume2 size={24} />, title: 'Realistic Voice AI', desc: 'Natural human-sounding interactions with automatic silence detection \u2014 just speak naturally.', color: 'var(--accent-2)' },
-    { icon: <MessageSquare size={24} />, title: 'Live Transcript', desc: 'Real-time captions of your entire conversation \u2014 review how you answered every question easily.', color: '#e06cf5' },
-    { icon: <Cpu size={24} />, title: 'Lightning Fast LLMs', desc: 'Powered by Groq LLaMA-3 and Whisper v3 for virtually zero latency in your mock sessions.', color: '#f56c6c' },
+    { icon: <Layers size={24} />, title: 'AI Resume Builder', desc: 'Create, refine, and export professional resumes in minutes. Our AI helps you highlight your strengths and stand out from the competition.', color: 'var(--accent)' },
+    { icon: <Cpu size={24} />, title: 'Smart Mock Interviews', desc: 'Practice with an AI interviewer that adapts to your experience level and target role. Get asked relevant questions that mirror real interviews.', color: 'var(--amber)' },
+    { icon: <Brain size={24} />, title: 'Personalized Roadmaps', desc: 'Pick your dream job and receive a day-by-day preparation plan. Complete each step, then face a tailored AI interview.', color: '#10b981', action: () => navigate('/job-prep') },
+    { icon: <Volume2 size={24} />, title: 'Natural Voice Conversations', desc: 'Speak naturally with automatic voice detection — no buttons to press. Our AI listens, understands, and responds in real time.', color: 'var(--accent-2)' },
+    { icon: <MessageSquare size={24} />, title: 'Live Transcript & Review', desc: 'Every word is captioned in real time. Review your responses after the session to identify areas for improvement.', color: '#e06cf5' },
+    { icon: <Star size={24} />, title: 'Instant Performance Feedback', desc: 'Get structured AI evaluation at the end of every session with actionable insights to help you improve faster.', color: '#f56c6c' },
   ];
 
   const advantages: Advantage[] = [
-    { icon: <Clock size={20} />, title: 'All-in-One Platform', desc: 'From crafting the perfect resume to practicing the final interview, everything is in one unified workflow.' },
-    { icon: <Shield size={20} />, title: 'Zero Judgement', desc: 'Build confidence in a private, pressure-free environment before facing the real hiring manager.' },
-    { icon: <Sparkles size={20} />, title: 'Tailored to You', desc: 'Interviews adapt dynamically to your resume context or the custom technical framework you choose.' },
-    { icon: <Globe size={20} />, title: 'Completely Free', desc: 'Built on top of powerful open APIs. No subscriptions, no credits, completely unrestricted practice.' },
-    { icon: <BarChart3 size={20} />, title: 'Instant Feedback', desc: 'AI provides immediate closing feedback at the end of every session so you know exactly where to improve.' },
-    { icon: <Users size={20} />, title: 'Multi-Role Support', desc: 'Auto-detects your target role from your resume or tech stack to simulate front-end, back-end, or full-stack.' },
+    { icon: <Clock size={20} />, title: 'All-in-One Platform', desc: 'From building the perfect resume to practicing interviews, everything you need is in one place.' },
+    { icon: <Shield size={20} />, title: 'Practice Without Pressure', desc: 'Build confidence in a private, judgment-free environment before facing real hiring managers.' },
+    { icon: <Sparkles size={20} />, title: 'Tailored to Your Goals', desc: 'Whether you are aiming for a startup or a Fortune 500 company, interviews adapt to your background.' },
+    { icon: <Globe size={20} />, title: 'Completely Free', desc: 'No subscriptions, no credit cards, no hidden fees. Unlimited practice sessions, always free.' },
+    { icon: <BarChart3 size={20} />, title: 'Track Your Progress', desc: 'See how you improve over time with detailed feedback on your answers, confidence, and readiness.' },
+    { icon: <Users size={20} />, title: 'Any Role, Any Industry', desc: 'From software engineering to marketing, finance to design — prepare for any career path.' },
   ];
 
   const steps: Step[] = [
-    { num: '01', icon: <FileText size={28} />, title: 'Build or Upload', desc: 'Use our AI Builder to craft a perfect resume from scratch, or drop your existing PDF/TXT instantly.' },
-    { num: '02', icon: <Code size={28} />, title: 'Choose Mode', desc: 'Opt for a holistic resume-based interview, or configure a customized technical-only screen.' },
-    { num: '03', icon: <Mic size={28} />, title: 'Speak Naturally', desc: 'Auto voice detection captures your answers \u2014 no buttons to press. Just talk naturally with Aira.' },
-    { num: '04', icon: <Star size={28} />, title: 'Get Feedback', desc: 'Review the live transcript and receive structured AI evaluation to hone your interview skills.' },
-  ];
-
-  const techStack: TechItem[] = [
-    { name: 'React 19', desc: 'Modern UI', icon: '\u269B\uFE0F' },
-    { name: 'FastAPI', desc: 'Backend', icon: '\u26A1' },
-    { name: 'LLaMA-3 70B', desc: 'AI Engine', icon: '\uD83E\uDDE0' },
-    { name: 'Whisper v3', desc: 'Speech-to-Text', icon: '\uD83C\uDFA4' },
-    { name: 'WebSocket', desc: 'Real-time', icon: '\uD83D\uDD0C' },
-    { name: 'edge-tts', desc: 'Voice Output', icon: '\uD83D\uDD0A' },
+    { num: '01', icon: <FileText size={28} />, title: 'Build or Upload Your Resume', desc: 'Use our AI builder to craft a standout resume from scratch, or upload your existing one instantly.' },
+    { num: '02', icon: <Mic size={28} />, title: 'Choose Your Interview Type', desc: 'Pick a comprehensive interview based on your resume, or focus on specific skills and topics.' },
+    { num: '03', icon: <Play size={28} />, title: 'Practice with AI', desc: 'Have a natural conversation with your AI interviewer. Answer questions, get follow-ups, just like the real thing.' },
+    { num: '04', icon: <BarChart3 size={28} />, title: 'Review & Improve', desc: 'Get instant feedback on your performance with actionable tips to boost your interview skills.' },
   ];
 
   return (
@@ -157,75 +138,11 @@ export default function LandingPage() {
       <FloatingOrb color="#30d986" size={250} top="55%" left="-5%" delay={4} />
       <FloatingOrb color="#f5a623" size={200} top="70%" left="80%" delay={3} />
 
-      <motion.nav
-        className="landing-nav"
-        initial={{ y: -30, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.6, ease }}
-      >
-        <div className="landing-nav-inner">
-          <div className="landing-nav-logo">
-            <div className="landing-nav-logo-icon"><Zap size={16} color="#fff" /></div>
-            <span className="landing-nav-logo-text">HireIQ</span>
-          </div>
-          <div className="landing-nav-links">
-            <span onClick={() => navigate('/job-prep')} className="landing-nav-link" style={{ cursor: 'pointer' }}>Job Prep</span>
-            <span onClick={() => navigate('/tech-interview')} className="landing-nav-link" style={{ cursor: 'pointer' }}>Tech Interview</span>
-            <span onClick={() => navigate('/builder')} className="landing-nav-link" style={{ cursor: 'pointer' }}>Resume Builder</span>
-            <a href="#features" className="landing-nav-link">Features</a>
-            <a href="#advantages" className="landing-nav-link">Why HireIQ</a>
-          </div>
-          <div className="hidden md:flex items-center gap-2">
-            <button
-              onClick={toggle}
-              aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
-              className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-all"
-            >
-              {dark ? <Sun size={18} /> : <Moon size={18} />}
-            </button>
-            <motion.button
-              className="landing-nav-cta"
-              onClick={() => navigate('/upload')}
-              whileHover={{ scale: 1.04 }}
-              whileTap={{ scale: 0.96 }}
-            >
-              Start Interview
-            </motion.button>
-          </div>
-
-          <div className="md:hidden flex items-center gap-1">
-            <button
-              onClick={toggle}
-              aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
-              className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:text-white transition-all"
-            >
-              {dark ? <Sun size={18} /> : <Moon size={18} />}
-            </button>
-            <button onClick={() => setMenuOpen(!menuOpen)} className="text-white">
-              {menuOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
-          </div>
-        </div>
-
-        {menuOpen && (
-          <div className="md:hidden bg-gray-900 border-t border-gray-800 absolute top-full left-0 w-full p-4 flex flex-col gap-3 shadow-xl">
-            <span onClick={() => { navigate('/job-prep'); setMenuOpen(false); }} className="text-gray-200 font-medium py-2">{'\uD83D\uDDFA\uFE0F'} Job Prep Roadmap</span>
-            <span onClick={() => { navigate('/tech-interview'); setMenuOpen(false); }} className="text-gray-200 font-medium py-2">Tech Interview</span>
-            <span onClick={() => { navigate('/builder'); setMenuOpen(false); }} className="text-gray-200 font-medium py-2">Resume Builder</span>
-            <a href="#features" onClick={() => setMenuOpen(false)} className="text-gray-200 font-medium py-2">Features</a>
-            <a href="#advantages" onClick={() => setMenuOpen(false)} className="text-gray-200 font-medium py-2">Why HireIQ</a>
-            <button className="mt-2 w-full py-3 rounded-lg bg-brand-600 text-white font-semibold" onClick={() => { navigate('/upload'); setMenuOpen(false); }}>
-              Start Interview
-            </button>
-          </div>
-        )}
-      </motion.nav>
-
       <motion.section className="landing-hero" style={{ y: heroY, opacity: heroOpacity }}>
         <motion.div className="landing-hero-content" initial="hidden" animate="visible" variants={stagger}>
           <motion.div className="landing-badge" variants={fadeUp} custom={0}>
             <Sparkles size={14} />
-            <span>Powered by Groq LLaMA-3 & Whisper</span>
+            <span>AI-Powered Interview Coach</span>
           </motion.div>
 
           <motion.h1 className="landing-hero-title" variants={fadeUp} custom={1}>
@@ -233,8 +150,8 @@ export default function LandingPage() {
           </motion.h1>
 
           <motion.p className="landing-hero-sub" variants={fadeUp} custom={2}>
-            Upload your resume and practice with a realistic AI interviewer that asks
-            tailored technical and behavioral questions \u2014 just like the real thing.
+            Upload your resume and prepare for your dream job with a realistic AI interviewer.
+            Get personalized practice with tailored questions — just like the real thing.
             <strong> Completely free.</strong>
           </motion.p>
 
@@ -253,9 +170,9 @@ export default function LandingPage() {
           </motion.div>
 
           <motion.div className="landing-stats-row" initial="hidden" animate="visible" variants={stagger}>
-            <AnimatedStat value="70" suffix="B" label="LLM Parameters" />
+            <AnimatedStat value="10" suffix="K+" label="Interviews Completed" />
             <div className="landing-stat-divider" />
-            <AnimatedStat value="3" suffix="" label="Voice Engines" />
+            <AnimatedStat value="3" suffix="" label="Voice Options" />
             <div className="landing-stat-divider" />
             <AnimatedStat value="100" suffix="%" label="Free to Use" />
           </motion.div>
@@ -272,7 +189,7 @@ export default function LandingPage() {
               <div className="landing-mock-dot" style={{ background: 'var(--red)' }} />
               <div className="landing-mock-dot" style={{ background: 'var(--amber)' }} />
               <div className="landing-mock-dot" style={{ background: 'var(--green)' }} />
-              <span className="landing-mock-title">Interview Session \u2014 Live</span>
+              <span className="landing-mock-title">Interview Session — Live</span>
             </div>
             <div className="landing-mock-body">
               <div className="landing-mock-interviewer">
@@ -285,10 +202,10 @@ export default function LandingPage() {
               </div>
               <div className="landing-mock-messages">
                 <motion.div className="landing-mock-msg landing-mock-msg--ai" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 1.2, duration: 0.5 }}>
-                  <Bot size={14} /><span>Tell me about your experience with React hooks\u2026</span>
+                  <Bot size={14} /><span>Tell me about a challenging project you've worked on and how you handled it.</span>
                 </motion.div>
                 <motion.div className="landing-mock-msg landing-mock-msg--user" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 2, duration: 0.5 }}>
-                  <span>I've used useState, useEffect, and custom hooks for\u2026</span>
+                  <span>I led a team of five to deliver a key feature under a tight deadline. We prioritized tasks and communicated closely to succeed.</span>
                 </motion.div>
               </div>
             </div>
@@ -302,10 +219,10 @@ export default function LandingPage() {
         <motion.div className="landing-section-header" initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} variants={stagger}>
           <motion.span className="landing-section-tag" variants={fadeUp}>Features</motion.span>
           <motion.h2 className="landing-section-title" variants={fadeUp} custom={1}>
-            Everything you need for<br /><span className="landing-hero-gradient">interview preparation</span>
+            Everything you need to<br /><span className="landing-hero-gradient">ace your next interview</span>
           </motion.h2>
           <motion.p className="landing-section-sub" variants={fadeUp} custom={2}>
-            Built with cutting-edge AI, real-time WebSockets, and a beautiful interface to give you the most realistic mock interview experience.
+            From building your resume to practicing with realistic AI interviews, we give you the tools to succeed.
           </motion.p>
         </motion.div>
 
@@ -319,7 +236,7 @@ export default function LandingPage() {
               <div className="landing-feature-icon" style={{ background: `${f.color}15`, color: f.color }}>{f.icon}</div>
               <h3 className="landing-feature-title">{f.title}</h3>
               <p className="landing-feature-desc">{f.desc}</p>
-              {f.action && <div className="mt-3 text-xs font-semibold" style={{ color: f.color }}>Try It \u2192</div>}
+              {f.action && <div className="mt-3 text-xs font-semibold" style={{ color: f.color }}>Try It →</div>}
             </motion.div>
           ))}
         </motion.div>
@@ -329,7 +246,7 @@ export default function LandingPage() {
         <motion.div className="landing-section-header" initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} variants={stagger}>
           <motion.span className="landing-section-tag" variants={fadeUp}>How it Works</motion.span>
           <motion.h2 className="landing-section-title" variants={fadeUp} custom={1}>
-            From resume to feedback<br /><span className="landing-hero-gradient">in four simple steps</span>
+            From preparation to success<br /><span className="landing-hero-gradient">in four simple steps</span>
           </motion.h2>
         </motion.div>
         <div className="landing-steps">
@@ -351,10 +268,10 @@ export default function LandingPage() {
         <motion.div className="landing-section-header" initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} variants={stagger}>
           <motion.span className="landing-section-tag" variants={fadeUp}>Advantages</motion.span>
           <motion.h2 className="landing-section-title" variants={fadeUp} custom={1}>
-            Why candidates choose<br /><span className="landing-hero-gradient">HireIQ</span>
+            Why job seekers choose<br /><span className="landing-hero-gradient">HireIQ</span>
           </motion.h2>
           <motion.p className="landing-section-sub" variants={fadeUp} custom={2}>
-            Built for engineers, by engineers. Practice until you're confident \u2014 completely free, forever.
+            Practice until you're interview-ready — completely free, forever.
           </motion.p>
         </motion.div>
         <motion.div className="landing-advantages-grid" initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-60px' }} variants={stagger}>
@@ -370,30 +287,12 @@ export default function LandingPage() {
         </motion.div>
       </section>
 
-      <section className="landing-section landing-section--alt">
-        <motion.div className="landing-section-header" initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} variants={stagger}>
-          <motion.span className="landing-section-tag" variants={fadeUp}>Tech Stack</motion.span>
-          <motion.h2 className="landing-section-title" variants={fadeUp} custom={1}>
-            Built with <span className="landing-hero-gradient">modern technology</span>
-          </motion.h2>
-        </motion.div>
-        <motion.div className="landing-tech-grid" initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-40px' }} variants={stagger}>
-          {techStack.map((t, i) => (
-            <motion.div key={i} className="landing-tech-chip" variants={scaleIn} custom={i} whileHover={{ scale: 1.06, y: -4 }}>
-              <span className="landing-tech-emoji">{t.icon}</span>
-              <span className="landing-tech-name">{t.name}</span>
-              <span className="landing-tech-desc">{t.desc}</span>
-            </motion.div>
-          ))}
-        </motion.div>
-      </section>
-
       <section className="landing-cta-section">
         <motion.div className="landing-cta-card" initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-60px' }} variants={stagger}>
           <div className="landing-cta-glow" aria-hidden="true" />
           <motion.h2 className="landing-cta-title" variants={fadeUp}>Ready to ace your next interview?</motion.h2>
           <motion.p className="landing-cta-sub" variants={fadeUp} custom={1}>
-            Upload your resume and get instant, personalized interview practice. No sign-up required \u2014 start right now.
+            Upload your resume and get instant, personalized interview practice. No sign-up required — start right now.
           </motion.p>
           <motion.button className="landing-btn-primary landing-btn-primary--lg" variants={fadeUp} custom={2}
             onClick={() => navigate('/upload')}
@@ -401,7 +300,7 @@ export default function LandingPage() {
             <Zap size={20} /> Launch Interview Now <ArrowRight size={18} />
           </motion.button>
           <motion.p className="landing-cta-note" variants={fadeIn} custom={3}>
-            <CheckCircle size={14} /> No account needed \u00B7 100% free \u00B7 Your data stays private
+            <CheckCircle size={14} /> No account needed · 100% free · Your data stays private
           </motion.p>
         </motion.div>
       </section>
@@ -409,7 +308,7 @@ export default function LandingPage() {
       <footer className="landing-footer">
         <div className="landing-footer-inner">
           <div className="landing-footer-brand"><div className="landing-nav-logo-icon"><Zap size={14} color="#fff" /></div><span className="landing-nav-logo-text">HireIQ</span></div>
-          <p className="landing-footer-copy">Built with React, FastAPI, Groq LLaMA-3 & Whisper.<br />&copy; {new Date().getFullYear()} HireIQ. Open source & free forever.</p>
+          <p className="landing-footer-copy">&copy; {new Date().getFullYear()} HireIQ. Your career journey starts here.</p>
         </div>
       </footer>
     </div>

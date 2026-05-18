@@ -91,7 +91,7 @@ export default function JobRoadmapPage() {
       setRoadmap(data);
       saveProgress(jobTitle, experienceLevel, durationDays, { roadmap: data, completedTasks: {} });
       setCompletedTasks({});
-      toast.success('Roadmap generated! Let\'s get started \uD83D\uDE80');
+      toast.success('Roadmap generated! Let\'s get started ??');
     } catch (err) {
       setError((err as Error).message || 'Failed to generate roadmap');
     } finally {
@@ -189,7 +189,7 @@ export default function JobRoadmapPage() {
           </div>
         </div>
         <div className="text-center">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Building your roadmap\u2026</h2>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Building your roadmap�</h2>
           <p className="text-gray-500 dark:text-gray-400 text-sm max-w-sm">
             AI is crafting a personalized {durationDays}-day preparation plan for <strong>{jobTitle}</strong>. This takes a few seconds.
           </p>
@@ -215,7 +215,7 @@ export default function JobRoadmapPage() {
         </div>
         <div className="flex gap-3">
           <button onClick={() => navigate('/job-prep')} className="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800">
-            \u2190 Choose Another Role
+            ? Choose Another Role
           </button>
           <button onClick={() => generateRoadmap(true)} className="px-4 py-2 rounded-xl bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 flex items-center gap-2">
             <RotateCcw size={15} /> Try Again
@@ -236,7 +236,7 @@ export default function JobRoadmapPage() {
                 <span className="text-xs font-semibold uppercase tracking-widest opacity-75">Interview Roadmap</span>
               </div>
               <h1 className="text-2xl font-bold">{roadmap?.job_title || jobTitle}</h1>
-              <p className="text-sm opacity-75 mt-0.5 capitalize">{experienceLevel} level \u00B7 {durationDays} days</p>
+              <p className="text-sm opacity-75 mt-0.5 capitalize">{experienceLevel} level � {durationDays} days</p>
             </div>
             <div className="flex items-center gap-4">
               <div className="text-center">
@@ -260,7 +260,7 @@ export default function JobRoadmapPage() {
                 </button>
                 <button onClick={() => navigate('/job-prep')}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-medium border border-white/20 transition-all">
-                  \u2190 Change Role
+                  ? Change Role
                 </button>
               </div>
             </div>
@@ -381,7 +381,7 @@ export default function JobRoadmapPage() {
                                   <div className="flex flex-wrap gap-1.5 mt-2">
                                     {task.resources.map((r, ri) => (
                                       <span key={ri} className="text-[11px] px-2 py-0.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded text-gray-500 dark:text-gray-400">
-                                        {'\uD83D\uDCA1'} {r}
+                                        {'??'} {r}
                                       </span>
                                     ))}
                                   </div>
@@ -407,14 +407,14 @@ export default function JobRoadmapPage() {
               <div className="relative">
                 <div className="flex items-center gap-4 mb-4">
                   <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center"><Trophy size={28} className="text-white" /></div>
-                  <div><div className="font-bold text-lg">{'\uD83C\uDF89'} Roadmap Complete!</div><div className="text-sm opacity-80">All {totalTasks} tasks done. You're interview-ready!</div></div>
+                  <div><div className="font-bold text-lg">{'??'} Roadmap Complete!</div><div className="text-sm opacity-80">All {totalTasks} tasks done. You're interview-ready!</div></div>
                 </div>
                 <p className="text-sm opacity-80 mb-5 leading-relaxed">
                   You've completed your entire {durationDays}-day preparation plan for <strong>{jobTitle}</strong>. Your AI interview is ready!
                 </p>
                 <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={startInterview} disabled={startingInterview}
                   className="w-full flex items-center justify-center gap-3 py-4 rounded-xl bg-white text-green-700 font-bold text-base shadow-xl hover:bg-green-50 transition-all disabled:opacity-70">
-                  {startingInterview ? <><Loader2 size={20} className="animate-spin" /> Starting Interview\u2026</> : <><Play size={20} /> Start AI Interview Now <ArrowRight size={18} /></>}
+                  {startingInterview ? <><Loader2 size={20} className="animate-spin" /> Starting Interview�</> : <><Play size={20} /> Start AI Interview Now <ArrowRight size={18} /></>}
                 </motion.button>
               </div>
             </motion.div>

@@ -60,7 +60,7 @@ const ControlBar = memo(function ControlBar({
           }}
         />
         <span className="ctrl-status-text">
-          {wsReady ? 'Live' : 'Connecting\u2026'}
+          {wsReady ? 'Live' : 'Connecting�'}
         </span>
       </div>
 

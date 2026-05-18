@@ -121,7 +121,7 @@ export default function TechInterviewSetup() {
                         ? 'bg-brand-500 text-white border-brand-500'
                         : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-brand-400 hover:text-brand-600 dark:hover:text-brand-400'
                     }`}>
-                    {languages.includes(lang) ? '\u2713 ' : '+ '}{lang}
+                    {languages.includes(lang) ? '? ' : '+ '}{lang}
                   </button>
                 ))}
               </div>
@@ -130,7 +130,7 @@ export default function TechInterviewSetup() {
                 <input type="text" value={inputValue}
                   onChange={(e) => { setInputValue(e.target.value); if (error) setError(''); }}
                   onKeyDown={handleKeyDown} onBlur={handleBlur}
-                  placeholder="Or type a custom language and press Enter\u2026"
+                  placeholder="Or type a custom language and press Enter�"
                   className="flex-1 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 transition-shadow outline-none text-sm" />
                 <button type="button" onClick={() => commitInput()}
                   className="px-3 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:bg-brand-50 dark:hover:bg-brand-900/20 text-gray-500 hover:text-brand-600 dark:hover:text-brand-400 transition-all"
@@ -151,7 +151,7 @@ export default function TechInterviewSetup() {
                 ))}
                 {languages.length === 0 && (
                   <span className="text-sm text-gray-400 dark:text-gray-500 italic mt-1 inline-block">
-                    No languages selected yet \u2014 click a chip above or type below.
+                    No languages selected yet � click a chip above or type below.
                   </span>
                 )}
               </div>

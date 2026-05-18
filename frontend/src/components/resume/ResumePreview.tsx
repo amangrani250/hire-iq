@@ -66,7 +66,7 @@ const MinimalTemplate = memo(function MinimalTemplate({ resume }: { resume: Resu
                   <p className="text-gray-500">{e.company}</p>
                 </div>
                 {(e.start_date || e.end_date) && (
-                  <p className="text-gray-400 whitespace-nowrap ml-4">{e.start_date}{e.end_date ? ` \u2013 ${e.end_date}` : ''}</p>
+                  <p className="text-gray-400 whitespace-nowrap ml-4">{e.start_date}{e.end_date ? ` � ${e.end_date}` : ''}</p>
                 )}
               </div>
               {e.description && (
@@ -100,7 +100,7 @@ const MinimalTemplate = memo(function MinimalTemplate({ resume }: { resume: Resu
                 <p className="font-semibold text-gray-900 text-xs">{e.degree}{e.field ? ` in ${e.field}` : ''}</p>
                 {e.year && <p className="text-gray-400">{e.year}</p>}
               </div>
-              <p className="text-gray-500">{e.institution}{e.gpa ? ` \u2022 GPA: ${e.gpa}` : ''}</p>
+              <p className="text-gray-500">{e.institution}{e.gpa ? ` � GPA: ${e.gpa}` : ''}</p>
             </div>
           ))}
         </Section>
@@ -110,7 +110,7 @@ const MinimalTemplate = memo(function MinimalTemplate({ resume }: { resume: Resu
         <Section title="Certifications">
           {resume.certifications.map((c, i) => (
             <div key={i} className="flex justify-between">
-              <p className="text-gray-700">{c.name}{c.issuer ? ` \u2014 ${c.issuer}` : ''}</p>
+              <p className="text-gray-700">{c.name}{c.issuer ? ` � ${c.issuer}` : ''}</p>
               {c.year && <p className="text-gray-400">{c.year}</p>}
             </div>
           ))}
@@ -161,7 +161,7 @@ const CorporateTemplate = memo(function CorporateTemplate({ resume }: { resume: 
                     <p className="text-blue-700 font-medium">{e.company}</p>
                   </div>
                   {(e.start_date || e.end_date) && (
-                    <p className="text-gray-400">{e.start_date}{e.end_date ? ` \u2013 ${e.end_date}` : ''}</p>
+                    <p className="text-gray-400">{e.start_date}{e.end_date ? ` � ${e.end_date}` : ''}</p>
                   )}
                 </div>
                 {e.description && <div className="mt-1 text-gray-700 whitespace-pre-line">{e.description}</div>}
@@ -244,7 +244,7 @@ const CreativeTemplate = memo(function CreativeTemplate({ resume }: { resume: Re
                 <div className="flex justify-between">
                   <p className="text-purple-600">{e.company}</p>
                   {(e.start_date || e.end_date) && (
-                    <p className="text-gray-400">{e.start_date}{e.end_date ? ` \u2013 ${e.end_date}` : ''}</p>
+                    <p className="text-gray-400">{e.start_date}{e.end_date ? ` � ${e.end_date}` : ''}</p>
                   )}
                 </div>
                 {e.description && <div className="mt-1 text-gray-700 whitespace-pre-line">{e.description}</div>}

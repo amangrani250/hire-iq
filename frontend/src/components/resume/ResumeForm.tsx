@@ -62,7 +62,7 @@ function ImprovableTextarea({
           className="flex items-center gap-1 text-xs text-brand-600 hover:text-brand-700 disabled:opacity-50 transition-colors"
         >
           <Wand2 size={12} />
-          {improving ? 'Improving\u2026' : 'AI Improve'}
+          {improving ? 'Improving�' : 'AI Improve'}
         </button>
       </div>
       <textarea
@@ -124,7 +124,7 @@ export default function ResumeForm({ jobRole }: { jobRole: string }) {
             rows={4}
             value={rawInput}
             onChange={(e) => setRawInput(e.target.value)}
-            placeholder="Describe your background, skills, and experience in plain text or speak using the mic\u2026"
+            placeholder="Describe your background, skills, and experience in plain text or speak using the mic�"
             className="input-field resize-none flex-1"
           />
           <VoiceButton listening={listening} supported={supported} onToggle={toggle} className="self-start mt-0.5" />
@@ -136,7 +136,7 @@ export default function ResumeForm({ jobRole }: { jobRole: string }) {
           className="btn-primary w-full justify-center text-sm"
         >
           <Wand2 size={16} />
-          {isGenerating ? 'Generating\u2026' : 'Generate with AI'}
+          {isGenerating ? 'Generating�' : 'Generate with AI'}
         </button>
       </div>
 
@@ -170,7 +170,7 @@ export default function ResumeForm({ jobRole }: { jobRole: string }) {
           sectionName="summary"
           jobRole={jobRole}
           rows={4}
-          placeholder="A compelling professional summary that highlights your expertise\u2026"
+          placeholder="A compelling professional summary that highlights your expertise�"
         />
       </Section>
 
@@ -182,7 +182,7 @@ export default function ResumeForm({ jobRole }: { jobRole: string }) {
             value={(resume.skills || []).join(', ')}
             onChange={(e) => updateField('skills', e.target.value.split(',').map((s) => s.trim()).filter(Boolean))}
             className="input-field resize-none"
-            placeholder="React, Node.js, Python, SQL, Docker\u2026"
+            placeholder="React, Node.js, Python, SQL, Docker�"
           />
         </div>
       </Section>
@@ -210,7 +210,7 @@ export default function ResumeForm({ jobRole }: { jobRole: string }) {
               sectionName="experience"
               jobRole={jobRole}
               rows={3}
-              placeholder="\u2022 Led team of 5 engineers to deliver\u2026&#10;\u2022 Improved performance by 40%\u2026"
+              placeholder="� Led team of 5 engineers to deliver�&#10;� Improved performance by 40%�"
             />
           </div>
         ))}
@@ -241,7 +241,7 @@ export default function ResumeForm({ jobRole }: { jobRole: string }) {
               sectionName="project"
               jobRole={jobRole}
               rows={2}
-              placeholder="Built a full-stack app that\u2026"
+              placeholder="Built a full-stack app that�"
             />
           </div>
         ))}

@@ -4,8 +4,8 @@ import { Toaster } from 'react-hot-toast';
 import { lazy, Suspense, type ReactNode, type LazyExoticComponent, type ComponentType } from 'react';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ResumeProvider } from './contexts/ResumeContext';
-import Navbar from './components/layout/Navbar';
-import { FloatingThemeToggle } from './components/ui/ThemeToggle';
+import AppNavbar from './components/layout/AppNavbar';
+import { isFeatureEnabled } from './config/features';
 
 const LandingPage = lazy(() => import('./components/LandingPage'));
 const UploadScreen = lazy(() => import('./components/UploadScreen'));
@@ -42,7 +42,7 @@ function AnimatedPage({ children }: { children: ReactNode }) {
 function PageSkeleton() {
   return (
     <div className="flex items-center justify-center min-h-screen text-gray-400 text-sm">
-      Loading\u2026
+      Loading�
     </div>
   );
 }
@@ -55,30 +55,32 @@ function LazyRoute({ Component }: { Component: LazyExoticComponent<ComponentType
   );
 }
 
+function FeatureRoute({ path, Component }: { path: string; Component: LazyExoticComponent<ComponentType> }) {
+  const featureKey = path.replace(/^\//, '');
+  if (!isFeatureEnabled(featureKey)) {
+    return <Navigate to="/" replace />;
+  }
+  return <LazyRoute Component={Component} />;
+}
+
 export default function App() {
   const location = useLocation();
-  const showNavbar = location.pathname.startsWith('/builder')
-    || location.pathname.startsWith('/saved')
-    || location.pathname.startsWith('/tech-interview')
-    || location.pathname.startsWith('/job-prep')
-    || location.pathname.startsWith('/job-roadmap');
 
   return (
     <ThemeProvider>
       <ResumeProvider>
-        {showNavbar && <Navbar />}
-        <FloatingThemeToggle />
+        <AppNavbar />
         <AnimatePresence mode="wait">
           <Routes location={location} key={location.pathname}>
             <Route path="/" element={<Suspense fallback={<PageSkeleton />}><LandingPage /></Suspense>} />
             <Route path="/upload" element={<LazyRoute Component={UploadScreen} />} />
             <Route path="/interview" element={<LazyRoute Component={InterviewRoom} />} />
             <Route path="/end" element={<LazyRoute Component={EndScreen} />} />
-            <Route path="/builder" element={<LazyRoute Component={BuilderPage} />} />
-            <Route path="/saved" element={<LazyRoute Component={SavedPage} />} />
-            <Route path="/tech-interview" element={<LazyRoute Component={TechInterviewSetup} />} />
-            <Route path="/job-prep" element={<LazyRoute Component={JobPrepPage} />} />
-            <Route path="/job-roadmap" element={<LazyRoute Component={JobRoadmapPage} />} />
+            <Route path="/builder" element={<FeatureRoute path="/builder" Component={BuilderPage} />} />
+            <Route path="/saved" element={<FeatureRoute path="/saved" Component={SavedPage} />} />
+            <Route path="/tech-interview" element={<FeatureRoute path="/tech-interview" Component={TechInterviewSetup} />} />
+            <Route path="/job-prep" element={<FeatureRoute path="/job-prep" Component={JobPrepPage} />} />
+            <Route path="/job-roadmap" element={<FeatureRoute path="/job-roadmap" Component={JobRoadmapPage} />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </AnimatePresence>

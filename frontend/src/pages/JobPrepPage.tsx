@@ -4,11 +4,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Briefcase, Search, ArrowRight, Sparkles, Code, Database,
   Globe, Shield, BarChart3, Cpu, Layers, Smartphone, Cloud,
-  Brain, ChevronRight, Clock,
+  Brain, ChevronRight, Clock, Check,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { JOB_CATEGORIES, EXPERIENCE_LEVELS, ROADMAP_DURATIONS } from '../utils';
 import { useDocumentMeta } from '../hooks/useDocumentMeta';
+import { useIsMobile } from '../hooks/useMediaQuery';
 
 const catIcons: Record<string, ReactNode> = {
   'Software Engineering': <Code size={16} />,
@@ -24,12 +25,15 @@ const catIcons: Record<string, ReactNode> = {
 export default function JobPrepPage() {
   useDocumentMeta('Job Interview Prep', 'AI-powered interview preparation with personalized study roadmaps');
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [search, setSearch] = useState('');
   const [selectedJob, setSelectedJob] = useState('');
   const [customJob, setCustomJob] = useState('');
   const [experience, setExperience] = useState('mid');
   const [duration, setDuration] = useState(14);
   const [step, setStep] = useState(1);
+
+  const steps = ['Select Role', 'Configure', 'Roadmap'];
 
   const filteredCategories = JOB_CATEGORIES.map((cat) => ({
     ...cat,
@@ -57,22 +61,46 @@ export default function JobPrepPage() {
             </div>
             <div>
               <h1 className="text-base font-bold text-gray-900 dark:text-white">Job Interview Prep</h1>
-              <p className="text-xs text-gray-500 dark:text-gray-400">AI-powered study roadmap \u2192 interview</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">AI-powered study roadmap ? interview</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 text-xs font-medium">
-            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all ${step === 1 ? 'bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300' : 'text-gray-400'}`}>
-              <span className="w-4 h-4 rounded-full bg-brand-500 text-white flex items-center justify-center text-[10px]">1</span> Select Role
+          {isMobile ? (
+            <div className="flex-1 max-w-[180px] ml-4">
+              <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1.5">
+                <span className="font-medium text-gray-900 dark:text-white">{steps[step - 1]}</span>
+                <span>Step {step} of 3</span>
+              </div>
+              <div className="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                <motion.div className="h-full bg-brand-500 rounded-full"
+                  initial={false} animate={{ width: `${(step / 3) * 100}%` }}
+                  transition={{ duration: 0.3, ease: 'easeInOut' }} />
+              </div>
             </div>
-            <ChevronRight size={14} className="text-gray-300" />
-            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all ${step === 2 ? 'bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300' : 'text-gray-400'}`}>
-              <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${step === 2 ? 'bg-brand-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-500'}`}>2</span> Configure
+          ) : (
+            <div className="flex items-center gap-2 text-xs font-medium">
+              {steps.map((label, i) => {
+                const idx = i + 1;
+                const isActive = step === idx;
+                const isDone = step > idx;
+                return (
+                  <div key={label} className="flex items-center gap-2">
+                    {i > 0 && <ChevronRight size={14} className="text-gray-300" />}
+                    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all ${
+                      isActive ? 'bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300' : 'text-gray-400'
+                    }`}>
+                      <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${
+                        isDone ? 'bg-green-500 text-white' :
+                        isActive ? 'bg-brand-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-500'
+                      }`}>
+                        {isDone ? <Check size={10} /> : idx}
+                      </span>
+                      {label}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-            <ChevronRight size={14} className="text-gray-300" />
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-gray-400">
-              <span className="w-4 h-4 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-500 flex items-center justify-center text-[10px]">3</span> Roadmap
-            </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -92,14 +120,14 @@ export default function JobPrepPage() {
               <div className="relative mb-6">
                 <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search job titles\u2026"
+                  placeholder="Search job titles�"
                   className="w-full pl-11 pr-4 py-3.5 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 outline-none text-sm shadow-sm" />
               </div>
 
               <div className="mb-6 p-4 bg-white dark:bg-gray-900 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">
                 <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Or type a custom role</label>
                 <input type="text" value={customJob} onChange={(e) => { setCustomJob(e.target.value); setSelectedJob(''); }}
-                  placeholder="e.g. Blockchain Developer, Embedded Systems Engineer\u2026"
+                  placeholder="e.g. Blockchain Developer, Embedded Systems Engineer�"
                   className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 outline-none text-sm" />
               </div>
 
@@ -130,7 +158,7 @@ export default function JobPrepPage() {
                 <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} disabled={!canProceed}
                   onClick={() => setStep(2)}
                   className="flex items-center gap-2 px-8 py-3.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-semibold text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-brand-500/20">
-                  Continue with &quot;{finalJob || '\u2026'}&quot; <ArrowRight size={18} />
+                  Continue with &quot;{finalJob || '�'}&quot; <ArrowRight size={18} />
                 </motion.button>
               </div>
             </motion.div>
@@ -201,7 +229,7 @@ export default function JobPrepPage() {
                   <div className="flex gap-3">
                     <button onClick={() => setStep(1)}
                       className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-medium border border-white/20 transition-all">
-                      \u2190 Change Role
+                      ? Change Role
                     </button>
                     <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} onClick={handleStart}
                       className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white text-brand-700 text-sm font-bold transition-all hover:bg-gray-50 shadow-lg">

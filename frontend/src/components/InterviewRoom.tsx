@@ -195,12 +195,12 @@ function InterviewRoomInner({
 
           <div className="room-status-overlay">
             {isTranscribing && (
-              <div className="room-status-pill"><Loader size={13} className="spin" />Transcribing\u2026</div>
+              <div className="room-status-pill"><Loader size={13} className="spin" />Transcribing�</div>
             )}
             {typingIndicator && <TypingDots />}
             {recording && micOn && (
               <div className="room-status-pill" style={{ background: 'rgba(247,80,80,0.85)' }}>
-                <div className="room-rec-dot" />Listening\u2026
+                <div className="room-rec-dot" />Listening�
               </div>
             )}
           </div>

@@ -8,3 +8,5 @@ export { useMediaDevice } from './useMediaDevice';
 export { useDocumentMeta } from './useDocumentMeta';
 export { useInterval } from './useInterval';
 export { useIntersectionObserver } from './useIntersectionObserver';
+export { useMediaQuery, useIsMobile, useIsTablet, useIsDesktop, useDeviceDetect, useReducedMotion, useTouchDevice } from './useMediaQuery';
+export type { DeviceType } from './useMediaQuery';

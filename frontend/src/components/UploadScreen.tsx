@@ -195,7 +195,7 @@ export default function UploadScreen() {
 
         <motion.h1 className="upload-heading" variants={fadeUp} custom={1}>Your AI Interview<br />starts here</motion.h1>
         <motion.p className="upload-sub" variants={fadeUp} custom={2}>
-          Upload your resume and we'll analyze it \u2014 extract your profile, skills, experience, and provide an ATS compatibility score.
+          Upload your resume and we'll analyze it � extract your profile, skills, experience, and provide an ATS compatibility score.
         </motion.p>
 
         <motion.div
@@ -217,7 +217,7 @@ export default function UploadScreen() {
             <>
               <Upload size={32} color="var(--text-3)" />
               <p className="upload-drop-text">Drop your resume here</p>
-              <p className="upload-drop-sub">PDF or TXT \u2022 Click or drag</p>
+              <p className="upload-drop-sub">PDF or TXT � Click or drag</p>
             </>
           )}
         </motion.div>
@@ -230,12 +230,12 @@ export default function UploadScreen() {
 
         {loading && (
           <motion.div className="upload-btn" style={{ cursor: 'default', opacity: 0.8 }} variants={fadeUp} custom={4}>
-            <Loader size={18} className="spin" /> Analyzing resume automatically\u2026
+            <Loader size={18} className="spin" /> Analyzing resume automatically�
           </motion.div>
         )}
 
         <motion.p className="upload-hint" variants={fadeUp} custom={5}>
-          Powered by Groq LLaMA-3 \u00B7 Whisper \u00B7 edge-tts
+          Smart AI that adapts to every interview
         </motion.p>
       </motion.div>
 

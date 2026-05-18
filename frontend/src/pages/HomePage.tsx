@@ -15,7 +15,7 @@ interface Feature {
 }
 
 const features: Feature[] = [
-  { icon: Wand2, title: 'AI-Powered Generation', desc: 'Describe yourself in plain text or voice \u2014 AI structures your perfect resume instantly.' },
+  { icon: Wand2, title: 'AI-Powered Generation', desc: 'Describe yourself in plain text or voice � AI structures your perfect resume instantly.' },
   { icon: Mic, title: 'Voice Input', desc: 'Speak naturally using your microphone. Your words become a polished, professional resume.' },
   { icon: Layout, title: '3 Premium Templates', desc: 'Minimal, Corporate, and Creative designs. Switch live and see the change instantly.' },
   { icon: ShieldCheck, title: 'ATS Optimized', desc: 'Score your resume for ATS compatibility and get smart keyword suggestions.' },
@@ -29,7 +29,7 @@ export default function HomePage() {
     <div className="min-h-screen">
       <section className="pt-32 pb-24 px-4 text-center max-w-4xl mx-auto">
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-50 dark:bg-brand-900/30 border border-brand-100 dark:border-brand-800 text-brand-600 dark:text-brand-400 text-xs font-medium mb-8 animate-fade-in">
-          <Zap size={12} /> AI-Powered \u00B7 ATS-Friendly \u00B7 Free to Try
+          <Zap size={12} /> AI-Powered � ATS-Friendly � Free to Try
         </div>
 
         <h1 className="text-5xl sm:text-6xl font-bold text-gray-900 dark:text-white leading-tight mb-6 animate-slide-up">
@@ -49,7 +49,7 @@ export default function HomePage() {
           <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-2xl overflow-hidden">
             <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
               <div className="w-3 h-3 rounded-full bg-red-400" /><div className="w-3 h-3 rounded-full bg-yellow-400" /><div className="w-3 h-3 rounded-full bg-green-400" />
-              <span className="ml-2 text-xs text-gray-400">ResumeAI \u2014 Builder</span>
+              <span className="ml-2 text-xs text-gray-400">HireIQ � Builder</span>
             </div>
             <div className="grid grid-cols-2 h-64">
               <div className="border-r border-gray-100 dark:border-gray-800 p-4 space-y-3">
@@ -104,7 +104,7 @@ export default function HomePage() {
       </section>
 
       <footer className="border-t border-gray-100 dark:border-gray-800 py-8 text-center">
-        <p className="text-sm text-gray-400">&copy; {new Date().getFullYear()} ResumeAI. Built with React 19 + FastAPI.</p>
+        <p className="text-sm text-gray-400">&copy; {new Date().getFullYear()} HireIQ. Your career journey starts here.</p>
       </footer>
     </div>
   );

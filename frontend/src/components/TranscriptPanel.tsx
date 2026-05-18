@@ -26,7 +26,7 @@ const TranscriptPanel = memo(function TranscriptPanel({ messages, visible }: Tra
       <div className="transcript-scroll">
         {messages.length === 0 && (
           <p className="transcript-empty">
-            Transcript will appear here as the interview progresses\u2026
+            Transcript will appear here as the interview progresses�
           </p>
         )}
 

@@ -8,9 +8,11 @@ import AtsScore from '../components/ui/AtsScore';
 import { useResume } from '../contexts/ResumeContext';
 import { usePdfExport } from '../hooks/usePdfExport';
 import { useDocumentMeta } from '../hooks/useDocumentMeta';
+import { useIsMobile } from '../hooks/useMediaQuery';
 
 export default function BuilderPage() {
   useDocumentMeta('Resume Builder', 'Build and export professional resumes with AI');
+  const isMobile = useIsMobile();
   const { resume, reset, saveResume } = useResume();
   const { exportPdf, exporting } = usePdfExport();
   const [jobRole, setJobRole] = useState('');
@@ -34,7 +36,7 @@ export default function BuilderPage() {
       resume.summary && `SUMMARY\n${resume.summary}`,
       resume.skills?.length && `SKILLS\n${resume.skills.join(', ')}`,
       resume.experience?.length && `EXPERIENCE\n${resume.experience.map((e) =>
-        `${e.role} at ${e.company} (${e.start_date}\u2013${e.end_date})\n${e.description}`
+        `${e.role} at ${e.company} (${e.start_date}�${e.end_date})\n${e.description}`
       ).join('\n\n')}`,
     ].filter(Boolean).join('\n');
     navigator.clipboard.writeText(text);
@@ -72,7 +74,7 @@ export default function BuilderPage() {
             </button>
             <button onClick={() => exportPdf('resume-preview', `${resume.personal_info?.full_name || 'resume'}.pdf`)}
               disabled={exporting} className="btn-primary text-xs py-1.5 px-4">
-              <Download size={13} /> {exporting ? 'Exporting\u2026' : 'Export PDF'}
+              <Download size={13} /> {exporting ? 'Exporting�' : 'Export PDF'}
             </button>
           </div>
         </div>

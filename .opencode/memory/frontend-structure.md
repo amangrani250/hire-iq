@@ -1,8 +1,8 @@
-﻿# Frontend Structure (Auto-generated: 2026-05-18 14.47)
+﻿# Frontend Structure (Auto-generated: 2026-05-18 15.56)
 
 ## Summary
-- **Files**: 49 source files
-- **Lines of code**: 7266
+- **Files**: 52 source files
+- **Lines of code**: 7616
 - **Framework**: React 18 + TypeScript 6 + Tailwind CSS
 
 ## File Tree
@@ -13,16 +13,18 @@ frontend/src/
   +-- components/EndScreen.tsx
   +-- components/InterviewRoom.tsx
   +-- components/LandingPage.tsx
-    +-- components/layout/Navbar.tsx
+    +-- components/layout/AppNavbar.tsx
     +-- components/resume/ResumeForm.tsx
     +-- components/resume/ResumePreview.tsx
   +-- components/TranscriptPanel.tsx
     +-- components/ui/AtsScore.tsx
+    +-- components/ui/BottomSheet.tsx
+    +-- components/ui/FadeIn.tsx
     +-- components/ui/TemplateSelector.tsx
-    +-- components/ui/ThemeToggle.tsx
     +-- components/ui/VoiceButton.tsx
   +-- components/UploadScreen.tsx
   +-- components/VideoTile.tsx
+  +-- config/features.ts
   +-- contexts/index.ts
   +-- contexts/ResumeContext.tsx
   +-- contexts/ThemeContext.tsx
@@ -35,6 +37,7 @@ frontend/src/
   +-- hooks/useInterviewSocket.ts
   +-- hooks/useLocalStorage.ts
   +-- hooks/useMediaDevice.ts
+  +-- hooks/useMediaQuery.ts
   +-- hooks/usePdfExport.ts
   +-- hooks/useVoiceInput.ts
 +-- index.css

@@ -52,7 +52,7 @@ export default function SavedPage() {
                 <div className="min-w-0">
                   <p className="font-medium text-gray-900 dark:text-white truncate">{saved.name}</p>
                   <p className="text-xs text-gray-400 dark:text-gray-500">
-                    {saved.template} template \u00B7 {new Date(saved.createdAt).toLocaleDateString()}
+                    {saved.template} template � {new Date(saved.createdAt).toLocaleDateString()}
                   </p>
                 </div>
               </div>
