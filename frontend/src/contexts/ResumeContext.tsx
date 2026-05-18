@@ -115,7 +115,7 @@ export function ResumeProvider({ children }: { children: ReactNode }) {
   const reset = useCallback(() => dispatch({ type: 'RESET' }), []);
 
   return (
-    <ResumeContext.Provider
+    <ResumeContext
       value={{
         ...state,
         setResume,
@@ -132,7 +132,7 @@ export function ResumeProvider({ children }: { children: ReactNode }) {
       }}
     >
       {children}
-    </ResumeContext.Provider>
+    </ResumeContext>
   );
 }
 

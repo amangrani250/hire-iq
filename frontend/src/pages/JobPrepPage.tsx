@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { JOB_CATEGORIES, EXPERIENCE_LEVELS, ROADMAP_DURATIONS } from '../utils';
+import { useDocumentMeta } from '../hooks/useDocumentMeta';
 
 const catIcons: Record<string, ReactNode> = {
   'Software Engineering': <Code size={16} />,
@@ -21,6 +22,7 @@ const catIcons: Record<string, ReactNode> = {
 };
 
 export default function JobPrepPage() {
+  useDocumentMeta('Job Interview Prep', 'AI-powered interview preparation with personalized study roadmaps');
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [selectedJob, setSelectedJob] = useState('');

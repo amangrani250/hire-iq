@@ -1,28 +1,20 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, type ReactNode } from 'react';
 import type { ThemeContextValue } from '../types';
+import { useLocalStorage } from '../hooks/useLocalStorage';
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-const THEME_STORAGE_KEY = 'theme';
-
-function getInitialTheme(): boolean {
-  const saved = localStorage.getItem(THEME_STORAGE_KEY);
-  if (saved) return saved === 'dark';
-  return window.matchMedia('(prefers-color-scheme: dark)').matches;
-}
-
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [dark, setDark] = useState<boolean>(getInitialTheme);
+  const [dark, setDark] = useLocalStorage('theme', window.matchMedia('(prefers-color-scheme: dark)').matches);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark);
-    localStorage.setItem(THEME_STORAGE_KEY, dark ? 'dark' : 'light');
   }, [dark]);
 
   return (
-    <ThemeContext.Provider value={{ dark, toggle: () => setDark((d) => !d) }}>
+    <ThemeContext value={{ dark, toggle: () => setDark((prev) => !prev) }}>
       {children}
-    </ThemeContext.Provider>
+    </ThemeContext>
   );
 }
 

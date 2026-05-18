@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { useResume } from '../../contexts/ResumeContext';
 import type { TemplateType } from '../../types';
 
@@ -7,7 +8,7 @@ const TEMPLATES: Array<{ id: TemplateType; label: string; desc: string }> = [
   { id: 'creative', label: 'Creative', desc: 'Bold & modern' },
 ];
 
-export default function TemplateSelector() {
+const TemplateSelector = memo(function TemplateSelector() {
   const { template, setTemplate } = useResume();
 
   return (
@@ -39,4 +40,6 @@ export default function TemplateSelector() {
       </div>
     </div>
   );
-}
+});
+
+export default TemplateSelector;

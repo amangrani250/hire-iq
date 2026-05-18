@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { memo, useRef, useEffect } from 'react';
 import { MicOff, Volume2 } from 'lucide-react';
 
 const VIDEO_CONSTRAINTS: MediaTrackConstraints = { facingMode: 'user' };
@@ -113,7 +113,7 @@ function AvatarDisplay({
   );
 }
 
-export default function VideoTile({
+const VideoTile = memo(function VideoTile({
   role, name, camOn, speaking, muted, large, avatarChar, accentColor,
 }: VideoTileProps) {
   const color = accentColor || '#4f8ef7';
@@ -149,4 +149,6 @@ export default function VideoTile({
       </div>
     </div>
   );
-}
+});
+
+export default VideoTile;

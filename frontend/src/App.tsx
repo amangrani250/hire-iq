@@ -1,19 +1,20 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion, type Variants } from 'framer-motion';
 import { Toaster } from 'react-hot-toast';
+import { lazy, Suspense, type ReactNode, type LazyExoticComponent, type ComponentType } from 'react';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ResumeProvider } from './contexts/ResumeContext';
 import Navbar from './components/layout/Navbar';
-import LandingPage from './components/LandingPage';
-import UploadScreen from './components/UploadScreen';
-import InterviewRoom from './components/InterviewRoom';
-import EndScreen from './components/EndScreen';
-import BuilderPage from './pages/BuilderPage';
-import SavedPage from './pages/SavedPage';
-import TechInterviewSetup from './pages/TechInterviewSetup';
-import JobPrepPage from './pages/JobPrepPage';
-import JobRoadmapPage from './pages/JobRoadmapPage';
-import type { ReactNode } from 'react';
+
+const LandingPage = lazy(() => import('./components/LandingPage'));
+const UploadScreen = lazy(() => import('./components/UploadScreen'));
+const InterviewRoom = lazy(() => import('./components/InterviewRoom'));
+const EndScreen = lazy(() => import('./components/EndScreen'));
+const BuilderPage = lazy(() => import('./pages/BuilderPage'));
+const SavedPage = lazy(() => import('./pages/SavedPage'));
+const TechInterviewSetup = lazy(() => import('./pages/TechInterviewSetup'));
+const JobPrepPage = lazy(() => import('./pages/JobPrepPage'));
+const JobRoadmapPage = lazy(() => import('./pages/JobRoadmapPage'));
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
@@ -37,6 +38,22 @@ function AnimatedPage({ children }: { children: ReactNode }) {
   );
 }
 
+function PageSkeleton() {
+  return (
+    <div className="flex items-center justify-center min-h-screen text-gray-400 text-sm">
+      Loading\u2026
+    </div>
+  );
+}
+
+function LazyRoute({ Component }: { Component: LazyExoticComponent<ComponentType> }) {
+  return (
+    <Suspense fallback={<PageSkeleton />}>
+      <AnimatedPage><Component /></AnimatedPage>
+    </Suspense>
+  );
+}
+
 export default function App() {
   const location = useLocation();
   const showNavbar = location.pathname.startsWith('/builder')
@@ -49,15 +66,15 @@ export default function App() {
         {showNavbar && <Navbar />}
         <AnimatePresence mode="wait">
           <Routes location={location} key={location.pathname}>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/upload" element={<AnimatedPage><UploadScreen /></AnimatedPage>} />
-            <Route path="/interview" element={<AnimatedPage><InterviewRoom /></AnimatedPage>} />
-            <Route path="/end" element={<AnimatedPage><EndScreen /></AnimatedPage>} />
-            <Route path="/builder" element={<AnimatedPage><BuilderPage /></AnimatedPage>} />
-            <Route path="/saved" element={<AnimatedPage><SavedPage /></AnimatedPage>} />
-            <Route path="/tech-interview" element={<AnimatedPage><TechInterviewSetup /></AnimatedPage>} />
-            <Route path="/job-prep" element={<AnimatedPage><JobPrepPage /></AnimatedPage>} />
-            <Route path="/job-roadmap" element={<AnimatedPage><JobRoadmapPage /></AnimatedPage>} />
+            <Route path="/" element={<Suspense fallback={<PageSkeleton />}><LandingPage /></Suspense>} />
+            <Route path="/upload" element={<LazyRoute Component={UploadScreen} />} />
+            <Route path="/interview" element={<LazyRoute Component={InterviewRoom} />} />
+            <Route path="/end" element={<LazyRoute Component={EndScreen} />} />
+            <Route path="/builder" element={<LazyRoute Component={BuilderPage} />} />
+            <Route path="/saved" element={<LazyRoute Component={SavedPage} />} />
+            <Route path="/tech-interview" element={<LazyRoute Component={TechInterviewSetup} />} />
+            <Route path="/job-prep" element={<LazyRoute Component={JobPrepPage} />} />
+            <Route path="/job-roadmap" element={<LazyRoute Component={JobRoadmapPage} />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </AnimatePresence>

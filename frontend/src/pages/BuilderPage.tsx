@@ -7,8 +7,10 @@ import TemplateSelector from '../components/ui/TemplateSelector';
 import AtsScore from '../components/ui/AtsScore';
 import { useResume } from '../contexts/ResumeContext';
 import { usePdfExport } from '../hooks/usePdfExport';
+import { useDocumentMeta } from '../hooks/useDocumentMeta';
 
 export default function BuilderPage() {
+  useDocumentMeta('Resume Builder', 'Build and export professional resumes with AI');
   const { resume, reset, saveResume } = useResume();
   const { exportPdf, exporting } = usePdfExport();
   const [jobRole, setJobRole] = useState('');

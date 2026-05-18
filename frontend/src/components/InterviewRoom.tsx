@@ -5,6 +5,8 @@ import TranscriptPanel from './TranscriptPanel';
 import ControlBar from './ControlBar';
 import { useInterviewSocket } from '../hooks/useInterviewSocket';
 import { useAudioRecorder } from '../hooks/useAudioRecorder';
+import { useDocumentMeta } from '../hooks/useDocumentMeta';
+import { useInterval } from '../hooks/useInterval';
 import { Loader } from 'lucide-react';
 import { API_BASE, stopAllMediaTracks } from '../utils';
 import type { CandidateInfo, Message } from '../types';
@@ -17,10 +19,7 @@ interface LocationState {
 function LiveTimer() {
   const [secs, setSecs] = useState(0);
 
-  useEffect(() => {
-    const id = setInterval(() => setSecs((s) => s + 1), 1000);
-    return () => clearInterval(id);
-  }, []);
+  useInterval(() => setSecs((s) => s + 1), 1000);
 
   const mm = String(Math.floor(secs / 60)).padStart(2, '0');
   const ss = String(secs % 60).padStart(2, '0');
@@ -42,6 +41,7 @@ function TypingDots() {
 }
 
 export default function InterviewRoom() {
+  useDocumentMeta('Interview Session', 'Live AI-powered interview session');
   const location = useLocation();
   const navigate = useNavigate();
   const { sessionId, candidate } = (location.state as LocationState) || {};

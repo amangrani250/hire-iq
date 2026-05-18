@@ -7,6 +7,7 @@ import {
   FileText, Volume2, Eye, BarChart3, Globe, Star,
   CheckCircle, Play, Users, Cpu, Code, Layers, Menu, X,
 } from 'lucide-react';
+import { useDocumentMeta } from '../hooks/useDocumentMeta';
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
@@ -104,6 +105,7 @@ interface TechItem {
 }
 
 export default function LandingPage() {
+  useDocumentMeta(undefined, 'AI-powered interview coach and resume builder. Practice with a realistic AI interviewer.');
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const { scrollYProgress } = useScroll();
@@ -136,7 +138,7 @@ export default function LandingPage() {
   ];
 
   const techStack: TechItem[] = [
-    { name: 'React 18', desc: 'Modern UI', icon: '\u269B\uFE0F' },
+    { name: 'React 19', desc: 'Modern UI', icon: '\u269B\uFE0F' },
     { name: 'FastAPI', desc: 'Backend', icon: '\u26A1' },
     { name: 'LLaMA-3 70B', desc: 'AI Engine', icon: '\uD83E\uDDE0' },
     { name: 'Whisper v3', desc: 'Speech-to-Text', icon: '\uD83C\uDFA4' },

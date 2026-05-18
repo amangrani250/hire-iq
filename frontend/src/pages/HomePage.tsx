@@ -1,5 +1,12 @@
 import { Link } from 'react-router-dom';
-import { Wand2, Mic, FileDown, Zap, ShieldCheck, Layout, type LucideIcon } from 'lucide-react';
+import { Wand2, Mic, FileDown, Zap, ShieldCheck, Layout } from 'lucide-react';
+import type { ForwardRefExoticComponent, RefAttributes, SVGAttributes } from 'react';
+import { useDocumentMeta } from '../hooks/useDocumentMeta';
+
+type LucideIcon = ForwardRefExoticComponent<
+  Omit<SVGAttributes<SVGSVGElement> & { size?: string | number; absoluteStrokeWidth?: boolean }, 'ref'> &
+  RefAttributes<SVGSVGElement>
+>;
 
 interface Feature {
   icon: LucideIcon;
@@ -17,6 +24,7 @@ const features: Feature[] = [
 ];
 
 export default function HomePage() {
+  useDocumentMeta(undefined, 'Build professional ATS-optimized resumes with AI');
   return (
     <div className="min-h-screen">
       <section className="pt-32 pb-24 px-4 text-center max-w-4xl mx-auto">
@@ -96,7 +104,7 @@ export default function HomePage() {
       </section>
 
       <footer className="border-t border-gray-100 dark:border-gray-800 py-8 text-center">
-        <p className="text-sm text-gray-400">&copy; {new Date().getFullYear()} ResumeAI. Built with React 18 + FastAPI.</p>
+        <p className="text-sm text-gray-400">&copy; {new Date().getFullYear()} ResumeAI. Built with React 19 + FastAPI.</p>
       </footer>
     </div>
   );

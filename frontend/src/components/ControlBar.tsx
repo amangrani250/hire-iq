@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Mic, MicOff, Video, VideoOff, MessageSquare, PhoneOff } from 'lucide-react';
 
 interface ControlBarProps {
@@ -43,7 +44,7 @@ function RecordingDot() {
   return <div className="ctrl-rec-dot" />;
 }
 
-export default function ControlBar({
+const ControlBar = memo(function ControlBar({
   micOn, toggleMic, camOn, toggleCam,
   transcriptOpen, toggleTranscript, onEndCall,
   recording, wsReady,
@@ -94,4 +95,6 @@ export default function ControlBar({
       </button>
     </div>
   );
-}
+});
+
+export default ControlBar;

@@ -1,17 +1,18 @@
+import { memo } from 'react';
 import { useResume } from '../../contexts/ResumeContext';
-import { Mail, Phone, MapPin, Globe, Linkedin } from 'lucide-react';
+import { Mail, Phone, MapPin, Globe } from 'lucide-react';
 import type { Resume } from '../../types';
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+const Section = memo(function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="mb-4">
       <h2 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-1.5 pb-0.5 border-b border-gray-200">{title}</h2>
       {children}
     </div>
   );
-}
+});
 
-function CorpSection({ title, children }: { title: string; children: React.ReactNode }) {
+const CorpSection = memo(function CorpSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
       <div className="flex items-center gap-2 mb-2">
@@ -21,9 +22,9 @@ function CorpSection({ title, children }: { title: string; children: React.React
       {children}
     </div>
   );
-}
+});
 
-function MinimalTemplate({ resume }: { resume: Resume }) {
+const MinimalTemplate = memo(function MinimalTemplate({ resume }: { resume: Resume }) {
   const pi = resume.personal_info || {};
   return (
     <div className="font-sans text-gray-900 text-[11px] leading-relaxed p-8 bg-white min-h-full">
@@ -34,7 +35,7 @@ function MinimalTemplate({ resume }: { resume: Resume }) {
           {pi.email && <span className="flex items-center gap-1"><Mail size={9} />{pi.email}</span>}
           {pi.phone && <span className="flex items-center gap-1"><Phone size={9} />{pi.phone}</span>}
           {pi.location && <span className="flex items-center gap-1"><MapPin size={9} />{pi.location}</span>}
-          {pi.linkedin && <span className="flex items-center gap-1"><Linkedin size={9} />{pi.linkedin}</span>}
+          {pi.linkedin && <span className="flex items-center gap-1"><Globe size={9} />{pi.linkedin}</span>}
           {pi.website && <span className="flex items-center gap-1"><Globe size={9} />{pi.website}</span>}
         </div>
       </div>
@@ -117,9 +118,9 @@ function MinimalTemplate({ resume }: { resume: Resume }) {
       )}
     </div>
   );
-}
+});
 
-function CorporateTemplate({ resume }: { resume: Resume }) {
+const CorporateTemplate = memo(function CorporateTemplate({ resume }: { resume: Resume }) {
   const pi = resume.personal_info || {};
   return (
     <div className="font-sans text-[11px] leading-relaxed bg-white min-h-full">
@@ -184,9 +185,9 @@ function CorporateTemplate({ resume }: { resume: Resume }) {
       </div>
     </div>
   );
-}
+});
 
-function CreativeTemplate({ resume }: { resume: Resume }) {
+const CreativeTemplate = memo(function CreativeTemplate({ resume }: { resume: Resume }) {
   const pi = resume.personal_info || {};
   return (
     <div className="font-sans text-[11px] leading-relaxed bg-white min-h-full flex">
@@ -280,9 +281,9 @@ function CreativeTemplate({ resume }: { resume: Resume }) {
       </div>
     </div>
   );
-}
+});
 
-export default function ResumePreview() {
+const ResumePreview = memo(function ResumePreview() {
   const { resume, template } = useResume();
 
   return (
@@ -296,4 +297,6 @@ export default function ResumePreview() {
       {template === 'creative' && <CreativeTemplate resume={resume} />}
     </div>
   );
-}
+});
+
+export default ResumePreview;

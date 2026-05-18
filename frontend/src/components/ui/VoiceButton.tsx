@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Mic, MicOff } from 'lucide-react';
 
 interface VoiceButtonProps {
@@ -7,7 +8,7 @@ interface VoiceButtonProps {
   className?: string;
 }
 
-export default function VoiceButton({ listening, supported, onToggle, className = '' }: VoiceButtonProps) {
+const VoiceButton = memo(function VoiceButton({ listening, supported, onToggle, className = '' }: VoiceButtonProps) {
   if (!supported) return null;
 
   return (
@@ -27,4 +28,6 @@ export default function VoiceButton({ listening, supported, onToggle, className 
       )}
     </button>
   );
-}
+});
+
+export default VoiceButton;

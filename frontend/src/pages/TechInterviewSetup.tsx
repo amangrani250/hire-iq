@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Terminal, Code, Cpu, ArrowRight, X, AlertCircle, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { API_BASE, POPULAR_LANGUAGES } from '../utils';
+import { useDocumentMeta } from '../hooks/useDocumentMeta';
 
 export default function TechInterviewSetup() {
+  useDocumentMeta('Tech Interview Setup', 'Configure your technical interview parameters');
   const navigate = useNavigate();
   const [languages, setLanguages] = useState<string[]>([]);
   const [inputValue, setInputValue] = useState('');

@@ -1,7 +1,8 @@
+import { memo } from 'react';
 import { useResume } from '../../contexts/ResumeContext';
 import { getAtsTextColor, getAtsRingColor, getAtsLabel } from '../../utils';
 
-export default function AtsScore() {
+const AtsScore = memo(function AtsScore() {
   const { atsScore, suggestions } = useResume();
 
   const r = 22;
@@ -43,4 +44,6 @@ export default function AtsScore() {
       </div>
     </div>
   );
-}
+});
+
+export default AtsScore;

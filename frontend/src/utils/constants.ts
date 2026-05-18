@@ -1,5 +1,5 @@
 export const API_BASE = (() => {
-  if (process.env.REACT_APP_API_URL) return process.env.REACT_APP_API_URL;
+  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
   return window.location.hostname === 'localhost'
     ? 'http://localhost:8000'
     : 'https://hire-iq-backend-eight.vercel.app';

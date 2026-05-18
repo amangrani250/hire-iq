@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { memo, useEffect, useRef } from 'react';
 import { Bot, User } from 'lucide-react';
 import type { Message } from '../types';
 
@@ -7,7 +7,7 @@ interface TranscriptPanelProps {
   visible: boolean;
 }
 
-export default function TranscriptPanel({ messages, visible }: TranscriptPanelProps) {
+const TranscriptPanel = memo(function TranscriptPanel({ messages, visible }: TranscriptPanelProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -64,4 +64,6 @@ export default function TranscriptPanel({ messages, visible }: TranscriptPanelPr
       </div>
     </div>
   );
-}
+});
+
+export default TranscriptPanel;

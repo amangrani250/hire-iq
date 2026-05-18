@@ -1,9 +1,11 @@
 import { useNavigate } from 'react-router-dom';
 import { FileText, Trash2, ExternalLink, PlusCircle } from 'lucide-react';
 import { useResume } from '../contexts/ResumeContext';
+import { useDocumentMeta } from '../hooks/useDocumentMeta';
 import toast from 'react-hot-toast';
 
 export default function SavedPage() {
+  useDocumentMeta('Saved Resumes', 'View and manage your saved resumes');
   const { savedResumes, loadResume, deleteResume } = useResume();
   const navigate = useNavigate();
 

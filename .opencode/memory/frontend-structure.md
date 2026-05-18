@@ -1,8 +1,8 @@
-﻿# Frontend Structure (Auto-generated: 2026-05-18 13.23)
+﻿# Frontend Structure (Auto-generated: 2026-05-18 14.18)
 
 ## Summary
-- **Files**: 42 source files
-- **Lines of code**: 6929
+- **Files**: 48 source files
+- **Lines of code**: 7158
 - **Framework**: React 18 + TypeScript 6 + Tailwind CSS
 
 ## File Tree
@@ -27,7 +27,13 @@ frontend/src/
   +-- contexts/ThemeContext.tsx
   +-- hooks/index.ts
   +-- hooks/useAudioRecorder.ts
+  +-- hooks/useDebounce.ts
+  +-- hooks/useDocumentMeta.ts
+  +-- hooks/useIntersectionObserver.ts
+  +-- hooks/useInterval.ts
   +-- hooks/useInterviewSocket.ts
+  +-- hooks/useLocalStorage.ts
+  +-- hooks/useMediaDevice.ts
   +-- hooks/usePdfExport.ts
   +-- hooks/useVoiceInput.ts
 +-- index.css

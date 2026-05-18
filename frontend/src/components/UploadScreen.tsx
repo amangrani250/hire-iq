@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useId } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -8,6 +8,7 @@ import {
   Eye, FileCheck, TrendingUp, MessageSquare, X,
 } from 'lucide-react';
 import { API_BASE, getAtsColor } from '../utils';
+import { useDocumentMeta } from '../hooks/useDocumentMeta';
 import type { AnalysisResult, ProfileData, AtsAnalysis } from '../types';
 
 const ease = [0.22, 1, 0.36, 1] as const;
@@ -86,6 +87,8 @@ function SkillTag({ name, color }: { name: string; color: string }) {
 }
 
 export default function UploadScreen() {
+  useDocumentMeta('Upload Resume', 'Upload your resume for AI-powered analysis and interview preparation');
+  const fileInputId = useId();
   const navigate = useNavigate();
   const [dragging, setDragging] = useState(false);
   const [file, setFile] = useState<File | null>(null);
@@ -199,11 +202,11 @@ export default function UploadScreen() {
           className={dropzoneClasses} variants={fadeUp} custom={3}
           onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
           onDragLeave={() => setDragging(false)} onDrop={handleDrop}
-          onClick={() => document.getElementById('file-input')?.click()}
+          onClick={() => document.getElementById(fileInputId)?.click()}
           role="button" tabIndex={0} aria-label="Upload resume file"
           whileHover={{ borderColor: 'rgba(79,142,247,0.5)', background: 'rgba(79,142,247,0.04)' }}
         >
-          <input id="file-input" type="file" accept=".pdf,.txt" hidden onChange={(e) => handleFile(e.target.files?.[0] ?? null)} />
+          <input id={fileInputId} type="file" accept=".pdf,.txt" hidden onChange={(e) => handleFile(e.target.files?.[0] ?? null)} />
           {file ? (
             <>
               <FileText size={32} color="var(--accent)" />

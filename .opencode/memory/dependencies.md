@@ -1,4 +1,4 @@
-﻿# Dependencies & Versions (Auto-generated: 2026-05-18 13.23)
+﻿# Dependencies & Versions (Auto-generated: 2026-05-18 14.18)
 
 ## Frontend (Production)
 | Package | Version |
@@ -6,22 +6,24 @@
 | axios | ^1.15.0 |
 | framer-motion | ^12.38.0 |
 | html2pdf.js | ^0.14.0 |
-| lucide-react | ^0.383.0 |
-| react | ^18.3.1 |
-| react-dom | ^18.3.1 |
+| lucide-react | ^1.16.0 |
+| react | ^19.1.0 |
+| react-dom | ^19.1.0 |
 | react-hot-toast | ^2.6.0 |
 | react-router-dom | ^7.13.2 |
-| react-scripts | ^5.0.1 |
 | react-use-websocket | ^4.13.0 |
 | react-webcam | ^7.2.0 |
 
 ## Frontend (Dev)
 | Package | Version |
 |---------|---------|
-| @types/node | ^25.8.0 |
-| @types/react | ^19.2.14 |
-| @types/react-dom | ^19.2.3 |
+| @types/react | ^19.1.2 |
+| @types/react-dom | ^19.1.2 |
+| @vitejs/plugin-react | ^6.0.2 |
+| autoprefixer | ^10.5.0 |
+| tailwindcss | ^3.4.19 |
 | typescript | ^6.0.3 |
+| vite | ^8.0.13 |
 
 ## Backend
 | Package | Version |

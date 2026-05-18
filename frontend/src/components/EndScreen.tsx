@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, RotateCcw, Sparkles, Download, ThumbsUp, AlertTriangle, ArrowUpRight } from 'lucide-react';
 import html2pdf from 'html2pdf.js';
 import { API_BASE } from '../utils';
+import { useDocumentMeta } from '../hooks/useDocumentMeta';
 import type { Message, Feedback } from '../types';
 
 interface LocationState {
@@ -26,6 +27,7 @@ const stagger = {
 };
 
 export default function EndScreen() {
+  useDocumentMeta('Interview Complete', 'Review your AI interview feedback and transcript');
   const location = useLocation();
   const navigate = useNavigate();
   const { candidateName, transcript } = (location.state as LocationState) || {};

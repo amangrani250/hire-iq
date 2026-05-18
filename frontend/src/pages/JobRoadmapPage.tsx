@@ -10,6 +10,7 @@ import {
 import toast from 'react-hot-toast';
 import { API_BASE, STORAGE_KEYS, TASK_TYPE_META } from '../utils';
 import { type RoadmapResult, type RoadmapDay } from '../types';
+import { useDocumentMeta } from '../hooks/useDocumentMeta';
 
 const STORAGE_KEY = STORAGE_KEYS.ROADMAP_PROGRESS;
 
@@ -42,6 +43,7 @@ function saveProgress(jobTitle: string, experienceLevel: string, durationDays: n
 }
 
 export default function JobRoadmapPage() {
+  useDocumentMeta('Interview Roadmap', 'AI-generated day-by-day interview preparation plan');
   const navigate = useNavigate();
   const location = useLocation();
   const { jobTitle, experienceLevel, durationDays } = (location.state as LocationState) || {};
