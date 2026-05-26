@@ -109,6 +109,11 @@ async def analyze_resume(file: UploadFile = File(...)):
                 "{\n"
                 '  "name": "Full Name",\n'
                 '  "role": "Current/Target Job Title",\n'
+                '  "email": "email@example.com",\n'
+                '  "phone": "+1 123-456-7890",\n'
+                '  "location": "City, State",\n'
+                '  "linkedin": "https://linkedin.com/in/...",\n'
+                '  "github": "https://github.com/...",\n'
                 '  "summary": "2-3 sentence professional summary",\n'
                 '  "experience": [\n'
                 "    {\n"
@@ -131,11 +136,19 @@ async def analyze_resume(file: UploadFile = File(...)):
                 '      "year": "2020"\n'
                 "    }\n"
                 "  ],\n"
+                '  "certifications": [\n'
+                "    {\n"
+                '      "name": "AWS Certified Solutions Architect",\n'
+                '      "issuer": "Amazon Web Services",\n'
+                '      "year": "2023"\n'
+                "    }\n"
+                "  ],\n"
                 '  "total_years": "e.g. 5+"\n'
                 "}\n\n"
-                "If any field is not found, use reasonable defaults. "
-                "For skills, categorize them intelligently. "
-                "For experience, list in reverse chronological order."
+                "Extract every field from the resume text. If a field is not present, use an empty string "
+                "or empty array as appropriate. For skills, categorize them intelligently. "
+                "For experience, list in reverse chronological order. "
+                "For certifications, extract all listed certifications with issuer and year if available."
             ),
         },
         {"role": "user", "content": trimmed},
@@ -178,10 +191,16 @@ async def analyze_resume(file: UploadFile = File(...)):
     profile = safe_json(profile_raw, {
         "name": "Candidate",
         "role": "Professional",
+        "email": "",
+        "phone": "",
+        "location": "",
+        "linkedin": "",
+        "github": "",
         "summary": "Unable to parse profile details.",
         "experience": [],
         "skills": {"languages": [], "frameworks": [], "tools": [], "other": []},
         "education": [],
+        "certifications": [],
         "total_years": "N/A",
     })
     ats = safe_json(ats_raw, {

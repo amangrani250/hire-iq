@@ -189,7 +189,7 @@ export default function JobRoadmapPage() {
           </div>
         </div>
         <div className="text-center">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Building your roadmap�</h2>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Building your roadmap...</h2>
           <p className="text-gray-500 dark:text-gray-400 text-sm max-w-sm">
             AI is crafting a personalized {durationDays}-day preparation plan for <strong>{jobTitle}</strong>. This takes a few seconds.
           </p>
@@ -236,7 +236,7 @@ export default function JobRoadmapPage() {
                 <span className="text-xs font-semibold uppercase tracking-widest opacity-75">Interview Roadmap</span>
               </div>
               <h1 className="text-2xl font-bold">{roadmap?.job_title || jobTitle}</h1>
-              <p className="text-sm opacity-75 mt-0.5 capitalize">{experienceLevel} level � {durationDays} days</p>
+              <p className="text-sm opacity-75 mt-0.5 capitalize">{experienceLevel} level • {durationDays} days</p>
             </div>
             <div className="flex items-center gap-4">
               <div className="text-center">
@@ -414,7 +414,8 @@ export default function JobRoadmapPage() {
                 </p>
                 <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={startInterview} disabled={startingInterview}
                   className="w-full flex items-center justify-center gap-3 py-4 rounded-xl bg-white text-green-700 font-bold text-base shadow-xl hover:bg-green-50 transition-all disabled:opacity-70">
-                  {startingInterview ? <><Loader2 size={20} className="animate-spin" /> Starting Interview�</> : <><Play size={20} /> Start AI Interview Now <ArrowRight size={18} /></>}
+                  {startingInterview ? <><Loader2 size={20} className="animate-spin" /> Starting Interview...</>
+        : <><Play size={20} /> Start AI Interview Now <ArrowRight size={18} /></>}
                 </motion.button>
               </div>
             </motion.div>

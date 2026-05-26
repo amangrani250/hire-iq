@@ -4,7 +4,7 @@
 
 @layer base {
   * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
+  html { scroll-behavior: smooth; scrollbar-gutter: stable; }
   body {
     font-family: 'Inter', system-ui, sans-serif;
     @apply bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100;
@@ -35,10 +35,7 @@
 ::-webkit-scrollbar-thumb { background: var(--border-lit); border-radius: 99px; }
 
 /* Resume print styles */
-@media print {
-  .no-print { display: none !important; }
-  body { background: white !important; }
-}
+/* Handled by window print in handlePrint */
 
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    HireIQ â€” Design Tokens & Theme System
@@ -1189,6 +1186,61 @@ textarea {
   border-radius: 10px;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+.transcript-text--interim {
+  opacity: 0.7;
+  font-style: italic;
+}
+
+.transcript-actions {
+  display: flex;
+  gap: 6px;
+  padding: 8px 10px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.transcript-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.transcript-action-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-1);
+}
+
+.transcript-action-btn--primary {
+  background: rgba(79, 142, 247, 0.12);
+  border-color: rgba(79, 142, 247, 0.3);
+  color: var(--accent);
+}
+
+.transcript-action-btn--primary:hover {
+  background: rgba(79, 142, 247, 0.22);
+}
+
+@media (max-width: 767px) {
+  .transcript-actions {
+    padding: 6px 8px;
+    gap: 4px;
+  }
+  .transcript-action-btn {
+    padding: 5px 10px;
+    font-size: 11px;
+  }
 }
 
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -2648,10 +2700,21 @@ textarea {
 .upload-root-v2,
 .landing-root,
 .room-root,
-.end-root,
-.transcript-scroll {
+.end-root {
   -webkit-overflow-scrolling: touch;
   scroll-behavior: smooth;
+}
+
+.transcript-scroll {
+  -webkit-overflow-scrolling: touch;
+  overflow-anchor: auto;
+}
+
+@media (max-width: 767px) {
+  .transcript-scroll {
+    scroll-behavior: auto;
+    -webkit-overflow-scrolling: auto;
+  }
 }
 
 .upload-root-v2 {

@@ -120,14 +120,14 @@ export default function JobPrepPage() {
               <div className="relative mb-6">
                 <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search job titles�"
+                  placeholder="Search job titles…"
                   className="w-full pl-11 pr-4 py-3.5 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 outline-none text-sm shadow-sm" />
               </div>
 
               <div className="mb-6 p-4 bg-white dark:bg-gray-900 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">
                 <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Or type a custom role</label>
                 <input type="text" value={customJob} onChange={(e) => { setCustomJob(e.target.value); setSelectedJob(''); }}
-                  placeholder="e.g. Blockchain Developer, Embedded Systems Engineer�"
+                  placeholder="e.g. Blockchain Developer, Embedded Systems Engineer…"
                   className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 outline-none text-sm" />
               </div>
 
@@ -158,7 +158,7 @@ export default function JobPrepPage() {
                 <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} disabled={!canProceed}
                   onClick={() => setStep(2)}
                   className="flex items-center gap-2 px-8 py-3.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-semibold text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-brand-500/20">
-                  Continue with &quot;{finalJob || '�'}&quot; <ArrowRight size={18} />
+                  Continue with &quot;{finalJob || '(any)'}&quot; <ArrowRight size={18} />
                 </motion.button>
               </div>
             </motion.div>

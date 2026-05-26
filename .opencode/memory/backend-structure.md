@@ -1,8 +1,8 @@
-﻿# Backend Structure (Auto-generated: 2026-05-18 15.56)
+﻿# Backend Structure (Auto-generated: 2026-05-26 23.29)
 
 ## Summary
 - **Files**: 20 source files
-- **Lines of code**: 1223
+- **Lines of code**: 1260
 - **Framework**: Python 3.12 + FastAPI 0.111
 
 ## File Tree

@@ -1,6 +1,6 @@
 export { useAudioRecorder } from './useAudioRecorder';
 export { useInterviewSocket } from './useInterviewSocket';
-export { useVoiceInput } from './useVoiceInput';
+export { useSpeechToText } from './useSpeechToText';
 export { usePdfExport } from './usePdfExport';
 export { useLocalStorage } from './useLocalStorage';
 export { useDebounce } from './useDebounce';

@@ -4,12 +4,13 @@ import VideoTile from './VideoTile';
 import TranscriptPanel from './TranscriptPanel';
 import ControlBar from './ControlBar';
 import { useInterviewSocket } from '../hooks/useInterviewSocket';
-import { useAudioRecorder } from '../hooks/useAudioRecorder';
 import { useDocumentMeta } from '../hooks/useDocumentMeta';
 import { useInterval } from '../hooks/useInterval';
-import { Loader } from 'lucide-react';
-import { API_BASE, stopAllMediaTracks } from '../utils';
-import type { CandidateInfo, Message } from '../types';
+import { useSpeechToText } from '../hooks/useSpeechToText';
+import { stopAllMediaTracks } from '../utils';
+import { InterviewProvider, useInterviewContext } from '../contexts/InterviewContext';
+import toast from 'react-hot-toast';
+import type { CandidateInfo } from '../types';
 
 interface LocationState {
   sessionId: string;
@@ -18,12 +19,9 @@ interface LocationState {
 
 function LiveTimer() {
   const [secs, setSecs] = useState(0);
-
   useInterval(() => setSecs((s) => s + 1), 1000);
-
   const mm = String(Math.floor(secs / 60)).padStart(2, '0');
   const ss = String(secs % 60).padStart(2, '0');
-
   return <span>{mm}:{ss}</span>;
 }
 
@@ -50,7 +48,11 @@ export default function InterviewRoom() {
     return <Navigate to="/" replace />;
   }
 
-  return <InterviewRoomInner sessionId={sessionId} candidate={candidate} navigate={navigate} />;
+  return (
+    <InterviewProvider>
+      <InterviewRoomInner sessionId={sessionId} candidate={candidate} navigate={navigate} />
+    </InterviewProvider>
+  );
 }
 
 function InterviewRoomInner({
@@ -60,7 +62,7 @@ function InterviewRoomInner({
   candidate: CandidateInfo;
   navigate: ReturnType<typeof useNavigate>;
 }) {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const { messages, addMessage, requestRepeat, requestNext, canRequestRepeat, canRequestNext, reset } = useInterviewContext();
   const messagesRef = useRef(messages);
   useEffect(() => { messagesRef.current = messages; }, [messages]);
 
@@ -72,64 +74,70 @@ function InterviewRoomInner({
   const [camOn, setCamOn] = useState(true);
   const [transcriptOpen, setTranscriptOpen] = useState(false);
   const [candidateSpeaking, setCandidateSpeaking] = useState(false);
-  const [isTranscribing, setIsTranscribing] = useState(false);
   const [typingIndicator, setTypingIndicator] = useState(false);
 
+  const interviewerSpeakingRef = useRef(false);
+
   const onTranscript = useCallback((speaker: string, text: string) => {
-    setMessages((prev) => [...prev, { speaker: speaker as 'interviewer' | 'candidate', text, ts: Date.now() }]);
+    addMessage({ speaker: speaker as 'interviewer' | 'candidate', text, ts: Date.now() });
     setTypingIndicator(false);
-  }, []);
+  }, [addMessage]);
 
   const { wsReady, interviewerSpeaking, isThinking, sendCandidateMessage, endInterview } =
     useInterviewSocket({ sessionId, onTranscript, onInterviewEnded: onInterviewEnd });
 
   useEffect(() => {
+    interviewerSpeakingRef.current = interviewerSpeaking;
     if (interviewerSpeaking) setTypingIndicator(false);
   }, [interviewerSpeaking]);
 
-  const handleAudioResult = useCallback(async (blob: Blob) => {
-    if (!micOn) return;
-    setCandidateSpeaking(false);
-    setIsTranscribing(true);
-    try {
-      const form = new FormData();
-      form.append('file', blob, 'audio.webm');
-      const res = await fetch(`${API_BASE}/api/transcribe`, {
-        method: 'POST',
-        body: form,
-      });
-      const data = await res.json();
-      const text = data.transcript?.trim();
-      if (text) {
-        setTypingIndicator(true);
-        sendCandidateMessage(text);
-      }
-    } catch (err) {
-      console.error('Transcription error:', err);
-    } finally {
-      setIsTranscribing(false);
-    }
-  }, [micOn, sendCandidateMessage]);
-
-  const { recording, startRecording, stopRecording, release } =
-    useAudioRecorder({ onResult: handleAudioResult, silenceMs: 1200 });
+  const { isListening, isSpeaking, interimTranscript, start, stop, abort: abortSTT, release } =
+    useSpeechToText((text) => {
+      if (interviewerSpeakingRef.current) return;
+      addMessage({ speaker: 'candidate', text, ts: Date.now() });
+      setTypingIndicator(true);
+      sendCandidateMessage(text);
+    }, interviewerSpeakingRef);
 
   useEffect(() => {
-    if (!interviewerSpeaking && !isThinking && wsReady && micOn && !recording && !isTranscribing) {
-      const t = setTimeout(() => startRecording(), 150);
+    setCandidateSpeaking(isSpeaking || !!interimTranscript);
+  }, [isSpeaking, interimTranscript]);
+
+  useEffect(() => {
+    if ((interviewerSpeaking || isThinking) && isListening) {
+      abortSTT();
+    }
+  }, [interviewerSpeaking, isThinking, isListening]);
+
+  useEffect(() => {
+    if (!interviewerSpeaking && !isThinking && wsReady && micOn && !isListening) {
+      const t = setTimeout(() => start(), 600);
       return () => clearTimeout(t);
     }
-    if ((interviewerSpeaking || isThinking) && recording) {
-      stopRecording();
-    }
-  }, [interviewerSpeaking, isThinking, wsReady, micOn, recording, isTranscribing]); // eslint-disable-line
+  }, [interviewerSpeaking, isThinking, wsReady, micOn, isListening]);
 
-  useEffect(() => {
-    setCandidateSpeaking(recording);
-  }, [recording]);
+  const handleRepeat = useCallback(() => {
+    const text = requestRepeat();
+    if (!text) {
+      toast.error('Repeat limit reached for this question');
+      return;
+    }
+    addMessage({ speaker: 'candidate', text, ts: Date.now() });
+    sendCandidateMessage(text);
+  }, [requestRepeat, addMessage, sendCandidateMessage]);
+
+  const handleNext = useCallback(() => {
+    const text = requestNext();
+    if (!text) {
+      toast('Answer the current question first');
+      return;
+    }
+    addMessage({ speaker: 'candidate', text, ts: Date.now() });
+    sendCandidateMessage(text);
+  }, [requestNext, addMessage, sendCandidateMessage]);
 
   const handleEndCall = () => {
-    stopRecording();
+    abortSTT();
     try { release(); } catch { /* ignore */ }
     try { stopAllMediaTracks(); } catch { /* ignore */ }
     endInterview();
@@ -138,7 +146,7 @@ function InterviewRoomInner({
 
   const handleToggleMic = () => {
     setMicOn((v) => !v);
-    if (recording) stopRecording();
+    if (isListening) abortSTT();
   };
 
   const handleToggleCam = () => {
@@ -152,19 +160,13 @@ function InterviewRoomInner({
   };
 
   useEffect(() => {
-    const handleUnload = () => {
-      try { stopRecording(); } catch { /* ignore */ }
-      try { release(); } catch { /* ignore */ }
-      try { stopAllMediaTracks(); } catch { /* ignore */ }
-    };
-    window.addEventListener('beforeunload', handleUnload);
+    reset();
     return () => {
-      window.removeEventListener('beforeunload', handleUnload);
-      try { stopRecording(); } catch { /* ignore */ }
+      try { abortSTT(); } catch { /* ignore */ }
       try { release(); } catch { /* ignore */ }
       try { stopAllMediaTracks(); } catch { /* ignore */ }
     };
-  }, []); // eslint-disable-line
+  }, []);
 
   const handleToggleTranscript = () => setTranscriptOpen((v) => !v);
 
@@ -194,19 +196,24 @@ function InterviewRoomInner({
           </div>
 
           <div className="room-status-overlay">
-            {isTranscribing && (
-              <div className="room-status-pill"><Loader size={13} className="spin" />Transcribing�</div>
-            )}
             {typingIndicator && <TypingDots />}
-            {recording && micOn && (
-              <div className="room-status-pill" style={{ background: 'rgba(247,80,80,0.85)' }}>
-                <div className="room-rec-dot" />Listening�
+            {isListening && micOn && (
+              <div className="room-status-pill" style={{ background: interimTranscript ? 'rgba(247,80,80,0.7)' : 'rgba(247,80,80,0.85)' }}>
+                <div className="room-rec-dot" />{interimTranscript || 'Listening...'}
               </div>
             )}
           </div>
         </div>
 
-        <TranscriptPanel messages={messages} visible={transcriptOpen} />
+        <TranscriptPanel
+          messages={messages}
+          visible={transcriptOpen}
+          interimText={interimTranscript}
+          canRequestRepeat={canRequestRepeat}
+          canRequestNext={canRequestNext}
+          onRepeat={handleRepeat}
+          onNext={handleNext}
+        />
       </div>
 
       <ControlBar
@@ -214,7 +221,7 @@ function InterviewRoomInner({
         camOn={camOn} toggleCam={handleToggleCam}
         transcriptOpen={transcriptOpen} toggleTranscript={handleToggleTranscript}
         onEndCall={handleEndCall}
-        recording={recording} wsReady={wsReady}
+        recording={isListening} wsReady={wsReady}
       />
     </div>
   );

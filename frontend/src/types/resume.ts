@@ -47,7 +47,7 @@ export interface Resume {
   certifications: Certification[];
 }
 
-export type TemplateType = 'minimal' | 'corporate' | 'creative';
+export type TemplateType = 'minimal' | 'corporate' | 'creative' | 'executive' | 'modern' | 'professional';
 
 export interface SavedResume {
   id: number;

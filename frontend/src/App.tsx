@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast';
 import { lazy, Suspense, type ReactNode, type LazyExoticComponent, type ComponentType } from 'react';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ResumeProvider } from './contexts/ResumeContext';
+import { QueryProvider } from './providers/QueryProvider';
 import AppNavbar from './components/layout/AppNavbar';
 import { isFeatureEnabled } from './config/features';
 
@@ -42,7 +43,7 @@ function AnimatedPage({ children }: { children: ReactNode }) {
 function PageSkeleton() {
   return (
     <div className="flex items-center justify-center min-h-screen text-gray-400 text-sm">
-      Loading�
+      Loading...
     </div>
   );
 }
@@ -67,9 +68,10 @@ export default function App() {
   const location = useLocation();
 
   return (
-    <ThemeProvider>
-      <ResumeProvider>
-        <AppNavbar />
+    <QueryProvider>
+      <ThemeProvider>
+        <ResumeProvider>
+          <AppNavbar />
         <AnimatePresence mode="wait">
           <Routes location={location} key={location.pathname}>
             <Route path="/" element={<Suspense fallback={<PageSkeleton />}><LandingPage /></Suspense>} />
@@ -95,7 +97,8 @@ export default function App() {
             duration: 3000,
           }}
         />
-      </ResumeProvider>
-    </ThemeProvider>
+        </ResumeProvider>
+      </ThemeProvider>
+    </QueryProvider>
   );
 }

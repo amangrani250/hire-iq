@@ -22,6 +22,11 @@ export interface AtsAnalysis {
 export interface ProfileData {
   name: string;
   role: string;
+  email?: string;
+  phone?: string;
+  location?: string;
+  linkedin?: string;
+  github?: string;
   summary: string;
   experience: Array<{
     company: string;
@@ -39,6 +44,11 @@ export interface ProfileData {
     degree: string;
     institution: string;
     year: string;
+  }>;
+  certifications?: Array<{
+    name: string;
+    issuer?: string;
+    year?: string;
   }>;
   total_years: string;
 }
