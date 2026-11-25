@@ -1,99 +1,85 @@
 import React from 'react';
-import { Mic, MicOff, Video, VideoOff, MessageSquare, PhoneOff } from 'lucide-react';
+import { Mic, MicOff, MessageSquare, PhoneOff, Video, VideoOff } from 'lucide-react';
+import { cn } from '../lib/cn';
 
 /**
  * ControlBar — bottom bar with mic, cam, transcript, and end-call controls.
- * On mobile the "End Interview" label is hidden (icon-only) to save space.
- *
- * @param {{
- *   micOn: boolean, toggleMic: () => void,
- *   camOn: boolean, toggleCam: () => void,
- *   transcriptOpen: boolean, toggleTranscript: () => void,
- *   onEndCall: () => void,
- *   recording: boolean,
- *   candidateSpeaking: boolean,
- *   wsReady: boolean,
- * }} props
  */
 export default function ControlBar({
-  micOn, toggleMic,
-  camOn, toggleCam,
-  transcriptOpen, toggleTranscript,
+  micOn,
+  toggleMic,
+  camOn,
+  toggleCam,
+  transcriptOpen,
+  toggleTranscript,
   onEndCall,
   recording,
   wsReady,
 }) {
   return (
     <div className="ctrl-bar">
-      {/* Status pill */}
       <div className="ctrl-status">
-        <div
+        <span
           className="ctrl-dot"
           style={{
-            background: wsReady ? 'var(--green)' : 'var(--amber)',
-            boxShadow: wsReady ? '0 0 8px var(--green)' : '0 0 8px var(--amber)',
+            background: wsReady ? 'var(--color-success)' : 'var(--color-warning)',
           }}
         />
-        <span className="ctrl-status-text">
-          {wsReady ? 'Live' : 'Connecting…'}
-        </span>
+        <span className="ctrl-status-text">{wsReady ? 'Live' : 'Connecting'}</span>
       </div>
 
-      {/* Controls group */}
       <div className="ctrl-group">
         <CtrlBtn
-          icon={micOn ? <Mic size={20} /> : <MicOff size={20} />}
+          icon={micOn ? <Mic size={19} /> : <MicOff size={19} />}
           label={micOn ? 'Mute' : 'Unmute'}
-          active={!micOn}
-          activeColor="var(--red)"
+          tone={!micOn ? 'danger' : null}
           onClick={toggleMic}
           badge={recording ? <RecordingDot /> : null}
         />
         <CtrlBtn
-          icon={camOn ? <Video size={20} /> : <VideoOff size={20} />}
-          label={camOn ? 'Stop Video' : 'Start Video'}
-          active={!camOn}
-          activeColor="var(--red)"
+          icon={camOn ? <Video size={19} /> : <VideoOff size={19} />}
+          label={camOn ? 'Stop video' : 'Start video'}
+          tone={!camOn ? 'danger' : null}
           onClick={toggleCam}
         />
         <CtrlBtn
-          icon={<MessageSquare size={20} />}
+          icon={<MessageSquare size={19} />}
           label="Transcript"
-          active={transcriptOpen}
-          activeColor="var(--accent)"
+          tone={transcriptOpen ? 'primary' : null}
           onClick={toggleTranscript}
         />
       </div>
 
-      {/* End call */}
-      <button className="ctrl-end-btn" onClick={onEndCall} aria-label="End Interview">
-        <PhoneOff size={20} />
-        <span className="ctrl-end-label">End Interview</span>
+      <button type="button" className="ctrl-end-btn" onClick={onEndCall} aria-label="End interview">
+        <PhoneOff size={18} />
+        <span className="ctrl-end-label">End interview</span>
       </button>
     </div>
   );
 }
 
-/** Individual control button. */
-function CtrlBtn({ icon, label, active, activeColor, onClick, badge }) {
-  const style = {
-    background: active ? `${activeColor}22` : 'var(--bg-elevated)',
-    border: `1px solid ${active ? activeColor + '55' : 'var(--border)'}`,
-    color: active ? activeColor : 'var(--text-1)',
-  };
-
+function CtrlBtn({ icon, label, tone, onClick, badge }) {
   return (
-    <button className="ctrl-btn" style={style} onClick={onClick} title={label}>
-      <div style={{ position: 'relative' }}>
+    <button
+      type="button"
+      className={cn(
+        'ctrl-btn',
+        tone === 'primary' && 'ctrl-btn--active-primary',
+        tone === 'danger' && 'ctrl-btn--active-danger'
+      )}
+      onClick={onClick}
+      title={label}
+      aria-pressed={tone ? true : undefined}
+    >
+      <span className="relative">
         {icon}
         {badge}
-      </div>
+      </span>
       <span className="ctrl-btn-label">{label}</span>
     </button>
   );
 }
 
-/** Pulsing red dot shown on the mic button when recording. */
 function RecordingDot() {
-  return <div className="ctrl-rec-dot" />;
+  return <span className="ctrl-rec-dot" />;
 }

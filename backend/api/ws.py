@@ -50,7 +50,7 @@ async def interview_websocket(websocket: WebSocket, session_id: str):
                 messages.append({"role": "user", "content": user_text})
 
             t0 = time.time()
-            ai_text = await call_llm(messages)
+            ai_text = await call_llm(messages, task="interview")
             llm_ms = int((time.time() - t0) * 1000)
 
             if user_text:
@@ -125,7 +125,7 @@ async def interview_websocket(websocket: WebSocket, session_id: str):
                     {"role": "user", "content": feedback_prompt}
                 ]
                 try:
-                    closing = await call_llm(messages)
+                    closing = await call_llm(messages, task="feedback")
                     await safe_send({"type": "transcript", "speaker": "interviewer", "text": closing})
                     audio = await text_to_speech_bytes(closing)
                     if audio:

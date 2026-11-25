@@ -1,85 +1,136 @@
-import { Link, useLocation } from 'react-router-dom'
-import { Sun, Moon, FileText, Menu, X } from 'lucide-react'
-import { useState } from 'react'
-import { useTheme } from '../../context/ThemeContext'
+import { useEffect, useState } from 'react';
+import { Link, NavLink, useLocation } from 'react-router-dom';
+import { ArrowRight, Menu, Monitor, Moon, Sun, X } from 'lucide-react';
+import { cn } from '../../lib/cn';
+import { useTheme } from '../../context/ThemeContext';
+import Logo from './Logo';
+import ThemeToggle from './ThemeToggle';
+import Button from '../ui/Button';
+
+const LINKS = [
+  { to: '/upload', label: 'Practice' },
+  { to: '/tech-interview', label: 'Technical round' },
+  { to: '/builder', label: 'Resume studio' },
+  { to: '/saved', label: 'Saved' },
+];
+
+const THEME_OPTIONS = [
+  { value: 'light', label: 'Light', icon: Sun },
+  { value: 'dark', label: 'Dark', icon: Moon },
+  { value: 'system', label: 'System', icon: Monitor },
+];
 
 export default function Navbar() {
-  const { dark, toggle } = useTheme()
-  const { pathname } = useLocation()
-  const [open, setOpen] = useState(false)
+  const { pathname } = useLocation();
+  const { mode, setMode } = useTheme();
+  const [open, setOpen] = useState(false);
 
-  const links = [
-    { to: '/', label: 'Home' },
-    { to: '/tech-interview', label: 'Tech Interview' },
-    { to: '/builder', label: 'Builder' },
-    { to: '/saved', label: 'Saved' },
-  ]
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [open]);
 
   return (
-    <nav className="fixed top-0 inset-x-0 z-50 bg-white/80 dark:bg-gray-950/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-        {/* Logo */}
-        <Link to="/" className="flex items-center gap-2 font-semibold text-gray-900 dark:text-white">
-          <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center">
-            <FileText size={16} className="text-white" />
-          </div>
-          <span>ResumeAI</span>
-        </Link>
-
-        {/* Desktop nav */}
-        <div className="hidden md:flex items-center gap-1">
-          {links.map(l => (
-            <Link
-              key={l.to}
-              to={l.to}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                pathname === l.to
-                  ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800/50'
-              }`}
-            >
-              {l.label}
-            </Link>
-          ))}
+    <header className="fixed inset-x-0 top-0 z-50 h-nav border-b border-border bg-background/85 backdrop-blur-xl no-print">
+      <div className="container-page flex h-full items-center justify-between gap-4">
+        <div className="flex items-center gap-7">
+          <Logo />
+          <nav className="hidden items-center gap-0.5 md:flex" aria-label="Primary">
+            {LINKS.map((link) => (
+              <NavLink
+                key={link.to}
+                to={link.to}
+                className={({ isActive }) => cn('nav-link', isActive && 'nav-link-active')}
+              >
+                {link.label}
+              </NavLink>
+            ))}
+          </nav>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
+          <ThemeToggle />
+          <Button as={Link} to="/upload" size="sm" className="hidden md:inline-flex">
+            Start a session
+            <ArrowRight size={14} />
+          </Button>
           <button
-            onClick={toggle}
-            className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-          >
-            {dark ? <Sun size={18} /> : <Moon size={18} />}
-          </button>
-          <Link to="/builder" className="hidden md:flex btn-primary text-sm py-2 px-4">
-            Build Resume
-          </Link>
-          <button
-            onClick={() => setOpen(o => !o)}
-            className="md:hidden w-9 h-9 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            type="button"
+            className="btn btn-ghost btn-icon btn-sm md:hidden"
+            aria-label={open ? 'Close navigation' : 'Open navigation'}
+            aria-expanded={open}
+            aria-controls="mobile-navigation"
+            onClick={() => setOpen((value) => !value)}
           >
             {open ? <X size={18} /> : <Menu size={18} />}
           </button>
         </div>
       </div>
 
-      {/* Mobile menu */}
       {open && (
-        <div className="md:hidden border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-950 px-4 py-3 space-y-1">
-          {links.map(l => (
-            <Link
-              key={l.to}
-              to={l.to}
-              onClick={() => setOpen(false)}
-              className="block px-4 py-2.5 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
-            >
-              {l.label}
-            </Link>
-          ))}
-          <Link to="/builder" onClick={() => setOpen(false)} className="btn-primary w-full justify-center mt-2 text-sm">
-            Build Resume
+        <div
+          id="mobile-navigation"
+          className="max-h-[calc(100dvh-var(--nav-height))] overflow-y-auto border-t border-border bg-background px-4 pb-4 pt-3 shadow-lg md:hidden"
+        >
+          <nav className="flex flex-col gap-0.5" aria-label="Mobile">
+            {LINKS.map((link) => (
+              <NavLink
+                key={link.to}
+                to={link.to}
+                className={({ isActive }) =>
+                  cn(
+                    'flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium',
+                    isActive
+                      ? 'bg-muted text-foreground'
+                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  )
+                }
+              >
+                {link.label}
+                <ArrowRight size={14} className="text-muted-foreground" />
+              </NavLink>
+            ))}
+          </nav>
+          <div className="mt-3 border-t border-border pt-3">
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-xs font-medium text-muted-foreground">Appearance</span>
+              <span className="font-mono text-[9.5px] uppercase tracking-[0.08em] text-muted-foreground/70">
+                {mode}
+              </span>
+            </div>
+            <div className="segmented w-full" role="group" aria-label="Colour theme">
+              {THEME_OPTIONS.map(({ value, label, icon: Icon }) => (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={mode === value}
+                  onClick={() => setMode(value)}
+                  className={cn('segmented-item flex-1', mode === value && 'segmented-item-active')}
+                >
+                  <Icon size={13} />
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <Link
+            to="/upload"
+            className="btn btn-primary mt-3 w-full"
+            onClick={() => setOpen(false)}
+          >
+            Start a session
+            <ArrowRight size={15} />
           </Link>
         </div>
       )}
-    </nav>
-  )
+    </header>
+  );
 }

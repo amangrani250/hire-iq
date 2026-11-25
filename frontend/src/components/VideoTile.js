@@ -4,19 +4,8 @@ import { MicOff, Volume2 } from 'lucide-react';
 const VIDEO_CONSTRAINTS = { facingMode: 'user' };
 
 /**
- * VideoTile — a single participant tile in the interview room.
+ * VideoTile — a participant tile in the interview room.
  * Shows either the webcam feed (candidate) or an animated avatar (interviewer).
- *
- * @param {{
- *   role: 'interviewer' | 'candidate',
- *   name: string,
- *   camOn?: boolean,
- *   speaking?: boolean,
- *   muted?: boolean,
- *   large?: boolean,
- *   avatarChar?: string,
- *   accentColor?: string,
- * }} props
  */
 export default function VideoTile({
   role,
@@ -28,14 +17,19 @@ export default function VideoTile({
   avatarChar,
   accentColor,
 }) {
-  const color = accentColor || '#4f8ef7';
-  const bg = role === 'interviewer' ? '#1a2236' : '#0f1520';
+  const color = accentColor || 'var(--color-primary)';
+  const background =
+    role === 'interviewer'
+      ? 'radial-gradient(circle at 50% 22%, #17241f 0%, #0c1210 68%)'
+      : '#0d1411';
 
-  const rootClass = `tile-root ${large ? 'tile-root--large' : 'tile-root--small'} ${speaking ? 'tile-speaking-active' : ''}`;
+  const rootClass = `tile-root ${large ? 'tile-root--large' : 'tile-root--small'} ${
+    speaking ? 'tile-speaking-active' : ''
+  }`;
 
   return (
     <div className={rootClass}>
-      <div className="tile-media" style={{ background: bg }}>
+      <div className="tile-media" style={{ background }}>
         {role === 'candidate' && camOn ? (
           <NativeWebcam videoConstraints={VIDEO_CONSTRAINTS} />
         ) : (
@@ -44,20 +38,14 @@ export default function VideoTile({
             color={color}
             speaking={speaking}
             role={role}
+            name={name}
+            showMeta={large}
           />
         )}
 
-        {/* Speaking ring */}
-        {speaking && (
-          <div className="tile-speak-ring" style={{ borderColor: color }} />
-        )}
-
-        {/* Name badge */}
         <div className="tile-badge">
-          {role === 'interviewer' && speaking && (
-            <Volume2 size={12} color={color} />
-          )}
-          {muted && <MicOff size={12} color="var(--red)" />}
+          {role === 'interviewer' && speaking && <Volume2 size={11} color={color} />}
+          {muted && <MicOff size={11} color="var(--color-danger)" />}
           <span className="tile-badge-name">{name}</span>
         </div>
       </div>
@@ -65,44 +53,35 @@ export default function VideoTile({
   );
 }
 
-/** Animated avatar circle with optional voice wave bars. */
-function AvatarDisplay({ char, color, speaking, role }) {
+function AvatarDisplay({ char, color, speaking, role, name, showMeta }) {
   return (
     <div className="avatar-root">
-      {/* Outer glow rings when speaking */}
-      {speaking && (
-        <>
-          <div
-            className="avatar-ring"
-            style={{ borderColor: color, animationDelay: '0s' }}
-          />
-          <div
-            className="avatar-ring"
-            style={{ borderColor: color, animationDelay: '0.4s' }}
-          />
-        </>
-      )}
-
-      {/* Circle avatar */}
       <div
         className="avatar-circle"
         style={{
-          background: `linear-gradient(135deg, ${color}44, ${color}22)`,
-          border: `2px solid ${speaking ? color : color + '44'}`,
-          boxShadow: speaking ? `0 0 24px ${color}55` : 'none',
+          borderColor: speaking ? color : 'rgba(255, 255, 255, 0.14)',
+          boxShadow: speaking ? `0 0 40px -8px ${color}` : 'none',
         }}
       >
         <span className="avatar-char">{char}</span>
       </div>
 
-      {/* Sound wave bars when interviewer is speaking */}
+      {showMeta && (
+        <div className="text-center">
+          <p className="text-[13px] font-medium text-white/90">{name}</p>
+          <p className="mt-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-white/40">
+            {role === 'interviewer' ? 'AI interviewer' : 'Camera off'}
+          </p>
+        </div>
+      )}
+
       {role === 'interviewer' && speaking && (
-        <div className="avatar-wave-row">
-          {[0, 1, 2, 3, 4].map((i) => (
-            <div
-              key={i}
+        <div className="avatar-wave-row" aria-hidden="true">
+          {[0, 1, 2, 3, 4].map((index) => (
+            <span
+              key={index}
               className="avatar-bar"
-              style={{ animationDelay: `${i * 0.12}s` }}
+              style={{ animationDelay: `${index * 0.12}s` }}
             />
           ))}
         </div>
@@ -111,7 +90,7 @@ function AvatarDisplay({ char, color, speaking, role }) {
   );
 }
 
-/** Custom Webcam element that aggressively manages track destruction */
+/** Webcam element that aggressively manages track destruction. */
 function NativeWebcam({ videoConstraints }) {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
@@ -125,14 +104,11 @@ function NativeWebcam({ videoConstraints }) {
           audio: false,
         });
         if (!mounted) {
-          // If unmounted before stream resolves, stop it immediately
-          stream.getTracks().forEach((t) => t.stop());
+          stream.getTracks().forEach((track) => track.stop());
           return;
         }
         streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
+        if (videoRef.current) videoRef.current.srcObject = stream;
       } catch (err) {
         console.error('Failed to grab camera:', err);
       }
@@ -140,16 +116,13 @@ function NativeWebcam({ videoConstraints }) {
 
     initCamera();
 
-    // Aggressive cleanup on unmount
     return () => {
       mounted = false;
       if (streamRef.current) {
-        streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current.getTracks().forEach((track) => track.stop());
         streamRef.current = null;
       }
-      if (videoRef.current) {
-        videoRef.current.srcObject = null;
-      }
+      if (videoRef.current) videoRef.current.srcObject = null;
     };
   }, [videoConstraints]);
 
@@ -160,12 +133,7 @@ function NativeWebcam({ videoConstraints }) {
       playsInline
       muted
       className="tile-video"
-      style={{
-        width: '100%',
-        height: '100%',
-        objectFit: 'cover',
-        transform: 'scaleX(-1)' // Mirroring typical of webcam UI
-      }}
+      style={{ transform: 'scaleX(-1)' }}
     />
   );
 }

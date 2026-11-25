@@ -1,298 +1,397 @@
-import { useState, useCallback } from 'react'
-import { Plus, Trash2, Wand2, ChevronDown, ChevronUp } from 'lucide-react'
-import { useResume } from '../../context/ResumeContext'
-import { improveSection } from '../../services/api'
-import VoiceButton from '../ui/VoiceButton'
-import { useVoiceInput } from '../../hooks/useVoiceInput'
-import toast from 'react-hot-toast'
+import { useState, useCallback, useId } from 'react';
+import { ChevronDown, ChevronUp, Plus, Sparkles, Trash2, Wand2 } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { useResume } from '../../context/ResumeContext';
+import { improveSection } from '../../services/api';
+import VoiceButton from '../ui/VoiceButton';
+import { useVoiceInput } from '../../hooks/useVoiceInput';
+import Button from '../ui/Button';
+import { Input, Label, Textarea } from '../ui/Field';
 
-function Section({ title, defaultOpen = false, children }) {
-  const [open, setOpen] = useState(defaultOpen)
+function Section({ title, description, defaultOpen = false, children }) {
+  const [open, setOpen] = useState(defaultOpen);
+
   return (
     <div className="card overflow-hidden">
       <button
         type="button"
-        onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+        onClick={() => setOpen((value) => !value)}
+        className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition-colors hover:bg-muted/60"
+        aria-expanded={open}
       >
-        <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">{title}</span>
-        {open ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
+        <span>
+          <span className="block text-[13px] font-semibold text-foreground">{title}</span>
+          {description && (
+            <span className="mt-0.5 block text-[11.5px] text-muted-foreground">{description}</span>
+          )}
+        </span>
+        {open ? (
+          <ChevronUp size={15} className="shrink-0 text-muted-foreground" />
+        ) : (
+          <ChevronDown size={15} className="shrink-0 text-muted-foreground" />
+        )}
       </button>
-      {open && <div className="px-4 pb-4 space-y-3 border-t border-gray-100 dark:border-gray-800 pt-3">{children}</div>}
+      {open && (
+        <div className="space-y-3 border-t border-border px-4 pb-4 pt-3.5">{children}</div>
+      )}
     </div>
-  )
+  );
 }
 
 function ImprovableTextarea({ label, value, onChange, sectionName, jobRole, rows = 3, placeholder }) {
-  const [improving, setImproving] = useState(false)
+  const [improving, setImproving] = useState(false);
 
   const handleImprove = async () => {
-    if (!value.trim()) return toast.error('Add some content first')
-    setImproving(true)
-    try {
-      const { data } = await improveSection(sectionName, value, jobRole)
-      onChange(data.improved_content)
-      toast.success('Section improved!')
-    } catch {
-      toast.error('Improvement failed. Check your API key.')
-    } finally {
-      setImproving(false)
+    if (!value.trim()) {
+      toast.error('Add some content first');
+      return;
     }
-  }
+    setImproving(true);
+    try {
+      const { data } = await improveSection(sectionName, value, jobRole);
+      onChange(data.improved_content);
+      toast.success('Section improved');
+    } catch {
+      toast.error('Could not improve this section. Please try again.');
+    } finally {
+      setImproving(false);
+    }
+  };
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-1.5">
-        <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{label}</label>
+      <div className="mb-1.5 flex items-center justify-between">
+        <Label className="mb-0 text-[11.5px] text-muted-foreground">{label}</Label>
         <button
           type="button"
           onClick={handleImprove}
           disabled={improving}
-          className="flex items-center gap-1 text-xs text-brand-600 hover:text-brand-700 disabled:opacity-50 transition-colors"
+          className="inline-flex items-center gap-1 text-[11.5px] font-medium text-primary transition-opacity hover:opacity-75 disabled:opacity-50"
         >
-          <Wand2 size={12} />
-          {improving ? 'Improving…' : 'AI Improve'}
+          <Wand2 size={11} />
+          {improving ? 'Improving…' : 'AI improve'}
         </button>
       </div>
-      <textarea
+      <Textarea
         rows={rows}
         value={value}
-        onChange={e => onChange(e.target.value)}
+        onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="input-field resize-none"
+        className="resize-none"
       />
     </div>
-  )
+  );
+}
+
+function FieldGrid({ fields, value, onChange, columns = 2 }) {
+  const groupId = useId();
+
+  return (
+    <div className={`grid gap-2 ${columns === 3 ? 'grid-cols-2 sm:grid-cols-3' : 'grid-cols-2'}`}>
+      {fields.map(([label, key, span]) => (
+        <div key={key} className={span ? 'col-span-2' : ''}>
+          <Label
+            htmlFor={`${groupId}-${key}`}
+            className="mb-1 block text-[11.5px] text-muted-foreground"
+          >
+            {label}
+          </Label>
+          <Input
+            id={`${groupId}-${key}`}
+            type="text"
+            value={value[key] || ''}
+            onChange={(event) => onChange(key, event.target.value)}
+            placeholder={label}
+            className="py-2"
+          />
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export default function ResumeForm({ jobRole }) {
-  const { resume, updateField, updatePersonal, setGenerating, setResume, setAts, isGenerating } = useResume()
+  const {
+    resume,
+    updateField,
+    updatePersonal,
+    setGenerating,
+    setResume,
+    setAts,
+    isGenerating,
+  } = useResume();
 
-  const [rawInput, setRawInput] = useState('')
+  const [rawInput, setRawInput] = useState('');
 
-  const handleVoiceResult = useCallback((text) => setRawInput(text), [])
-  const { listening, supported, toggle } = useVoiceInput(handleVoiceResult)
+  const handleVoiceResult = useCallback((text) => setRawInput(text), []);
+  const { listening, supported, toggle } = useVoiceInput(handleVoiceResult);
 
-  // Personal info
-  const pi = resume.personal_info || {}
-  const setPI = (key, val) => updatePersonal({ [key]: val })
+  const pi = resume.personal_info || {};
+  const setPI = (key, value) => updatePersonal({ [key]: value });
 
-  // List helpers
-  const addItem = (field, empty) => updateField(field, [...(resume[field] || []), empty])
-  const removeItem = (field, i) => updateField(field, resume[field].filter((_, idx) => idx !== i))
-  const updateItem = (field, i, key, val) => {
-    const arr = [...resume[field]]
-    arr[i] = { ...arr[i], [key]: val }
-    updateField(field, arr)
-  }
+  const addItem = (field, empty) => updateField(field, [...(resume[field] || []), empty]);
+  const removeItem = (field, index) =>
+    updateField(field, resume[field].filter((_, itemIndex) => itemIndex !== index));
+  const updateItem = (field, index, key, value) => {
+    const next = [...resume[field]];
+    next[index] = { ...next[index], [key]: value };
+    updateField(field, next);
+  };
 
   const handleGenerate = async () => {
-    if (!rawInput.trim()) return toast.error('Please describe yourself or your experience')
-    setGenerating(true)
-    try {
-      const { generateResume } = await import('../../services/api')
-      const { data } = await generateResume(rawInput, jobRole)
-      setResume(data.resume_data)
-      setAts(data.ats_score, data.suggestions)
-      toast.success('Resume generated!')
-    } catch (e) {
-      toast.error(e.message || 'Generation failed')
-    } finally {
-      setGenerating(false)
+    if (!rawInput.trim()) {
+      toast.error('Describe yourself or your experience first');
+      return;
     }
-  }
+    setGenerating(true);
+    try {
+      const { generateResume } = await import('../../services/api');
+      const { data } = await generateResume(rawInput, jobRole);
+      setResume(data.resume_data);
+      setAts(data.ats_score, data.suggestions);
+      toast.success('Resume generated');
+    } catch (error) {
+      toast.error(error.message || 'Generation failed');
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   return (
     <div className="space-y-3">
-      {/* AI Input */}
       <div className="card p-4">
-        <p className="section-label">AI Generate</p>
-        <div className="flex gap-2 mb-2">
-          <textarea
+        <p className="section-label mb-2">AI generate</p>
+        <div className="flex gap-2">
+          <Textarea
             rows={4}
             value={rawInput}
-            onChange={e => setRawInput(e.target.value)}
-            placeholder="Describe your background, skills, and experience in plain text or speak using the mic…"
-            className="input-field resize-none flex-1"
+            onChange={(event) => setRawInput(event.target.value)}
+            placeholder="Describe your background, skills, and experience in plain language — or speak using the mic."
+            className="flex-1 resize-none"
           />
-          <VoiceButton listening={listening} supported={supported} onToggle={toggle} className="self-start mt-0.5" />
+          <VoiceButton
+            listening={listening}
+            supported={supported}
+            onToggle={toggle}
+            className="mt-0.5 self-start"
+          />
         </div>
-        <button
-          type="button"
-          onClick={handleGenerate}
-          disabled={isGenerating}
-          className="btn-primary w-full justify-center text-sm"
-        >
-          <Wand2 size={16} />
+        <Button onClick={handleGenerate} disabled={isGenerating} className="mt-2 w-full" size="sm">
+          <Sparkles size={14} />
           {isGenerating ? 'Generating…' : 'Generate with AI'}
-        </button>
+        </Button>
       </div>
 
-      {/* Personal Info */}
-      <Section title="Personal Info" defaultOpen>
+      <Section title="Personal info" description="Name, contact, and links" defaultOpen>
         <div className="grid grid-cols-2 gap-2">
           {[
-            ['Full Name', 'full_name'], ['Job Title', 'title'],
-            ['Email', 'email'], ['Phone', 'phone'],
-            ['Location', 'location'], ['LinkedIn', 'linkedin'],
+            ['Full name', 'full_name', true],
+            ['Job title', 'title', true],
+            ['Email', 'email'],
+            ['Phone', 'phone'],
+            ['Location', 'location'],
+            ['LinkedIn', 'linkedin'],
             ['Website', 'website'],
-          ].map(([label, key]) => (
-            <div key={key} className={key === 'full_name' || key === 'title' ? 'col-span-2' : ''}>
-              <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">{label}</label>
-              <input
+          ].map(([label, key, span]) => (
+            <div key={key} className={span ? 'col-span-2' : ''}>
+              <Label htmlFor={key} className="mb-1 block text-[11.5px] text-muted-foreground">
+                {label}
+              </Label>
+              <Input
+                id={key}
                 type="text"
                 value={pi[key] || ''}
-                onChange={e => setPI(key, e.target.value)}
-                className="input-field"
+                onChange={(event) => setPI(key, event.target.value)}
                 placeholder={label}
+                className="py-2"
               />
             </div>
           ))}
         </div>
       </Section>
 
-      {/* Summary */}
-      <Section title="Professional Summary">
+      <Section title="Professional summary" description="The two or three lines a recruiter reads first">
         <ImprovableTextarea
           label="Summary"
           value={resume.summary || ''}
-          onChange={v => updateField('summary', v)}
+          onChange={(value) => updateField('summary', value)}
           sectionName="summary"
           jobRole={jobRole}
           rows={4}
-          placeholder="A compelling professional summary that highlights your expertise…"
+          placeholder="A concise summary that connects your experience to the role…"
         />
       </Section>
 
-      {/* Skills */}
-      <Section title="Skills">
-        <div>
-          <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Skills (comma-separated)</label>
-          <textarea
-            rows={3}
-            value={(resume.skills || []).join(', ')}
-            onChange={e => updateField('skills', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
-            className="input-field resize-none"
-            placeholder="React, Node.js, Python, SQL, Docker…"
-          />
-        </div>
+      <Section title="Skills" description="Comma-separated">
+        <Textarea
+          rows={3}
+          value={(resume.skills || []).join(', ')}
+          onChange={(event) =>
+            updateField(
+              'skills',
+              event.target.value
+                .split(',')
+                .map((skill) => skill.trim())
+                .filter(Boolean)
+            )
+          }
+          className="resize-none"
+          placeholder="React, Node.js, Python, SQL, Docker…"
+        />
       </Section>
 
-      {/* Experience */}
-      <Section title="Experience">
-        {(resume.experience || []).map((exp, i) => (
-          <div key={i} className="border border-gray-100 dark:border-gray-800 rounded-xl p-3 space-y-2 relative">
-            <button type="button" onClick={() => removeItem('experience', i)}
-              className="absolute top-2 right-2 text-gray-300 hover:text-red-400 transition-colors">
-              <Trash2 size={14} />
+      <Section title="Experience" description={`${(resume.experience || []).length} entries`}>
+        {(resume.experience || []).map((item, index) => (
+          <div key={index} className="relative rounded-lg border border-border bg-subtle p-3">
+            <button
+              type="button"
+              onClick={() => removeItem('experience', index)}
+              className="absolute right-2 top-2 text-muted-foreground transition-colors hover:text-danger"
+              aria-label="Remove experience"
+            >
+              <Trash2 size={13} />
             </button>
-            <div className="grid grid-cols-2 gap-2">
-              {[['Company', 'company'], ['Role', 'role'], ['Start', 'start_date'], ['End', 'end_date']].map(([label, key]) => (
-                <div key={key}>
-                  <label className="text-xs text-gray-400 mb-1 block">{label}</label>
-                  <input type="text" value={exp[key] || ''} onChange={e => updateItem('experience', i, key, e.target.value)}
-                    className="input-field" placeholder={label} />
-                </div>
-              ))}
+            <FieldGrid
+              fields={[
+                ['Company', 'company', true],
+                ['Role', 'role', true],
+                ['Start', 'start_date'],
+                ['End', 'end_date'],
+              ]}
+              value={item}
+              onChange={(key, value) => updateItem('experience', index, key, value)}
+            />
+            <div className="mt-2">
+              <ImprovableTextarea
+                label="Description"
+                value={item.description || ''}
+                onChange={(value) => updateItem('experience', index, 'description', value)}
+                sectionName="experience"
+                jobRole={jobRole}
+                rows={3}
+                placeholder={'• Led a team of 5 engineers to deliver…\n• Improved performance by 40%…'}
+              />
             </div>
-            <ImprovableTextarea
-              label="Description"
-              value={exp.description || ''}
-              onChange={v => updateItem('experience', i, 'description', v)}
-              sectionName="experience"
-              jobRole={jobRole}
-              rows={3}
-              placeholder="• Led team of 5 engineers to deliver…&#10;• Improved performance by 40%…"
+          </div>
+        ))}
+        <Button
+          onClick={() => addItem('experience', { company: '', role: '', start_date: '', end_date: '', description: '' })}
+          variant="outline"
+          size="sm"
+          className="w-full"
+        >
+          <Plus size={13} /> Add experience
+        </Button>
+      </Section>
+
+      <Section title="Projects" description={`${(resume.projects || []).length} entries`}>
+        {(resume.projects || []).map((item, index) => (
+          <div key={index} className="relative rounded-lg border border-border bg-subtle p-3">
+            <button
+              type="button"
+              onClick={() => removeItem('projects', index)}
+              className="absolute right-2 top-2 text-muted-foreground transition-colors hover:text-danger"
+              aria-label="Remove project"
+            >
+              <Trash2 size={13} />
+            </button>
+            <FieldGrid
+              fields={[
+                ['Name', 'name', true],
+                ['Tech stack', 'tech_stack', true],
+                ['Link', 'link', true],
+              ]}
+              value={item}
+              onChange={(key, value) => updateItem('projects', index, key, value)}
+            />
+            <div className="mt-2">
+              <ImprovableTextarea
+                label="Description"
+                value={item.description || ''}
+                onChange={(value) => updateItem('projects', index, 'description', value)}
+                sectionName="project"
+                jobRole={jobRole}
+                rows={2}
+                placeholder="Built a full-stack app that…"
+              />
+            </div>
+          </div>
+        ))}
+        <Button
+          onClick={() => addItem('projects', { name: '', description: '', tech_stack: '', link: '' })}
+          variant="outline"
+          size="sm"
+          className="w-full"
+        >
+          <Plus size={13} /> Add project
+        </Button>
+      </Section>
+
+      <Section title="Education" description={`${(resume.education || []).length} entries`}>
+        {(resume.education || []).map((item, index) => (
+          <div key={index} className="relative rounded-lg border border-border bg-subtle p-3">
+            <button
+              type="button"
+              onClick={() => removeItem('education', index)}
+              className="absolute right-2 top-2 text-muted-foreground transition-colors hover:text-danger"
+              aria-label="Remove education"
+            >
+              <Trash2 size={13} />
+            </button>
+            <FieldGrid
+              fields={[
+                ['Institution', 'institution', true],
+                ['Degree', 'degree'],
+                ['Field', 'field'],
+                ['Year', 'year'],
+                ['GPA', 'gpa'],
+              ]}
+              value={item}
+              onChange={(key, value) => updateItem('education', index, key, value)}
             />
           </div>
         ))}
-        <button type="button" onClick={() => addItem('experience', { company: '', role: '', start_date: '', end_date: '', description: '' })}
-          className="btn-secondary w-full justify-center text-sm py-2">
-          <Plus size={14} /> Add Experience
-        </button>
+        <Button
+          onClick={() => addItem('education', { institution: '', degree: '', field: '', year: '', gpa: '' })}
+          variant="outline"
+          size="sm"
+          className="w-full"
+        >
+          <Plus size={13} /> Add education
+        </Button>
       </Section>
 
-      {/* Projects */}
-      <Section title="Projects">
-        {(resume.projects || []).map((proj, i) => (
-          <div key={i} className="border border-gray-100 dark:border-gray-800 rounded-xl p-3 space-y-2 relative">
-            <button type="button" onClick={() => removeItem('projects', i)}
-              className="absolute top-2 right-2 text-gray-300 hover:text-red-400 transition-colors">
-              <Trash2 size={14} />
+      <Section title="Certifications" description={`${(resume.certifications || []).length} entries`}>
+        {(resume.certifications || []).map((item, index) => (
+          <div key={index} className="relative rounded-lg border border-border bg-subtle p-3">
+            <button
+              type="button"
+              onClick={() => removeItem('certifications', index)}
+              className="absolute right-2 top-2 text-muted-foreground transition-colors hover:text-danger"
+              aria-label="Remove certification"
+            >
+              <Trash2 size={13} />
             </button>
-            {[['Name', 'name'], ['Tech Stack', 'tech_stack'], ['Link', 'link']].map(([label, key]) => (
-              <div key={key}>
-                <label className="text-xs text-gray-400 mb-1 block">{label}</label>
-                <input type="text" value={proj[key] || ''} onChange={e => updateItem('projects', i, key, e.target.value)}
-                  className="input-field" placeholder={label} />
-              </div>
-            ))}
-            <ImprovableTextarea
-              label="Description"
-              value={proj.description || ''}
-              onChange={v => updateItem('projects', i, 'description', v)}
-              sectionName="project"
-              jobRole={jobRole}
-              rows={2}
-              placeholder="Built a full-stack app that…"
+            <FieldGrid
+              fields={[
+                ['Name', 'name', true],
+                ['Issuer', 'issuer'],
+                ['Year', 'year'],
+              ]}
+              value={item}
+              onChange={(key, value) => updateItem('certifications', index, key, value)}
             />
           </div>
         ))}
-        <button type="button" onClick={() => addItem('projects', { name: '', description: '', tech_stack: '', link: '' })}
-          className="btn-secondary w-full justify-center text-sm py-2">
-          <Plus size={14} /> Add Project
-        </button>
-      </Section>
-
-      {/* Education */}
-      <Section title="Education">
-        {(resume.education || []).map((edu, i) => (
-          <div key={i} className="border border-gray-100 dark:border-gray-800 rounded-xl p-3 space-y-2 relative">
-            <button type="button" onClick={() => removeItem('education', i)}
-              className="absolute top-2 right-2 text-gray-300 hover:text-red-400 transition-colors">
-              <Trash2 size={14} />
-            </button>
-            <div className="grid grid-cols-2 gap-2">
-              {[['Institution', 'institution'], ['Degree', 'degree'], ['Field', 'field'], ['Year', 'year'], ['GPA', 'gpa']].map(([label, key]) => (
-                <div key={key} className={key === 'institution' ? 'col-span-2' : ''}>
-                  <label className="text-xs text-gray-400 mb-1 block">{label}</label>
-                  <input type="text" value={edu[key] || ''} onChange={e => updateItem('education', i, key, e.target.value)}
-                    className="input-field" placeholder={label} />
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
-        <button type="button" onClick={() => addItem('education', { institution: '', degree: '', field: '', year: '', gpa: '' })}
-          className="btn-secondary w-full justify-center text-sm py-2">
-          <Plus size={14} /> Add Education
-        </button>
-      </Section>
-
-      {/* Certifications */}
-      <Section title="Certifications">
-        {(resume.certifications || []).map((cert, i) => (
-          <div key={i} className="border border-gray-100 dark:border-gray-800 rounded-xl p-3 space-y-2 relative">
-            <button type="button" onClick={() => removeItem('certifications', i)}
-              className="absolute top-2 right-2 text-gray-300 hover:text-red-400 transition-colors">
-              <Trash2 size={14} />
-            </button>
-            <div className="grid grid-cols-3 gap-2">
-              {[['Name', 'name'], ['Issuer', 'issuer'], ['Year', 'year']].map(([label, key]) => (
-                <div key={key} className={key === 'name' ? 'col-span-3' : ''}>
-                  <label className="text-xs text-gray-400 mb-1 block">{label}</label>
-                  <input type="text" value={cert[key] || ''} onChange={e => updateItem('certifications', i, key, e.target.value)}
-                    className="input-field" placeholder={label} />
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
-        <button type="button" onClick={() => addItem('certifications', { name: '', issuer: '', year: '' })}
-          className="btn-secondary w-full justify-center text-sm py-2">
-          <Plus size={14} /> Add Certification
-        </button>
+        <Button
+          onClick={() => addItem('certifications', { name: '', issuer: '', year: '' })}
+          variant="outline"
+          size="sm"
+          className="w-full"
+        >
+          <Plus size={13} /> Add certification
+        </Button>
       </Section>
     </div>
-  )
+  );
 }

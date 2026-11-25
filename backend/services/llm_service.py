@@ -1,8 +1,10 @@
 import asyncio
+
+import httpx
 from fastapi import HTTPException
+
 from core.config import settings, log
 from services.http_client import get_http_client
-import httpx
 
 SYSTEM_PROMPT = """You are Aira, a warm, experienced senior technical interviewer at a top-tier tech company.
 Your personality:
@@ -49,65 +51,177 @@ Use contractions, natural pauses ("…"), and conversational fillers where appro
 Keep each message under 80 words unless the answer genuinely needs more.
 Do NOT use markdown formatting, bullet points, or numbered lists. Speak naturally."""
 
-async def call_llm(messages: list[dict], retries: int = 2, max_tokens: int = 800) -> str:
-    """Call Groq or OpenAI chat completion with retry logic."""
-    client = await get_http_client()
-    last_error = None
+RETRYABLE_STATUS = {429, 500, 502, 503, 504}
+
+TASK_TEMPERATURES = {
+    "interview": 0.8,
+    "feedback": 0.7,
+    "analysis": 0.2,
+    "resume": 0.4,
+}
+
+
+async def _call_groq(
+    client: httpx.AsyncClient,
+    messages: list[dict],
+    retries: int,
+    max_tokens: int,
+    task: str,
+    temperature: float,
+) -> str:
+    """Try the task's primary Groq model, then global fallbacks, with retries."""
+    models = settings.models_for_task(task)
+    primary = models[0]
+    last_error = "No Groq models configured."
 
     for attempt in range(retries + 1):
-        try:
-            if settings.LLM_BACKEND == "groq" and settings.GROQ_API_KEY:
-                resp = await client.post(
+        retry_attempt = False
+
+        for model in models:
+            try:
+                response = await client.post(
                     "https://api.groq.com/openai/v1/chat/completions",
                     headers={
                         "Authorization": f"Bearer {settings.GROQ_API_KEY}",
                         "Content-Type": "application/json",
                     },
                     json={
-                        "model": settings.GROQ_MODEL,
+                        "model": model,
                         "messages": messages,
-                        "temperature": 0.8,
+                        "temperature": temperature,
                         "max_tokens": max_tokens,
                     },
                 )
-                if resp.status_code != 200:
-                    log.warning("Groq %d: %s", resp.status_code, resp.text[:200])
-                    if attempt < retries and resp.status_code >= 500:
-                        await asyncio.sleep(0.5 * (attempt + 1))
-                        continue
-                resp.raise_for_status()
-                return resp.json()["choices"][0]["message"]["content"]
+            except httpx.RequestError as exc:
+                last_error = f"{model}: {exc}"
+                log.error("Groq request failed for %s: %s", model, exc)
+                retry_attempt = True
+                break
 
-            elif settings.OPENAI_API_KEY:
-                resp = await client.post(
-                    "https://api.openai.com/v1/chat/completions",
-                    headers={
-                        "Authorization": f"Bearer {settings.OPENAI_API_KEY}",
-                        "Content-Type": "application/json",
-                    },
-                    json={
-                        "model": settings.OPENAI_CHAT_MODEL,
-                        "messages": messages,
-                        "temperature": 0.8,
-                        "max_tokens": max_tokens,
-                    },
+            if response.status_code == 404 or (
+                response.status_code == 400
+                and any(
+                    marker in response.text.lower()
+                    for marker in ("model_not_found", "does not exist", "decommissioned")
                 )
-                if resp.status_code != 200:
-                    log.warning("OpenAI %d: %s", resp.status_code, resp.text[:200])
-                    if attempt < retries and resp.status_code >= 500:
-                        await asyncio.sleep(0.5 * (attempt + 1))
-                        continue
-                resp.raise_for_status()
-                return resp.json()["choices"][0]["message"]["content"]
-            else:
-                raise HTTPException(status_code=500, detail="No LLM API key configured.")
+            ):
+                last_error = f"model {model} is unavailable"
+                log.warning("Groq model %s is unavailable; trying the next configured model.", model)
+                continue
+
+            if response.status_code != 200:
+                last_error = f"{model} returned HTTP {response.status_code}"
+                log.warning("Groq %s %d: %s", model, response.status_code, response.text[:300])
+
+                if response.status_code in RETRYABLE_STATUS and attempt < retries:
+                    retry_attempt = True
+                    break
+
+                raise HTTPException(
+                    status_code=502,
+                    detail="The AI provider rejected the request. Please try again.",
+                )
+
+            try:
+                payload = response.json()
+                content = (
+                    payload.get("choices", [{}])[0]
+                    .get("message", {})
+                    .get("content", "")
+                    or ""
+                ).strip()
+            except (ValueError, IndexError, KeyError, TypeError):
+                content = ""
+
+            if content:
+                if model != primary:
+                    log.info("Groq fallback for %s: %s", task, model)
+                return content
+
+            last_error = f"{model} returned an empty response"
+            log.warning("Groq model %s returned an empty response; trying the next model.", model)
+
+        if retry_attempt and attempt < retries:
+            await asyncio.sleep(0.5 * (attempt + 1))
+            continue
+
+        break
+
+    log.error("All configured Groq models failed: %s", last_error)
+    raise HTTPException(
+        status_code=502,
+        detail="The AI interviewer is temporarily unavailable. Please try again in a moment.",
+    )
+
+
+async def _call_openai(
+    client: httpx.AsyncClient,
+    messages: list[dict],
+    retries: int,
+    max_tokens: int,
+    temperature: float,
+) -> str:
+    if not settings.OPENAI_API_KEY:
+        raise HTTPException(status_code=500, detail="No AI provider is configured.")
+
+    last_error = None
+    for attempt in range(retries + 1):
+        try:
+            response = await client.post(
+                "https://api.openai.com/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {settings.OPENAI_API_KEY}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": settings.OPENAI_CHAT_MODEL,
+                    "messages": messages,
+                    "temperature": temperature,
+                    "max_tokens": max_tokens,
+                },
+            )
+
+            if response.status_code != 200:
+                log.warning("OpenAI %d: %s", response.status_code, response.text[:200])
+                if attempt < retries and response.status_code in RETRYABLE_STATUS:
+                    await asyncio.sleep(0.5 * (attempt + 1))
+                    continue
+                response.raise_for_status()
+
+            return response.json()["choices"][0]["message"]["content"]
 
         except httpx.HTTPStatusError:
             raise
-        except Exception as e:
-            last_error = e
-            log.error("LLM attempt %d failed: %s", attempt + 1, e)
+        except Exception as exc:
+            last_error = exc
+            log.error("OpenAI attempt %d failed: %s", attempt + 1, exc)
             if attempt < retries:
                 await asyncio.sleep(0.5 * (attempt + 1))
 
-    raise HTTPException(status_code=500, detail=f"LLM call failed after {retries + 1} attempts: {last_error}")
+    raise HTTPException(
+        status_code=500,
+        detail=f"AI call failed after {retries + 1} attempts: {last_error}",
+    )
+
+
+async def call_llm(
+    messages: list[dict],
+    retries: int = 2,
+    max_tokens: int = 800,
+    task: str = "analysis",
+    temperature: float | None = None,
+) -> str:
+    """Call the task-appropriate AI model, with model fallbacks for Groq."""
+    client = await get_http_client()
+    resolved_temperature = (
+        temperature if temperature is not None else TASK_TEMPERATURES.get(task, 0.4)
+    )
+
+    if settings.LLM_BACKEND == "groq" and settings.GROQ_API_KEY:
+        return await _call_groq(
+            client, messages, retries, max_tokens, task, resolved_temperature
+        )
+
+    return await _call_openai(
+        client, messages, retries, max_tokens, resolved_temperature
+    )

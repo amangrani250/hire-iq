@@ -1,53 +1,78 @@
-import { useResume } from '../../context/ResumeContext'
+import { useResume } from '../../context/ResumeContext';
+
+function toneFor(score) {
+  if (score >= 80) return { color: 'var(--color-success)', label: 'Excellent' };
+  if (score >= 60) return { color: 'var(--color-warning)', label: 'Good' };
+  return { color: 'var(--color-danger)', label: 'Needs work' };
+}
 
 export default function AtsScore() {
-  const { atsScore, suggestions } = useResume()
+  const { atsScore, suggestions } = useResume();
 
-  const color = atsScore >= 80 ? 'text-green-600 dark:text-green-400'
-    : atsScore >= 60 ? 'text-yellow-600 dark:text-yellow-400'
-    : 'text-red-500 dark:text-red-400'
+  if (!atsScore) return null;
 
-  const ring = atsScore >= 80 ? 'stroke-green-500'
-    : atsScore >= 60 ? 'stroke-yellow-500'
-    : 'stroke-red-500'
-
-  const r = 22
-  const circ = 2 * Math.PI * r
-  const dash = (atsScore / 100) * circ
-
-  if (!atsScore) return null
+  const tone = toneFor(atsScore);
+  const radius = 22;
+  const circumference = 2 * Math.PI * radius;
+  const dash = (atsScore / 100) * circumference;
 
   return (
     <div className="card p-4">
-      <p className="section-label">ATS Score</p>
-      <div className="flex items-center gap-4">
-        <div className="relative w-16 h-16 shrink-0">
-          <svg viewBox="0 0 52 52" className="w-full h-full -rotate-90">
-            <circle cx="26" cy="26" r={r} fill="none" stroke="currentColor" strokeWidth="4" className="text-gray-100 dark:text-gray-800" />
+      <div className="flex items-center justify-between">
+        <p className="section-label mb-0">ATS readiness</p>
+        <span className="font-mono text-[10px] uppercase tracking-[0.08em]" style={{ color: tone.color }}>
+          {tone.label}
+        </span>
+      </div>
+      <div className="mt-3 flex items-center gap-4">
+        <div className="relative h-14 w-14 shrink-0">
+          <svg viewBox="0 0 52 52" className="h-full w-full -rotate-90" aria-hidden="true">
             <circle
-              cx="26" cy="26" r={r} fill="none" strokeWidth="4"
-              strokeDasharray={`${dash} ${circ}`}
+              cx="26"
+              cy="26"
+              r={radius}
+              fill="none"
+              stroke="hsl(var(--muted))"
+              strokeWidth="4"
+            />
+            <circle
+              cx="26"
+              cy="26"
+              r={radius}
+              fill="none"
+              strokeWidth="4"
+              stroke={tone.color}
+              strokeDasharray={`${dash} ${circumference}`}
               strokeLinecap="round"
-              className={ring}
             />
           </svg>
-          <span className={`absolute inset-0 flex items-center justify-center text-sm font-semibold ${color}`}>
+          <span
+            className="absolute inset-0 flex items-center justify-center text-[13px] font-semibold tabular-nums"
+            style={{ color: tone.color }}
+          >
             {atsScore}
           </span>
         </div>
-        <div className="flex-1 min-w-0">
-          <p className={`text-sm font-semibold ${color}`}>
-            {atsScore >= 80 ? 'Excellent' : atsScore >= 60 ? 'Good' : 'Needs Work'}
-          </p>
-          {suggestions?.length > 0 && (
-            <ul className="mt-1 space-y-1">
-              {suggestions.slice(0, 2).map((s, i) => (
-                <li key={i} className="text-xs text-gray-500 dark:text-gray-400 truncate">• {s}</li>
+
+        <div className="min-w-0 flex-1">
+          {suggestions?.length > 0 ? (
+            <ul className="space-y-1">
+              {suggestions.slice(0, 2).map((suggestion, index) => (
+                <li
+                  key={index}
+                  className="line-clamp-2 text-[11.5px] leading-relaxed text-muted-foreground"
+                >
+                  — {suggestion}
+                </li>
               ))}
             </ul>
+          ) : (
+            <p className="text-[11.5px] leading-relaxed text-muted-foreground">
+              Scores update when you generate or improve a section.
+            </p>
           )}
         </div>
       </div>
     </div>
-  )
+  );
 }

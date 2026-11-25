@@ -7,7 +7,7 @@ echo.
 :: Check Python
 python --version >nul 2>&1
 if errorlevel 1 (
-    echo ERROR: Python not found. Install Python 3.11+ from python.org
+    echo ERROR: Python not found. Install Python 3.15+ from python.org
     pause
     exit /b 1
 )

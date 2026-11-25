@@ -6,7 +6,12 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""
     ELEVENLABS_API_KEY: str = ""
     
-    GROQ_MODEL: str = "llama-3.3-70b-versatile"
+    GROQ_MODEL_INTERVIEW: str = "openai/gpt-oss-120b"
+    GROQ_MODEL_ANALYSIS: str = "qwen/qwen3.8-27b"
+    GROQ_MODEL_RESUME: str = "qwen/qwen3.8-27b"
+    GROQ_MODEL_FEEDBACK: str = "openai/gpt-oss-120b"
+    GROQ_FALLBACK_MODELS: str = "openai/gpt-oss-120b,qwen/qwen3.8-27b,openai/gpt-oss-20b"
+    GROQ_STT_MODEL: str = "whisper-large-v3"
     OPENAI_CHAT_MODEL: str = "gpt-4o-mini"
     OPENAI_TTS_MODEL: str = "tts-1"
     OPENAI_TTS_VOICE: str = "nova"
@@ -21,6 +26,33 @@ class Settings(BaseSettings):
     @property
     def LLM_BACKEND(self) -> str:
         return "groq" if self.GROQ_API_KEY else "openai"
+
+    @property
+    def GROQ_MODELS(self) -> list[str]:
+        """Global fallback list, de-duplicated. Prefer models_for_task()."""
+        candidates = [*self.GROQ_FALLBACK_MODELS.split(",")]
+        models: list[str] = []
+        for candidate in candidates:
+            model = candidate.strip()
+            if model and model not in models:
+                models.append(model)
+        return models
+
+    def models_for_task(self, task: str) -> list[str]:
+        """Primary model for a task, followed by global fallbacks."""
+        primary = {
+            "interview": self.GROQ_MODEL_INTERVIEW,
+            "analysis": self.GROQ_MODEL_ANALYSIS,
+            "resume": self.GROQ_MODEL_RESUME,
+            "feedback": self.GROQ_MODEL_FEEDBACK,
+        }.get(task, self.GROQ_MODEL_ANALYSIS)
+
+        models: list[str] = []
+        for candidate in [primary, *self.GROQ_MODELS]:
+            model = candidate.strip()
+            if model and model not in models:
+                models.append(model)
+        return models
 
     @property
     def TTS_BACKEND(self) -> str:

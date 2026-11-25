@@ -83,7 +83,7 @@ async def transcribe_audio_bytes(audio_bytes: bytes, content_type: str = "") -> 
     filename = f"upload{suffix}"
 
     form_data = {
-        "model": "whisper-large-v3",
+        "model": settings.GROQ_STT_MODEL,
         "language": "en",
         "prompt": "This is a candidate's answer in an interview. Only transcribe English speech. Do not transcribe background noise."
     }

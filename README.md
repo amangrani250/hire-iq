@@ -9,9 +9,9 @@ Upload your resume → get a personalized technical interview → hear a realist
 
 | Feature | How it works |
 |---|---|
-| **Resume parsing** | PDF/TXT extracted server-side (PyPDF2) |
-| **AI Interviewer "Aira"** | Groq LLaMA-3 70B (free) or OpenAI GPT-4o-mini |
-| **Realistic voice** | ElevenLabs → OpenAI TTS → edge-tts (all free fallbacks) |
+| **Resume parsing** | PDF and Word (.docx) extracted server-side |
+| **AI Interviewer "Aira"** | GPT-OSS 120B for live turns, Qwen 3.8 27B for analysis (Groq) |
+| **Realistic voice** | ElevenLabs → OpenAI TTS → gTTS (free fallback) |
 | **Speech-to-text** | Groq Whisper-large-v3 (free) or OpenAI Whisper |
 | **Real-time comms** | WebSocket (FastAPI) |
 | **Video call UI** | React — Zoom-style tiles, controls, transcript panel |
@@ -28,7 +28,7 @@ Upload your resume → get a personalized technical interview → hear a realist
 | **OpenAI** (optional) | https://platform.openai.com | Paid, fallback only |
 
 **Minimum requirement:** Just a free Groq API key is enough to run everything.  
-edge-tts handles voice for free with no key needed.
+gTTS handles voice for free with no key needed.
 
 ---
 
@@ -43,6 +43,7 @@ cd ai-interviewer
 ```bash
 cd backend
 
+# Requires Python 3.15+
 # Create virtual environment
 python -m venv venv
 source venv/bin/activate          # Windows: venv\Scripts\activate
@@ -59,7 +60,8 @@ uvicorn main:app --reload --port 8000
 ```
 
 Backend runs at: http://localhost:8000  
-API docs at: http://localhost:8000/docs
+API docs at: http://localhost:8000/docs  
+Health check at: http://localhost:8000/health
 
 ### 3. Frontend setup
 ```bash
@@ -114,7 +116,7 @@ ai-interviewer/
 1. **Upload resume** → backend extracts text, creates a session, extracts candidate info
 2. **WebSocket opens** → AI generates a personalized greeting from resume context
 3. **Auto recording** — silence detection listens when interviewer is done speaking
-4. **You speak** → audio sent to Whisper STT → text sent to LLaMA/GPT → response spoken via TTS
+4. **You speak** → audio sent to Whisper STT → text sent to the LLM → response spoken via TTS
 5. **Transcript panel** — every message from both sides is shown live
 6. **End call** → AI gives a warm closing statement → End screen
 
@@ -125,6 +127,25 @@ ai-interviewer/
 | Variable | Default | Description |
 |---|---|---|
 | `GROQ_API_KEY` | — | **Required** — LLM + STT |
+| `GROQ_MODEL_INTERVIEW` | `openai/gpt-oss-120b` | Live interview turns |
+| `GROQ_MODEL_ANALYSIS` | `qwen/qwen3.8-27b` | Resume profile + ATS JSON |
+| `GROQ_MODEL_RESUME` | `qwen/qwen3.8-27b` | Resume generation / rewriting |
+| `GROQ_MODEL_FEEDBACK` | `openai/gpt-oss-120b` | Closing message + feedback report |
+| `GROQ_FALLBACK_MODELS` | `openai/gpt-oss-120b,qwen/qwen3.8-27b,openai/gpt-oss-20b` | Automatic fallbacks |
+| `GROQ_STT_MODEL` | `whisper-large-v3` | Speech-to-text model |
+
+### Model routing
+
+| Task | Model | Why |
+|---|---|---|
+| Live interview turns | `openai/gpt-oss-120b` | Best reasoning and instruction-following for follow-up questions |
+| Resume profile + ATS | `qwen/qwen3.8-27b` | Fast and reliable structured JSON |
+| Resume generation / rewriting | `qwen/qwen3.8-27b` | Good writing quality with predictable JSON |
+| Closing message + feedback report | `openai/gpt-oss-120b` | Highest-quality post-interview review |
+| Speech-to-text | `whisper-large-v3` | Accuracy-first; set to `whisper-large-v3-turbo` for speed |
+
+If a model is retired or unavailable, the backend automatically tries
+`openai/gpt-oss-120b` → `qwen/qwen3.8-27b` → `openai/gpt-oss-20b`.
 | `OPENAI_API_KEY` | — | Optional fallback |
 | `ELEVENLABS_API_KEY` | — | Better voice quality |
 | `REACT_APP_API_URL` | `http://localhost:8000` | Backend URL for frontend |
@@ -137,15 +158,15 @@ ai-interviewer/
 |---|---|---|---|
 | Best | ElevenLabs (Rachel voice) | ★★★★★ | Free tier |
 | Good | OpenAI TTS (Nova) | ★★★★ | ~$0.015/1k chars |
-| Free | edge-tts (Jenny Neural) | ★★★ | Completely free |
+| Free | gTTS | ★★★ | Completely free |
 
 ---
 
 ## 🛠️ Tech Stack
 
-**Backend:** Python 3.11, FastAPI, WebSockets, PyPDF2, httpx, edge-tts  
+**Backend:** Python 3.15+, FastAPI, WebSockets, pypdf, python-docx, httpx  
 **Frontend:** React 18, Lucide React  
-**AI:** Groq LLaMA-3-70B, Groq Whisper-large-v3, edge-tts  
+**AI:** GPT-OSS 120B for live interviews, Qwen 3.8 27B for resume analysis/writing, Groq Whisper for STT, gTTS  
 **Protocols:** REST (resume upload), WebSocket (real-time interview)
 
 ---
@@ -159,7 +180,7 @@ ai-interviewer/
 → Make sure backend is running on port 8000. Check `REACT_APP_API_URL` in frontend.
 
 **No audio from interviewer?**  
-→ Check your API key. edge-tts fallback requires `pip install edge-tts`. Try `pip install edge-tts --upgrade`.
+→ Check your API key. The gTTS fallback is installed with the backend requirements.
 
 **"Session not found" on WS?**  
 → Upload the resume first — session is created on upload.

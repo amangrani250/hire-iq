@@ -2,10 +2,8 @@ import React, { useEffect, useRef } from 'react';
 import { Bot, User } from 'lucide-react';
 
 /**
- * TranscriptPanel — shows the live conversation transcript.
- * On mobile it appears below the video area; on desktop it docks to the right.
- *
- * @param {{ messages: Array<{speaker: string, text: string}>, visible: boolean }} props
+ * TranscriptPanel — live conversation transcript.
+ * Docks to the right on desktop and below the video on mobile.
  */
 export default function TranscriptPanel({ messages, visible }) {
   const bottomRef = useRef(null);
@@ -17,51 +15,38 @@ export default function TranscriptPanel({ messages, visible }) {
   if (!visible) return null;
 
   return (
-    <div className="transcript-panel">
+    <aside className="transcript-panel" aria-label="Live transcript">
       <div className="transcript-header">
-        <span className="transcript-title">Live Transcript</span>
-        <span className="transcript-count">{messages.length} messages</span>
+        <span className="transcript-title">Live transcript</span>
+        <span className="transcript-count">{messages.length} lines</span>
       </div>
 
       <div className="transcript-scroll">
         {messages.length === 0 && (
           <p className="transcript-empty">
-            Transcript will appear here as the interview progresses…
+            The conversation will appear here as soon as Aira starts.
           </p>
         )}
 
-        {messages.map((m, i) => (
-          <div
-            key={i}
-            className={`transcript-msg ${m.speaker !== 'interviewer' ? 'transcript-msg--user' : ''}`}
-          >
-            <div className="transcript-avatar-wrap">
-              {m.speaker === 'interviewer' ? (
-                <div
-                  className="transcript-avatar"
-                  style={{ background: 'rgba(79,142,247,0.18)', color: 'var(--accent)' }}
-                >
-                  <Bot size={14} />
-                </div>
-              ) : (
-                <div
-                  className="transcript-avatar"
-                  style={{ background: 'rgba(48,217,134,0.15)', color: 'var(--green)' }}
-                >
-                  <User size={14} />
-                </div>
-              )}
-            </div>
-            <div className="transcript-bubble">
-              <span className="transcript-speaker">
-                {m.speaker === 'interviewer' ? 'Aira (AI)' : 'You'}
+        {messages.map((message, index) => {
+          const isInterviewer = message.speaker === 'interviewer';
+          return (
+            <div
+              key={`${message.ts || index}-${index}`}
+              className={`transcript-msg ${isInterviewer ? '' : 'transcript-msg--user'}`}
+            >
+              <span className={`transcript-avatar ${isInterviewer ? 'transcript-avatar--ai' : ''}`}>
+                {isInterviewer ? <Bot size={13} /> : <User size={13} />}
               </span>
-              <p className="transcript-text">{m.text}</p>
+              <div className="transcript-bubble">
+                <span className="transcript-speaker">{isInterviewer ? 'Aira' : 'You'}</span>
+                <p className="transcript-text">{message.text}</p>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
         <div ref={bottomRef} />
       </div>
-    </div>
+    </aside>
   );
 }

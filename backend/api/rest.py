@@ -1,45 +1,55 @@
 import uuid
 import time
 import asyncio
+from datetime import datetime, timezone
 from fastapi import APIRouter, File, UploadFile, HTTPException
-from fastapi.responses import ORJSONResponse
 from pydantic import BaseModel
 from typing import List
 import orjson
 from core.config import settings, log
 from core.session import sessions
-from utils.pdf_extractor import extract_text_from_pdf
+from utils.pdf_extractor import extract_resume_text
 from services.llm_service import call_llm
 from services.audio_service import transcribe_audio_bytes
 
-# Ensure that responses default to ORJSONResponse for speed performance
-router = APIRouter(default_response_class=ORJSONResponse)
+# FastAPI serializes responses directly via Pydantic; no custom response class needed.
+router = APIRouter()
 
 @router.get("/")
 async def root():
     return {
         "status": "HireIQ API running",
         "version": "2.0.0",
-        "llm": settings.LLM_BACKEND,
-        "tts": settings.TTS_BACKEND,
-        "active_sessions": len(sessions),
+    }
+
+
+@router.get("/health", tags=["health"])
+async def health():
+    """Liveness probe for uptime monitors and deployment platforms."""
+    return {
+        "status": "ok",
+        "service": "hireiq-api",
+        "version": "2.0.0",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
 @router.post("/api/upload-resume")
 async def upload_resume(file: UploadFile = File(...)):
-    """Parse PDF/TXT resume and create a session."""
+    """Parse a PDF/DOCX resume and create a session."""
     filename = (file.filename or "").lower()
-    if not filename.endswith((".pdf", ".txt")):
-        raise HTTPException(status_code=400, detail="Only PDF and TXT files are supported.")
+    if filename.endswith(".doc"):
+        raise HTTPException(
+            status_code=400,
+            detail="Older .doc files are not supported. Save the file as .docx and try again.",
+        )
+    if not filename.endswith((".pdf", ".docx")):
+        raise HTTPException(status_code=400, detail="Only PDF and Word (.docx) files are supported.")
 
     content = await file.read()
     if len(content) > 5 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="File too large. Maximum size is 5MB.")
 
-    if filename.endswith(".pdf"):
-        resume_text = extract_text_from_pdf(content)
-    else:
-        resume_text = content.decode("utf-8", errors="ignore")
+    resume_text = extract_resume_text(filename, content)
 
     if len(resume_text.strip()) < 50:
         raise HTTPException(status_code=400, detail="Could not extract enough text from resume.")
@@ -71,7 +81,7 @@ async def upload_resume(file: UploadFile = File(...)):
         {"role": "user", "content": resume_text[:3000]},
     ]
     try:
-        raw = await call_llm(summary_messages)
+        raw = await call_llm(summary_messages, task="analysis")
         raw = raw.strip().lstrip("```json").lstrip("```").rstrip("```").strip()
         candidate_info = orjson.loads(raw)
     except Exception:
@@ -84,17 +94,19 @@ async def upload_resume(file: UploadFile = File(...)):
 async def analyze_resume(file: UploadFile = File(...)):
     """Deep-analyze a resume: extract profile, experience timeline, skills, and ATS score."""
     filename = (file.filename or "").lower()
-    if not filename.endswith((".pdf", ".txt")):
-        raise HTTPException(status_code=400, detail="Only PDF and TXT files are supported.")
+    if filename.endswith(".doc"):
+        raise HTTPException(
+            status_code=400,
+            detail="Older .doc files are not supported. Save the file as .docx and try again.",
+        )
+    if not filename.endswith((".pdf", ".docx")):
+        raise HTTPException(status_code=400, detail="Only PDF and Word (.docx) files are supported.")
 
     content = await file.read()
     if len(content) > 5 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="File too large. Maximum size is 5MB.")
 
-    if filename.endswith(".pdf"):
-        resume_text = extract_text_from_pdf(content)
-    else:
-        resume_text = content.decode("utf-8", errors="ignore")
+    resume_text = extract_resume_text(filename, content)
 
     if len(resume_text.strip()) < 50:
         raise HTTPException(status_code=400, detail="Could not extract enough text from resume.")
@@ -170,8 +182,8 @@ async def analyze_resume(file: UploadFile = File(...)):
 
     try:
         profile_raw, ats_raw = await asyncio.gather(
-            call_llm(profile_prompt, max_tokens=2000),
-            call_llm(ats_prompt, max_tokens=1500),
+            call_llm(profile_prompt, max_tokens=2000, task="analysis"),
+            call_llm(ats_prompt, max_tokens=1500, task="analysis"),
         )
     except Exception as e:
         log.error("Resume analysis LLM error: %s", e)
@@ -315,7 +327,7 @@ async def get_interview_feedback(req: FeedbackRequest):
     ]
     
     try:
-        raw = await call_llm(prompt, max_tokens=1000)
+        raw = await call_llm(prompt, max_tokens=1000, task="feedback")
         raw = raw.strip().lstrip("```json").lstrip("```").rstrip("```").strip()
         data = orjson.loads(raw)
         return data
@@ -364,7 +376,7 @@ async def interview_respond_rest(req: InterviewMessageRequest):
             messages.append({"role": "user", "content": user_text})
 
         # Call LLM
-        ai_text = await call_llm(messages)
+        ai_text = await call_llm(messages, task="interview")
         
         # Update history
         if user_text:
@@ -423,7 +435,7 @@ async def interview_end_rest(req: InterviewMessageRequest):
     messages = [system_msg] + session["history"] + [{"role": "user", "content": feedback_prompt}]
     
     try:
-        closing = await call_llm(messages)
+        closing = await call_llm(messages, task="feedback")
         audio = await text_to_speech_bytes(closing)
         audio_b64 = base64.b64encode(audio).decode() if audio else None
         

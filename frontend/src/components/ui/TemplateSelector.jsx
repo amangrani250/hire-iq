@@ -1,41 +1,81 @@
-import { useResume } from '../../context/ResumeContext'
+import { useResume } from '../../context/ResumeContext';
+import { cn } from '../../lib/cn';
 
 const TEMPLATES = [
-  { id: 'minimal', label: 'Minimal', desc: 'Clean & simple' },
-  { id: 'corporate', label: 'Corporate', desc: 'Classic & formal' },
-  { id: 'creative', label: 'Creative', desc: 'Bold & modern' },
-]
+  { id: 'minimal', label: 'Minimal', desc: 'Clean, quiet, scannable' },
+  { id: 'corporate', label: 'Corporate', desc: 'Formal, structured' },
+  { id: 'creative', label: 'Creative', desc: 'Sidebar-led, expressive' },
+];
+
+function Thumbnail({ id }) {
+  return (
+    <div className="relative h-11 overflow-hidden rounded-md border border-[#e6e4dd] bg-white p-1.5">
+      {id === 'minimal' && (
+        <div className="space-y-1">
+          <div className="h-1.5 w-8 rounded-full bg-[#1c2924]" />
+          <div className="h-1 w-5 rounded-full bg-[#b9c3bd]" />
+          <div className="pt-1">
+            <div className="h-0.5 w-full rounded-full bg-[#e6e4dd]" />
+            <div className="mt-0.5 h-0.5 w-4/5 rounded-full bg-[#e6e4dd]" />
+          </div>
+          <div className="h-1 w-6 rounded-full bg-[#1c2924]" />
+          <div className="h-0.5 w-full rounded-full bg-[#e6e4dd]" />
+        </div>
+      )}
+      {id === 'corporate' && (
+        <div className="space-y-1">
+          <div className="-mx-1.5 -mt-1.5 h-4 bg-[#135a4b]" />
+          <div className="h-0.5 w-full rounded-full bg-[#ccd6d1]" />
+          <div className="h-0.5 w-4/5 rounded-full bg-[#ccd6d1]" />
+          <div className="h-1 w-6 rounded-full bg-[#135a4b]" />
+          <div className="h-0.5 w-full rounded-full bg-[#e6e4dd]" />
+        </div>
+      )}
+      {id === 'creative' && (
+        <div className="flex h-full gap-1.5">
+          <div className="-my-1.5 -ml-1.5 w-1/3 bg-[#1c2924]" />
+          <div className="flex-1 space-y-1 py-0.5">
+            <div className="h-1 w-7 rounded-full bg-[#1c2924]" />
+            <div className="h-0.5 w-5 rounded-full bg-[#8fae9f]" />
+            <div className="h-0.5 w-8 rounded-full bg-[#8fae9f]" />
+            <div className="h-0.5 w-6 rounded-full bg-[#e6e4dd]" />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function TemplateSelector() {
-  const { template, setTemplate } = useResume()
+  const { template, setTemplate } = useResume();
 
   return (
     <div>
       <p className="section-label">Template</p>
-      <div className="grid grid-cols-3 gap-2">
-        {TEMPLATES.map(t => (
-          <button
-            key={t.id}
-            onClick={() => setTemplate(t.id)}
-            className={`p-3 rounded-xl border text-left transition-all duration-150 ${
-              template === t.id
-                ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20'
-                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-            }`}
-          >
-            <div className={`w-full h-8 rounded mb-2 flex flex-col justify-center gap-1 px-1 overflow-hidden ${
-              t.id === 'minimal' ? 'bg-gray-100 dark:bg-gray-800' :
-              t.id === 'corporate' ? 'bg-blue-50 dark:bg-blue-950' :
-              'bg-purple-50 dark:bg-purple-950'
-            }`}>
-              <div className={`h-1 rounded-full w-3/4 ${t.id === 'creative' ? 'bg-purple-400' : 'bg-gray-300 dark:bg-gray-600'}`} />
-              <div className={`h-0.5 rounded-full w-1/2 ${t.id === 'creative' ? 'bg-purple-300' : 'bg-gray-200 dark:bg-gray-700'}`} />
-            </div>
-            <p className="text-xs font-medium text-gray-800 dark:text-gray-200">{t.label}</p>
-            <p className="text-xs text-gray-400 dark:text-gray-500">{t.desc}</p>
-          </button>
-        ))}
+      <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Resume template">
+        {TEMPLATES.map((item) => {
+          const selected = template === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              onClick={() => setTemplate(item.id)}
+              className={cn(
+                'rounded-lg border p-2 text-left transition-all',
+                selected
+                  ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
+                  : 'border-border hover:border-muted-foreground/30 hover:bg-muted/40'
+              )}
+            >
+              <Thumbnail id={item.id} />
+              <p className="mt-2 text-[11.5px] font-medium text-foreground">{item.label}</p>
+              <p className="text-[10px] leading-tight text-muted-foreground">{item.desc}</p>
+            </button>
+          );
+        })}
       </div>
     </div>
-  )
+  );
 }

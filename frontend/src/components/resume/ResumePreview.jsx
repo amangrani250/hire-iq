@@ -65,7 +65,7 @@ function MinimalTemplate({ resume }) {
             <div key={i} className={i > 0 ? 'mt-2' : ''}>
               <div className="flex justify-between">
                 <p className="font-semibold text-gray-900 text-xs">{p.name}</p>
-                {p.link && <a href={p.link} className="text-blue-500">{p.link}</a>}
+                {p.link && <a href={p.link} className="text-[#135a4b]">{p.link}</a>}
               </div>
               {p.tech_stack && <p className="text-gray-400 italic">{p.tech_stack}</p>}
               {p.description && <p className="text-gray-700 mt-0.5">{p.description}</p>}
@@ -109,10 +109,10 @@ function CorporateTemplate({ resume }) {
   return (
     <div className="font-sans text-[11px] leading-relaxed bg-white min-h-full">
       {/* Blue header */}
-      <div className="bg-blue-700 text-white px-8 py-6">
+      <div className="bg-[#135a4b] text-white px-8 py-6">
         <h1 className="text-2xl font-bold mb-0.5">{pi.full_name || 'Your Name'}</h1>
-        {pi.title && <p className="text-blue-200 text-sm mb-3">{pi.title}</p>}
-        <div className="flex flex-wrap gap-x-5 gap-y-1 text-blue-100 text-[10px]">
+        {pi.title && <p className="text-[#c7e5da] text-sm mb-3">{pi.title}</p>}
+        <div className="flex flex-wrap gap-x-5 gap-y-1 text-[#d9efe7] text-[10px]">
           {pi.email && <span>{pi.email}</span>}
           {pi.phone && <span>{pi.phone}</span>}
           {pi.location && <span>{pi.location}</span>}
@@ -130,7 +130,7 @@ function CorporateTemplate({ resume }) {
             <div className="grid grid-cols-3 gap-1">
               {resume.skills.map((s, i) => (
                 <span key={i} className="flex items-center gap-1 text-gray-700">
-                  <span className="w-1 h-1 bg-blue-600 rounded-full shrink-0" />{s}
+                  <span className="w-1 h-1 bg-[#135a4b] rounded-full shrink-0" />{s}
                 </span>
               ))}
             </div>
@@ -143,7 +143,7 @@ function CorporateTemplate({ resume }) {
                 <div className="flex justify-between">
                   <div>
                     <p className="font-bold text-gray-900 text-xs">{e.role}</p>
-                    <p className="text-blue-700 font-medium">{e.company}</p>
+                    <p className="text-[#135a4b] font-medium">{e.company}</p>
                   </div>
                   {(e.start_date || e.end_date) && (
                     <p className="text-gray-400">{e.start_date}{e.end_date ? ` – ${e.end_date}` : ''}</p>
@@ -180,7 +180,7 @@ function CreativeTemplate({ resume }) {
       <div className="w-1/3 bg-gray-900 text-white p-6 space-y-5 shrink-0">
         <div>
           <h1 className="text-lg font-bold leading-tight">{pi.full_name || 'Your Name'}</h1>
-          {pi.title && <p className="text-purple-300 text-[10px] mt-0.5">{pi.title}</p>}
+          {pi.title && <p className="text-[#9ed8c7] text-[10px] mt-0.5">{pi.title}</p>}
         </div>
         <div className="space-y-1.5">
           <p className="text-[9px] font-semibold uppercase tracking-widest text-gray-400 mb-2">Contact</p>
@@ -197,7 +197,7 @@ function CreativeTemplate({ resume }) {
                 <div key={i}>
                   <p className="text-gray-300 mb-0.5">{s}</p>
                   <div className="h-0.5 bg-gray-700 rounded-full">
-                    <div className="h-full bg-purple-500 rounded-full" style={{ width: `${70 + (i % 3) * 10}%` }} />
+                    <div className="h-full bg-[#2f9c7f] rounded-full" style={{ width: `${70 + (i % 3) * 10}%` }} />
                   </div>
                 </div>
               ))}
@@ -218,18 +218,18 @@ function CreativeTemplate({ resume }) {
       <div className="flex-1 p-6 space-y-4">
         {resume.summary && (
           <div>
-            <p className="text-[9px] font-semibold uppercase tracking-widest text-purple-600 mb-1.5">About Me</p>
+            <p className="text-[9px] font-semibold uppercase tracking-widest text-[#135a4b] mb-1.5">About Me</p>
             <p className="text-gray-700">{resume.summary}</p>
           </div>
         )}
         {resume.experience?.length > 0 && (
           <div>
-            <p className="text-[9px] font-semibold uppercase tracking-widest text-purple-600 mb-2">Experience</p>
+            <p className="text-[9px] font-semibold uppercase tracking-widest text-[#135a4b] mb-2">Experience</p>
             {resume.experience.map((e, i) => (
-              <div key={i} className={`${i > 0 ? 'mt-3' : ''} pl-3 border-l-2 border-purple-200`}>
+              <div key={i} className={`${i > 0 ? 'mt-3' : ''} pl-3 border-l-2 border-[#d6ebe3]`}>
                 <p className="font-bold text-gray-900 text-xs">{e.role}</p>
                 <div className="flex justify-between">
-                  <p className="text-purple-600">{e.company}</p>
+                  <p className="text-[#135a4b]">{e.company}</p>
                   {(e.start_date || e.end_date) && (
                     <p className="text-gray-400">{e.start_date}{e.end_date ? ` – ${e.end_date}` : ''}</p>
                   )}
@@ -241,11 +241,11 @@ function CreativeTemplate({ resume }) {
         )}
         {resume.projects?.length > 0 && (
           <div>
-            <p className="text-[9px] font-semibold uppercase tracking-widest text-purple-600 mb-2">Projects</p>
+            <p className="text-[9px] font-semibold uppercase tracking-widest text-[#135a4b] mb-2">Projects</p>
             {resume.projects.map((p, i) => (
-              <div key={i} className={`${i > 0 ? 'mt-2' : ''} pl-3 border-l-2 border-purple-200`}>
+              <div key={i} className={`${i > 0 ? 'mt-2' : ''} pl-3 border-l-2 border-[#d6ebe3]`}>
                 <p className="font-bold text-gray-900 text-xs">{p.name}</p>
-                {p.tech_stack && <p className="text-purple-400 italic">{p.tech_stack}</p>}
+                {p.tech_stack && <p className="text-[#3fae91] italic">{p.tech_stack}</p>}
                 {p.description && <p className="text-gray-700 mt-0.5">{p.description}</p>}
               </div>
             ))}
@@ -253,7 +253,7 @@ function CreativeTemplate({ resume }) {
         )}
         {resume.education?.length > 0 && (
           <div>
-            <p className="text-[9px] font-semibold uppercase tracking-widest text-purple-600 mb-2">Education</p>
+            <p className="text-[9px] font-semibold uppercase tracking-widest text-[#135a4b] mb-2">Education</p>
             {resume.education.map((e, i) => (
               <div key={i} className={i > 0 ? 'mt-2' : ''}>
                 <p className="font-bold text-gray-900 text-xs">{e.degree}{e.field ? ` in ${e.field}` : ''}</p>
@@ -283,8 +283,8 @@ function CorpSection({ title, children }) {
   return (
     <div>
       <div className="flex items-center gap-2 mb-2">
-        <h2 className="text-xs font-bold text-blue-700 uppercase tracking-wider">{title}</h2>
-        <div className="flex-1 h-px bg-blue-100" />
+        <h2 className="text-xs font-bold text-[#135a4b] uppercase tracking-wider">{title}</h2>
+        <div className="flex-1 h-px bg-[#dbeae4]" />
       </div>
       {children}
     </div>
@@ -297,7 +297,7 @@ export default function ResumePreview() {
   return (
     <div
       id="resume-preview"
-      className="w-full shadow-xl rounded-xl overflow-hidden border border-gray-200"
+      className="resume-preview-shell resume-paper w-full overflow-hidden"
       style={{ minHeight: '842px' }}
     >
       {template === 'minimal' && <MinimalTemplate resume={resume} />}
