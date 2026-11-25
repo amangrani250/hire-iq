@@ -11,6 +11,8 @@ def _extract_json(text: str) -> dict:
     text = re.sub(r"^```(?:json)?\s*", "", text)
     text = re.sub(r"\s*```$", "", text)
     return json.loads(text)
+from utils.json_utils import safe_json
+from services.llm_service import call_llm
 
 
 async def generate_resume(raw_input: str, job_role: str = "") -> GenerateResumeResponse:

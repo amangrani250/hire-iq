@@ -33,6 +33,7 @@ if not exist ".env" (
     pause
 )
 
+
 if not exist "venv" (
     python -m venv venv
 )

@@ -497,7 +497,7 @@
 }
 
 /* ============================================================================
-   Product shell — resume builder
+   Product shell ï¿½ resume builder
    ========================================================================== */
 
 .builder-toolbar {
@@ -509,7 +509,7 @@
   @apply overflow-hidden rounded-xl border border-border bg-white shadow-md;
 }
 
-/* The document itself is always light — it is paper, not UI chrome. */
+/* The document itself is always light ï¿½ it is paper, not UI chrome. */
 .resume-paper {
   background: #fff;
   color: #181a19;

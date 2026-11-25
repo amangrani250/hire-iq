@@ -2,15 +2,17 @@ import uuid
 import time
 import asyncio
 from datetime import datetime, timezone
+import base64
 from fastapi import APIRouter, File, UploadFile, HTTPException
 from pydantic import BaseModel
 from typing import List
-import orjson
 from core.config import settings, log
 from core.session import sessions
 from utils.pdf_extractor import extract_resume_text
+from utils.json_utils import safe_json
+from utils.system_msg import build_system_message
 from services.llm_service import call_llm
-from services.audio_service import transcribe_audio_bytes
+from services.audio_service import transcribe_audio_bytes, text_to_speech_bytes
 
 # FastAPI serializes responses directly via Pydantic; no custom response class needed.
 router = APIRouter()
@@ -32,6 +34,7 @@ async def health():
         "version": "2.0.0",
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
+
 
 @router.post("/api/upload-resume")
 async def upload_resume(file: UploadFile = File(...)):
@@ -57,14 +60,12 @@ async def upload_resume(file: UploadFile = File(...)):
     session_id = str(uuid.uuid4())
     sessions[session_id] = {
         "resume_text": resume_text[:settings.MAX_RESUME_CHARS],
-        "history": [
-            {"role": "user", "content": "Hi, I'm ready for the interview."}
-        ],
+        "history": [{"role": "user", "content": "Hi, I'm ready for the interview."}],
         "stage": "greeting",
         "question_count": 0,
         "last_active": time.time(),
         "created_at": time.time(),
-        "interview_type": "resume"
+        "interview_type": "resume",
     }
 
     log.info("Session created: %s (resume: %d chars)", session_id[:8], len(resume_text))
@@ -92,7 +93,6 @@ async def upload_resume(file: UploadFile = File(...)):
 
 @router.post("/api/analyze-resume")
 async def analyze_resume(file: UploadFile = File(...)):
-    """Deep-analyze a resume: extract profile, experience timeline, skills, and ATS score."""
     filename = (file.filename or "").lower()
     if filename.endswith(".doc"):
         raise HTTPException(
@@ -123,6 +123,11 @@ async def analyze_resume(file: UploadFile = File(...)):
                 "{\n"
                 '  "name": "Full Name",\n'
                 '  "role": "Current/Target Job Title",\n'
+                '  "email": "email@example.com",\n'
+                '  "phone": "+1 123-456-7890",\n'
+                '  "location": "City, State",\n'
+                '  "linkedin": "https://linkedin.com/in/...",\n'
+                '  "github": "https://github.com/...",\n'
                 '  "summary": "2-3 sentence professional summary",\n'
                 '  "experience": [\n'
                 "    {\n"
@@ -145,11 +150,19 @@ async def analyze_resume(file: UploadFile = File(...)):
                 '      "year": "2020"\n'
                 "    }\n"
                 "  ],\n"
+                '  "certifications": [\n'
+                "    {\n"
+                '      "name": "AWS Certified Solutions Architect",\n'
+                '      "issuer": "Amazon Web Services",\n'
+                '      "year": "2023"\n'
+                "    }\n"
+                "  ],\n"
                 '  "total_years": "e.g. 5+"\n'
                 "}\n\n"
-                "If any field is not found, use reasonable defaults. "
-                "For skills, categorize them intelligently. "
-                "For experience, list in reverse chronological order."
+                "Extract every field from the resume text. If a field is not present, use an empty string "
+                "or empty array as appropriate. For skills, categorize them intelligently. "
+                "For experience, list in reverse chronological order. "
+                "For certifications, extract all listed certifications with issuer and year if available."
             ),
         },
         {"role": "user", "content": trimmed},
@@ -189,53 +202,46 @@ async def analyze_resume(file: UploadFile = File(...)):
         log.error("Resume analysis LLM error: %s", e)
         raise HTTPException(status_code=500, detail="Failed to analyze resume. Please try again.")
 
-    try:
-        profile_raw = profile_raw.strip().lstrip("```json").lstrip("```").rstrip("```").strip()
-        profile = orjson.loads(profile_raw)
-    except Exception:
-        log.warning("Profile parse failed, raw: %s", profile_raw[:300])
-        profile = {
-            "name": "Candidate",
-            "role": "Professional",
-            "summary": "Unable to parse profile details.",
-            "experience": [],
-            "skills": {"languages": [], "frameworks": [], "tools": [], "other": []},
-            "education": [],
-            "total_years": "N/A",
-        }
-
-    try:
-        ats_raw = ats_raw.strip().lstrip("```json").lstrip("```").rstrip("```").strip()
-        ats = orjson.loads(ats_raw)
-    except Exception:
-        log.warning("ATS parse failed, raw: %s", ats_raw[:300])
-        ats = {
-            "overall_score": 65,
-            "breakdown": {
-                "keyword_optimization": {"score": 65, "feedback": "Analysis unavailable"},
-                "formatting": {"score": 65, "feedback": "Analysis unavailable"},
-                "section_completeness": {"score": 65, "feedback": "Analysis unavailable"},
-                "impact_metrics": {"score": 65, "feedback": "Analysis unavailable"},
-                "readability": {"score": 65, "feedback": "Analysis unavailable"},
-            },
-            "top_suggestions": ["Unable to generate suggestions at this time."],
-        }
+    profile = safe_json(profile_raw, {
+        "name": "Candidate",
+        "role": "Professional",
+        "email": "",
+        "phone": "",
+        "location": "",
+        "linkedin": "",
+        "github": "",
+        "summary": "Unable to parse profile details.",
+        "experience": [],
+        "skills": {"languages": [], "frameworks": [], "tools": [], "other": []},
+        "education": [],
+        "certifications": [],
+        "total_years": "N/A",
+    })
+    ats = safe_json(ats_raw, {
+        "overall_score": 65,
+        "breakdown": {
+            "keyword_optimization": {"score": 65, "feedback": "Analysis unavailable"},
+            "formatting": {"score": 65, "feedback": "Analysis unavailable"},
+            "section_completeness": {"score": 65, "feedback": "Analysis unavailable"},
+            "impact_metrics": {"score": 65, "feedback": "Analysis unavailable"},
+            "readability": {"score": 65, "feedback": "Analysis unavailable"},
+        },
+        "top_suggestions": ["Unable to generate suggestions at this time."],
+    })
 
     session_id = str(uuid.uuid4())
     sessions[session_id] = {
         "resume_text": trimmed,
-        "history": [
-            {"role": "user", "content": "Hi, I'm ready for the interview."}
-        ],
+        "history": [{"role": "user", "content": "Hi, I'm ready for the interview."}],
         "stage": "greeting",
         "question_count": 0,
         "last_active": time.time(),
         "created_at": time.time(),
-        "interview_type": "resume"
+        "interview_type": "resume",
     }
 
     log.info("Session created from analysis: %s (resume: %d chars)", session_id[:8], len(trimmed))
-    
+
     try:
         skills_list = profile.get("skills", {}).get("languages", []) + profile.get("skills", {}).get("frameworks", [])
     except Exception:
@@ -250,82 +256,92 @@ async def analyze_resume(file: UploadFile = File(...)):
             "name": profile.get("name", "Candidate"),
             "role": profile.get("role", "Professional"),
             "skills": skills_list,
-            "years": profile.get("total_years", "")
-        }
+            "years": profile.get("total_years", ""),
+        },
     }
+
 
 @router.post("/api/transcribe")
 async def transcribe_audio(file: UploadFile = File(...)):
-    """Transcribe audio blob using Whisper."""
     audio_bytes = await file.read()
     text = await transcribe_audio_bytes(audio_bytes, file.content_type or "")
     return {"transcript": text}
+
 
 class TechInterviewRequest(BaseModel):
     languages: List[str]
     complexity: str
 
+
 @router.post("/api/setup-tech-interview")
 async def setup_tech_interview(req: TechInterviewRequest):
     session_id = str(uuid.uuid4())
-    
+
     sessions[session_id] = {
         "resume_text": "",
         "languages": req.languages,
         "complexity": req.complexity,
         "history": [
-            {"role": "user", "content": f"Hi, I'm ready for the technical interview. I want {req.complexity} complexity questions on {', '.join(req.languages)}."}
+            {
+                "role": "user",
+                "content": f"Hi, I'm ready for the technical interview. I want {req.complexity} complexity questions on {', '.join(req.languages)}.",
+            }
         ],
         "stage": "greeting",
         "question_count": 0,
         "last_active": time.time(),
         "created_at": time.time(),
-        "interview_type": "tech"
+        "interview_type": "tech",
     }
-    
+
     log.info("Tech interview session created: %s", session_id[:8])
-    
+
     return {
         "session_id": session_id,
         "candidate": {
             "name": "Candidate",
             "role": f"{req.complexity.title()} Level Engineer",
             "skills": req.languages,
-            "years": ""
-        }
+            "years": "",
+        },
     }
+
 
 class TranscriptMessage(BaseModel):
     speaker: str
     text: str
     ts: int = 0
 
+
 class FeedbackRequest(BaseModel):
     transcript: List[TranscriptMessage]
 
+
 @router.post("/api/interview-feedback")
 async def get_interview_feedback(req: FeedbackRequest):
-    """Generate constructive feedback based on the interview transcript."""
     if not req.transcript:
         return {
             "good_points": "No interview data found.",
             "bad_points": "The interview was too short to evaluate.",
-            "improvements": "Try to complete a full mock interview session."
+            "improvements": "Try to complete a full mock interview session.",
         }
-        
+
     text_transcript = "\n".join([f"{m.speaker}: {m.text}" for m in req.transcript])
-    
+
     prompt = [
-        {"role": "system", "content": (
-            "You are an expert technical interviewer evaluator. Analyze the following interview transcript. "
-            "Return ONLY a valid JSON object, no extra markdown text, with these keys: "
-            "'good_points' (string summarizing strengths), "
-            "'bad_points' (string summarizing weaknesses), "
-            "'improvements' (string with actionable advice)."
-        )},
-        {"role": "user", "content": text_transcript[:10000]}
+        {
+            "role": "system",
+            "content": (
+                "You are an expert technical interviewer evaluator. Analyze the following interview transcript. "
+                "Return ONLY a valid JSON object, no extra markdown text, with these keys: "
+                "'good_points' (string summarizing strengths), "
+                "'bad_points' (string summarizing weaknesses), "
+                "'improvements' (string with actionable advice)."
+            ),
+        },
+        {"role": "user", "content": text_transcript[:10000]},
     ]
-    
+
     try:
         raw = await call_llm(prompt, max_tokens=1000, task="feedback")
         raw = raw.strip().lstrip("```json").lstrip("```").rstrip("```").strip()
@@ -333,22 +349,21 @@ async def get_interview_feedback(req: FeedbackRequest):
         return data
     except Exception as e:
         log.error("Feedback LLM error: %s", e)
-        return {
-            "good_points": "You communicated your ideas clearly.",
-            "bad_points": "Unable to perform deep analysis at this time due to high server load.",
-            "improvements": "Practice breaking down your thoughts systematically."
-        }
+
+    return {
+        "good_points": "You communicated your ideas clearly.",
+        "bad_points": "Unable to perform deep analysis at this time due to high server load.",
+        "improvements": "Practice breaking down your thoughts systematically.",
+    }
+
 
 class InterviewMessageRequest(BaseModel):
     session_id: str
     text: str | None = None
 
+
 @router.post("/api/interview/respond")
 async def interview_respond_rest(req: InterviewMessageRequest):
-    """
-    REST fallback for interview dialogue. 
-    Mirrors the logic in ws.py but returns transcript and audio in a single response.
-    """
     session_id = req.session_id
     user_text = req.text
 
@@ -356,19 +371,7 @@ async def interview_respond_rest(req: InterviewMessageRequest):
         raise HTTPException(status_code=404, detail="Session not found.")
 
     session = sessions[session_id]
-    from services.llm_service import SYSTEM_PROMPT, TECH_SYSTEM_PROMPT
-    from services.audio_service import text_to_speech_bytes
-    import base64
-
-    if session.get("interview_type") == "tech":
-        system_msg_content = f"{TECH_SYSTEM_PROMPT}\n\n--- INTERVIEW PARAMETERS ---\nLanguages: {', '.join(session.get('languages', []))}\nComplexity: {session.get('complexity', 'medium')}"
-    else:
-        system_msg_content = f"{SYSTEM_PROMPT}\n\n--- CANDIDATE RESUME ---\n{session.get('resume_text', '')}"
-
-    system_msg = {
-        "role": "system",
-        "content": system_msg_content,
-    }
+    system_msg = build_system_message(session)
 
     try:
         messages = [system_msg] + session["history"]
@@ -383,12 +386,10 @@ async def interview_respond_rest(req: InterviewMessageRequest):
             session["history"].append({"role": "user", "content": user_text})
         session["history"].append({"role": "assistant", "content": ai_text})
         session["question_count"] += 1
-        
-        # Trim history
+
         if len(session["history"]) > 40:
             session["history"] = session["history"][-40:]
 
-        # Call TTS
         audio_bytes = await text_to_speech_bytes(ai_text)
         audio_b64 = base64.b64encode(audio_bytes).decode() if audio_bytes else None
 
@@ -397,51 +398,35 @@ async def interview_respond_rest(req: InterviewMessageRequest):
             "speaker": "interviewer",
             "text": ai_text,
             "audio": audio_b64,
-            "format": "mp3"
+            "format": "mp3",
         }
 
     except Exception as e:
         log.error("REST interview response error: %s", e)
         raise HTTPException(status_code=500, detail="Error generating interviewer response.")
 
+
 @router.post("/api/interview/end")
 async def interview_end_rest(req: InterviewMessageRequest):
-    """REST endpoint to end interview and get closing message."""
     session_id = req.session_id
     if session_id not in sessions:
-        return {"status": "ok"} # Graceful
+        return {"status": "ok"}
 
     session = sessions[session_id]
-    from services.llm_service import SYSTEM_PROMPT, TECH_SYSTEM_PROMPT
-    from services.audio_service import text_to_speech_bytes
-    import base64
+    system_msg = build_system_message(session)
 
     feedback_prompt = (
         "Based on this interview conversation, provide a brief, warm closing "
         "message (2-3 sentences) telling the candidate what went well and next steps. "
         "Sound like a real human interviewer wrapping up a call."
     )
-    
-    if session.get("interview_type") == "tech":
-        system_msg_content = f"{TECH_SYSTEM_PROMPT}\n\n--- INTERVIEW PARAMETERS ---\nLanguages: {', '.join(session.get('languages', []))}\nComplexity: {session.get('complexity', 'medium')}"
-    else:
-        system_msg_content = f"{SYSTEM_PROMPT}\n\n--- CANDIDATE RESUME ---\n{session.get('resume_text', '')}"
 
-    system_msg = {
-        "role": "system",
-        "content": system_msg_content,
-    }
-    
     messages = [system_msg] + session["history"] + [{"role": "user", "content": feedback_prompt}]
-    
+
     try:
         closing = await call_llm(messages, task="feedback")
         audio = await text_to_speech_bytes(closing)
         audio_b64 = base64.b64encode(audio).decode() if audio else None
-        
-        return {
-            "text": closing,
-            "audio": audio_b64
-        }
+        return {"text": closing, "audio": audio_b64}
     except Exception:
         return {"text": "Thank you for the interview today. We will be in touch soon.", "audio": None}
