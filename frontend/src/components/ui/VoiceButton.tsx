@@ -1,7 +1,14 @@
 import { Mic, MicOff } from 'lucide-react';
 import { cn } from '../../lib/cn';
 
-export default function VoiceButton({ listening, supported, onToggle, className = '' }) {
+export interface VoiceButtonProps {
+  listening: boolean;
+  supported: boolean;
+  onToggle: () => void;
+  className?: string;
+}
+
+export default function VoiceButton({ listening, supported, onToggle, className = '' }: VoiceButtonProps) {
   if (!supported) return null;
 
   return (

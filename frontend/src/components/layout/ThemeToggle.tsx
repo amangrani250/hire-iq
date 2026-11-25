@@ -1,27 +1,28 @@
 import { useEffect, useRef, useState } from 'react';
 import { Check, ChevronDown, Monitor, Moon, Sun } from 'lucide-react';
-import { useTheme } from '../../context/ThemeContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { cn } from '../../lib/cn';
+import type { ThemeMode } from '../../types';
 
-const OPTIONS = [
+const OPTIONS: Array<{ value: ThemeMode; label: string; icon: typeof Sun }> = [
   { value: 'light', label: 'Light', icon: Sun },
   { value: 'dark', label: 'Dark', icon: Moon },
   { value: 'system', label: 'System', icon: Monitor },
 ];
 
-export default function ThemeToggle({ className }) {
+export default function ThemeToggle({ className }: { className?: string }) {
   const { mode, setMode, theme } = useTheme();
   const [open, setOpen] = useState(false);
-  const wrapperRef = useRef(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const ActiveIcon = theme === 'dark' ? Moon : Sun;
 
   useEffect(() => {
     if (!open) return undefined;
 
-    const onPointerDown = (event) => {
-      if (!wrapperRef.current?.contains(event.target)) setOpen(false);
+    const onPointerDown = (event: MouseEvent) => {
+      if (!wrapperRef.current?.contains(event.target as Node)) setOpen(false);
     };
-    const onKeyDown = (event) => {
+    const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setOpen(false);
     };
 

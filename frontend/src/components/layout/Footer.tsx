@@ -7,6 +7,7 @@ const COLUMNS = [
     links: [
       { to: '/upload', label: 'Resume interview' },
       { to: '/tech-interview', label: 'Technical round' },
+      { to: '/job-prep', label: 'Job prep' },
     ],
   },
   {
@@ -14,6 +15,7 @@ const COLUMNS = [
     links: [
       { to: '/builder', label: 'Builder' },
       { to: '/saved', label: 'Saved resumes' },
+      { to: '/job-roadmap', label: 'Roadmap' },
     ],
   },
 ];

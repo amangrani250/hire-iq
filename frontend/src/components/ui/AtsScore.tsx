@@ -1,6 +1,6 @@
-import { useResume } from '../../context/ResumeContext';
+import { useResume } from '../../contexts/ResumeContext';
 
-function toneFor(score) {
+function toneFor(score: number) {
   if (score >= 80) return { color: 'var(--color-success)', label: 'Excellent' };
   if (score >= 60) return { color: 'var(--color-warning)', label: 'Good' };
   return { color: 'var(--color-danger)', label: 'Needs work' };

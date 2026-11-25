@@ -1,6 +1,15 @@
+import type { ComponentType, ReactNode } from 'react';
 import { cn } from '../../lib/cn';
 
-export default function EmptyState({ icon: Icon, title, description, action, className }) {
+export interface EmptyStateProps {
+  icon?: ComponentType<{ size?: number; className?: string }>;
+  title: ReactNode;
+  description?: ReactNode;
+  action?: ReactNode;
+  className?: string;
+}
+
+export default function EmptyState({ icon: Icon, title, description, action, className }: EmptyStateProps) {
   return (
     <div
       className={cn(

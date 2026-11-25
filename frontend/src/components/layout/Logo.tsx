@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { cn } from '../../lib/cn';
 
-export function LogoMark({ className }) {
+export function LogoMark({ className }: { className?: string }) {
   return (
     <span
       className={cn(
@@ -17,7 +17,15 @@ export function LogoMark({ className }) {
   );
 }
 
-export default function Logo({ to = '/', className, showWordmark = true }) {
+export default function Logo({
+  to = '/',
+  className,
+  showWordmark = true,
+}: {
+  to?: string;
+  className?: string;
+  showWordmark?: boolean;
+}) {
   return (
     <Link
       to={to}

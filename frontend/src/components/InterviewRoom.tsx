@@ -9,6 +9,7 @@ import { useInterval } from '../hooks/useInterval';
 import { useSpeechToText } from '../hooks/useSpeechToText';
 import { stopAllMediaTracks } from '../utils';
 import { InterviewProvider, useInterviewContext } from '../contexts/InterviewContext';
+import { LogoMark } from './layout/Logo';
 import toast from 'react-hot-toast';
 import type { CandidateInfo } from '../types';
 
@@ -177,7 +178,7 @@ function InterviewRoomInner({
     <div className="room-root">
       <header className="room-header">
         <div className="room-logo-row">
-          <div className="room-logo-dot" />
+          <LogoMark className="h-6 w-6 rounded-[7px]" />
           <span className="room-logo-name">HireIQ</span>
         </div>
         <div className="room-header-center">
@@ -189,10 +190,10 @@ function InterviewRoomInner({
 
       <div className="room-main">
         <div className="room-video-area">
-          <VideoTile role="interviewer" name={interviewerName} speaking={interviewerSpeaking} large avatarChar="A" accentColor="#4f8ef7" />
+          <VideoTile role="interviewer" name={interviewerName} speaking={interviewerSpeaking} large avatarChar="A" accentColor="hsl(var(--primary))" />
           <div className="room-small-tiles">
             <VideoTile role="candidate" name={candidateName} camOn={camOn} speaking={candidateSpeaking} muted={!micOn}
-              avatarChar={candidateName[0]} accentColor="#30d986" />
+              avatarChar={candidateName[0]} accentColor="hsl(var(--success))" />
           </div>
 
           <div className="room-status-overlay">

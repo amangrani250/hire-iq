@@ -1,6 +1,15 @@
+import type { ReactNode } from 'react';
 import { cn } from '../../lib/cn';
 
-export default function PageHeader({ eyebrow, title, description, actions, className }) {
+export interface PageHeaderProps {
+  eyebrow?: ReactNode;
+  title: ReactNode;
+  description?: ReactNode;
+  actions?: ReactNode;
+  className?: string;
+}
+
+export default function PageHeader({ eyebrow, title, description, actions, className }: PageHeaderProps) {
   return (
     <div className={cn('flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between', className)}>
       <div className="max-w-2xl">

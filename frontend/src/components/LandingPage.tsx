@@ -1,316 +1,510 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { motion, useScroll, useTransform, type Variants } from 'framer-motion';
+import type { ReactNode } from 'react';
+import { Link } from 'react-router-dom';
+import { motion, useReducedMotion } from 'framer-motion';
 import {
-  Zap, Upload, Mic, Brain, MessageSquare, Shield,
-  Clock, Sparkles, ArrowRight, ChevronDown, Bot,
-  FileText, Volume2, Eye, BarChart3, Globe, Star,
-  CheckCircle, Play, Users, Cpu, Layers,
+  ArrowRight,
+  ArrowUpRight,
+  BarChart3,
+  Check,
+  Code2,
+  FileText,
+  MessagesSquare,
+  Mic,
+  Play,
+  Sparkles,
 } from 'lucide-react';
-import { useDocumentMeta } from '../hooks/useDocumentMeta';
+import Button from './ui/Button';
+import usePageTitle from '../hooks/usePageTitle';
 
-const ease = [0.22, 1, 0.36, 1] as const;
+const STEPS = [
+  {
+    number: '01',
+    title: 'Add your resume',
+    description:
+      'Upload a PDF or Word file, or build one in the studio. HireIQ extracts your role, skills, and experience to shape the questions.',
+  },
+  {
+    number: '02',
+    title: 'Choose the format',
+    description:
+      'Run a resume-aware conversation, or configure a technical screen with your stack and difficulty level.',
+  },
+  {
+    number: '03',
+    title: 'Speak naturally',
+    description:
+      'Aira asks one question at a time, listens for silence, and responds like a real interviewer would.',
+  },
+  {
+    number: '04',
+    title: 'Review the tape',
+    description:
+      'Get a full transcript and structured notes on strengths, weaknesses, and the next thing to fix.',
+  },
+];
 
-const fadeUp: Variants = {
-  hidden: { opacity: 0, y: 40 },
-  visible: (i = 0) => ({
-    opacity: 1, y: 0,
-    transition: { duration: 0.7, delay: i * 0.12, ease },
-  }),
-};
+const SIGNALS = [
+  'Resume-aware questions',
+  'Voice-native sessions',
+  'Live transcript',
+  'Structured feedback',
+];
 
-const fadeIn: Variants = {
-  hidden: { opacity: 0 },
-  visible: (i = 0) => ({
-    opacity: 1,
-    transition: { duration: 0.6, delay: i * 0.1, ease: 'easeOut' },
-  }),
-};
+const LANGUAGES = ['JavaScript', 'Python', 'TypeScript', 'Go', 'Java', 'C++'];
+const EASE = [0.22, 1, 0.36, 1] as const;
 
-const scaleIn: Variants = {
-  hidden: { opacity: 0, scale: 0.85 },
-  visible: (i = 0) => ({
-    opacity: 1, scale: 1,
-    transition: { duration: 0.6, delay: i * 0.12, ease },
-  }),
-};
-
-const stagger: Variants = {
-  visible: { transition: { staggerChildren: 0.1, delayChildren: 0.15 } },
-};
-
-function FloatingOrb({ color, size, top, left, delay = 0 }: { color: string; size: number; top: string; left: string; delay?: number }) {
-  return (
-    <div
-      className="landing-orb"
-      style={{
-        width: size, height: size, top, left,
-        background: `radial-gradient(circle, ${color}30, ${color}05)`,
-        border: `1px solid ${color}15`,
-        animationDelay: `${delay}s`,
-      }}
-    />
-  );
+interface RevealProps {
+  children: ReactNode;
+  delay?: number;
+  className?: string;
 }
 
-function AnimatedStat({ value, suffix = '', label }: { value: string; suffix?: string; label: string }) {
-  const [count, setCount] = useState(0);
-
-  useEffect(() => {
-    let start = 0;
-    const end = parseInt(value);
-    const duration = 2000;
-    const stepTime = Math.max(Math.floor(duration / end), 20);
-    const timer = setInterval(() => {
-      start += 1;
-      setCount(start);
-      if (start >= end) clearInterval(timer);
-    }, stepTime);
-    return () => clearInterval(timer);
-  }, [value]);
+function Reveal({ children, delay = 0, className }: RevealProps) {
+  const reduceMotion = useReducedMotion();
 
   return (
-    <motion.div className="landing-stat" variants={fadeUp}>
-      <span className="landing-stat-value">{count}{suffix}</span>
-      <span className="landing-stat-label">{label}</span>
+    <motion.div
+      className={className}
+      initial={reduceMotion ? false : { opacity: 0, y: 16 }}
+      whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay, ease: EASE }}
+      viewport={{ once: true, margin: '-60px' }}
+    >
+      {children}
     </motion.div>
   );
 }
 
-interface Feature {
-  icon: React.ReactNode;
-  title: string;
-  desc: string;
-  color: string;
-  action?: () => void;
-}
+function SessionPreview() {
+  return (
+    <div className="relative">
+      <div
+        className="dot-grid pointer-events-none absolute -inset-x-8 -inset-y-10 -z-0 opacity-70"
+        aria-hidden="true"
+      />
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.7, delay: 0.15, ease: EASE }}
+        className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-lg"
+      >
+        <div className="flex items-center justify-between border-b border-border px-4 py-3">
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <Mic size={15} />
+            </span>
+            <div>
+              <p className="text-[12px] font-medium leading-tight text-foreground">Interview session</p>
+              <p className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-muted-foreground">
+                Aira · voice
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2.5">
+            <span className="badge badge-success">
+              <span className="h-1.5 w-1.5 rounded-full bg-success" />
+              Live
+            </span>
+            <span className="font-mono text-[11px] tabular-nums text-muted-foreground">12:04</span>
+          </div>
+        </div>
 
-interface Advantage {
-  icon: React.ReactNode;
-  title: string;
-  desc: string;
-}
+        <div className="p-4 sm:p-5">
+          <div className="flex items-center justify-between gap-3 border-b border-border pb-4">
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-muted text-[13px] font-medium text-foreground">
+                A
+              </span>
+              <div>
+                <p className="text-[12.5px] font-medium text-foreground">Technical screen</p>
+                <p className="text-[11px] text-muted-foreground">Frontend · Senior</p>
+              </div>
+            </div>
+            <span className="badge">Question 4 / 8</span>
+          </div>
 
-interface Step {
-  num: string;
-  icon: React.ReactNode;
-  title: string;
-  desc: string;
+          <div className="mt-4 flex gap-2.5">
+            <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <Sparkles size={13} />
+            </span>
+            <div className="max-w-[86%] rounded-xl rounded-tl-sm border border-border bg-muted px-3.5 py-2.5 text-[12.5px] leading-relaxed text-foreground">
+              Walk me through how you would debug a render loop in React.
+            </div>
+          </div>
+
+          <div className="mt-3 flex justify-end gap-2.5">
+            <div className="max-w-[86%] rounded-xl rounded-tr-sm bg-primary px-3.5 py-2.5 text-[12.5px] leading-relaxed text-primary-foreground">
+              I&apos;d start with the dependency array, then confirm whether state is being set during
+              render…
+            </div>
+            <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-border bg-card text-[11px] font-medium text-foreground">
+              Y
+            </span>
+          </div>
+
+          <div className="mt-4 flex items-center gap-3 rounded-lg border border-border bg-subtle px-3 py-2.5">
+            <span className="text-primary">
+              <Mic size={14} />
+            </span>
+            <div className="flex h-4 flex-1 items-center gap-[3px]" aria-hidden="true">
+              {[10, 16, 7, 13, 18, 9, 14, 6, 11, 17, 8, 12].map((height, index) => (
+                <span
+                  key={index}
+                  className="w-[2.5px] rounded-full bg-primary/70 motion-safe:animate-[wave_1s_ease-in-out_infinite]"
+                  style={{ height, animationDelay: `${index * 0.07}s` }}
+                />
+              ))}
+            </div>
+            <span className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-muted-foreground">
+              Listening
+            </span>
+          </div>
+        </div>
+
+        <div className="border-t border-border px-4 py-3.5">
+          <div className="flex items-center justify-between text-[11px]">
+            <span className="text-muted-foreground">Interview progress</span>
+            <span className="font-medium text-foreground">50%</span>
+          </div>
+          <div className="meter mt-2">
+            <div className="meter-fill" style={{ width: '50%' }} />
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
 }
 
 export default function LandingPage() {
-  useDocumentMeta(undefined, 'AI-powered interview coach and resume builder. Practice with a realistic AI interviewer.');
-  const navigate = useNavigate();
-  const { scrollYProgress } = useScroll();
-  const heroY = useTransform(scrollYProgress, [0, 0.3], [0, -80]);
-  const heroOpacity = useTransform(scrollYProgress, [0, 0.25], [1, 0]);
-
-  const features: Feature[] = [
-    { icon: <Layers size={24} />, title: 'AI Resume Builder', desc: 'Create, refine, and export professional resumes in minutes. Our AI helps you highlight your strengths and stand out from the competition.', color: 'var(--accent)' },
-    { icon: <Cpu size={24} />, title: 'Smart Mock Interviews', desc: 'Practice with an AI interviewer that adapts to your experience level and target role. Get asked relevant questions that mirror real interviews.', color: 'var(--amber)' },
-    { icon: <Brain size={24} />, title: 'Personalized Roadmaps', desc: 'Pick your dream job and receive a day-by-day preparation plan. Complete each step, then face a tailored AI interview.', color: '#10b981', action: () => navigate('/job-prep') },
-    { icon: <Volume2 size={24} />, title: 'Natural Voice Conversations', desc: 'Speak naturally with automatic voice detection — no buttons to press. Our AI listens, understands, and responds in real time.', color: 'var(--accent-2)' },
-    { icon: <MessageSquare size={24} />, title: 'Live Transcript & Review', desc: 'Every word is captioned in real time. Review your responses after the session to identify areas for improvement.', color: '#e06cf5' },
-    { icon: <Star size={24} />, title: 'Instant Performance Feedback', desc: 'Get structured AI evaluation at the end of every session with actionable insights to help you improve faster.', color: '#f56c6c' },
-  ];
-
-  const advantages: Advantage[] = [
-    { icon: <Clock size={20} />, title: 'All-in-One Platform', desc: 'From building the perfect resume to practicing interviews, everything you need is in one place.' },
-    { icon: <Shield size={20} />, title: 'Practice Without Pressure', desc: 'Build confidence in a private, judgment-free environment before facing real hiring managers.' },
-    { icon: <Sparkles size={20} />, title: 'Tailored to Your Goals', desc: 'Whether you are aiming for a startup or a Fortune 500 company, interviews adapt to your background.' },
-    { icon: <Globe size={20} />, title: 'Completely Free', desc: 'No subscriptions, no credit cards, no hidden fees. Unlimited practice sessions, always free.' },
-    { icon: <BarChart3 size={20} />, title: 'Track Your Progress', desc: 'See how you improve over time with detailed feedback on your answers, confidence, and readiness.' },
-    { icon: <Users size={20} />, title: 'Any Role, Any Industry', desc: 'From software engineering to marketing, finance to design — prepare for any career path.' },
-  ];
-
-  const steps: Step[] = [
-    { num: '01', icon: <FileText size={28} />, title: 'Build or Upload Your Resume', desc: 'Use our AI builder to craft a standout resume from scratch, or upload your existing one instantly.' },
-    { num: '02', icon: <Mic size={28} />, title: 'Choose Your Interview Type', desc: 'Pick a comprehensive interview based on your resume, or focus on specific skills and topics.' },
-    { num: '03', icon: <Play size={28} />, title: 'Practice with AI', desc: 'Have a natural conversation with your AI interviewer. Answer questions, get follow-ups, just like the real thing.' },
-    { num: '04', icon: <BarChart3 size={28} />, title: 'Review & Improve', desc: 'Get instant feedback on your performance with actionable tips to boost your interview skills.' },
-  ];
+  usePageTitle('AI interview studio');
 
   return (
-    <div className="landing-root">
-      <div className="landing-grid" aria-hidden="true" />
-      <FloatingOrb color="#4f8ef7" size={400} top="-5%" left="-10%" delay={0} />
-      <FloatingOrb color="#7c6af5" size={300} top="15%" left="75%" delay={2} />
-      <FloatingOrb color="#30d986" size={250} top="55%" left="-5%" delay={4} />
-      <FloatingOrb color="#f5a623" size={200} top="70%" left="80%" delay={3} />
-
-      <motion.section className="landing-hero" style={{ y: heroY, opacity: heroOpacity }}>
-        <motion.div className="landing-hero-content" initial="hidden" animate="visible" variants={stagger}>
-          <motion.div className="landing-badge" variants={fadeUp} custom={0}>
-            <Sparkles size={14} />
-            <span>AI-Powered Interview Coach</span>
-          </motion.div>
-
-          <motion.h1 className="landing-hero-title" variants={fadeUp} custom={1}>
-            Your AI-Powered<br /><span className="landing-hero-gradient">Interview Coach</span>
-          </motion.h1>
-
-          <motion.p className="landing-hero-sub" variants={fadeUp} custom={2}>
-            Upload your resume and prepare for your dream job with a realistic AI interviewer.
-            Get personalized practice with tailored questions — just like the real thing.
-            <strong> Completely free.</strong>
-          </motion.p>
-
-          <motion.div className="landing-hero-actions" variants={fadeUp} custom={3}>
-            <motion.button
-              className="landing-btn-primary"
-              onClick={() => navigate('/upload')}
-              whileHover={{ scale: 1.03, boxShadow: '0 8px 40px rgba(79,142,247,0.4)' }}
-              whileTap={{ scale: 0.97 }}
+    <div className="overflow-hidden">
+      {/* ── Hero ────────────────────────────────────────────────────────── */}
+      <section className="relative">
+        <div className="container-page grid items-center gap-14 pb-20 pt-14 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 lg:pb-28 lg:pt-20">
+          <div>
+            <motion.p
+              className="eyebrow eyebrow-dot"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
             >
-              <Play size={18} /> Start Free Interview
-            </motion.button>
-            <motion.a href="#how-it-works" className="landing-btn-ghost" whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
-              See How it Works <ArrowRight size={16} />
-            </motion.a>
-          </motion.div>
+              AI interview studio
+            </motion.p>
 
-          <motion.div className="landing-stats-row" initial="hidden" animate="visible" variants={stagger}>
-            <AnimatedStat value="10" suffix="K+" label="Interviews Completed" />
-            <div className="landing-stat-divider" />
-            <AnimatedStat value="3" suffix="" label="Voice Options" />
-            <div className="landing-stat-divider" />
-            <AnimatedStat value="100" suffix="%" label="Free to Use" />
-          </motion.div>
-        </motion.div>
+            <motion.h1
+              className="display mt-5 text-[clamp(2.9rem,7vw,4.9rem)] text-foreground"
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.08, ease: EASE }}
+            >
+              Practice the room
+              <br />
+              <em>before</em> it matters.
+            </motion.h1>
 
-        <motion.div
-          className="landing-hero-visual"
-          initial={{ opacity: 0, x: 60, rotateY: -8 }}
-          animate={{ opacity: 1, x: 0, rotateY: 0 }}
-          transition={{ duration: 0.9, delay: 0.4, ease }}
-        >
-          <div className="landing-mock-card">
-            <div className="landing-mock-header">
-              <div className="landing-mock-dot" style={{ background: 'var(--red)' }} />
-              <div className="landing-mock-dot" style={{ background: 'var(--amber)' }} />
-              <div className="landing-mock-dot" style={{ background: 'var(--green)' }} />
-              <span className="landing-mock-title">Interview Session — Live</span>
+            <motion.p
+              className="display-sub mt-6 max-w-[46ch]"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.55, delay: 0.18, ease: EASE }}
+            >
+              HireIQ reads your resume, runs a realistic voice interview, and hands back a
+              transcript you can actually learn from. No scripts. No pressure. No account.
+            </motion.p>
+
+            <motion.div
+              className="mt-8 flex flex-wrap items-center gap-3"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.55, delay: 0.26, ease: EASE }}
+            >
+              <Button as={Link} to="/upload" size="lg">
+                <Play size={16} />
+                Start a mock interview
+              </Button>
+              <Button as={Link} to="/tech-interview" variant="outline" size="lg">
+                Configure technical round
+              </Button>
+            </motion.div>
+
+            <motion.div
+              className="mt-9 flex flex-wrap items-center gap-x-5 gap-y-2.5 border-t border-border pt-5"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.36 }}
+            >
+              {SIGNALS.map((signal) => (
+                <span
+                  key={signal}
+                  className="inline-flex items-center gap-1.5 font-mono text-[10.5px] uppercase tracking-[0.1em] text-muted-foreground"
+                >
+                  <Check size={11} className="text-primary" />
+                  {signal}
+                </span>
+              ))}
+            </motion.div>
+          </div>
+
+          <SessionPreview />
+        </div>
+      </section>
+
+      {/* ── Proof strip ─────────────────────────────────────────────────── */}
+      <section className="border-y border-border bg-subtle">
+        <div className="container-page grid grid-cols-2 gap-y-8 py-8 sm:grid-cols-4">
+          {[
+            ['8', 'questions per session'],
+            ['~12 min', 'for a realistic round'],
+            ['1', 'transcript to review'],
+            ['0', 'accounts required'],
+          ].map(([value, label]) => (
+            <div key={label} className="px-1">
+              <p className="font-display text-[24px] font-medium tracking-[-0.03em] text-foreground">
+                {value}
+              </p>
+              <p className="mt-0.5 text-[12px] text-muted-foreground">{label}</p>
             </div>
-            <div className="landing-mock-body">
-              <div className="landing-mock-interviewer">
-                <div className="landing-mock-avatar"><span>A</span><div className="landing-mock-ring" /></div>
-                <div className="landing-mock-wave">
-                  {[0, 1, 2, 3, 4].map((i) => (
-                    <div key={i} className="landing-mock-bar" style={{ animationDelay: `${i * 0.12}s` }} />
+          ))}
+        </div>
+      </section>
+
+      {/* ── How it works ────────────────────────────────────────────────── */}
+      <section className="container-page py-20 lg:py-28" id="how-it-works">
+        <Reveal className="mx-auto max-w-2xl text-center">
+          <p className="eyebrow justify-center">The practice loop</p>
+          <h2 className="mt-4 text-[clamp(1.9rem,3.4vw,2.8rem)] font-semibold tracking-[-0.035em] text-foreground">
+            Four steps. One honest rehearsal.
+          </h2>
+          <p className="mt-4 text-[15px] leading-relaxed text-muted-foreground">
+            Built to feel less like a test and more like the real conversation — with the replay
+            you never get after the real one.
+          </p>
+        </Reveal>
+
+        <div className="mt-12 grid gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-2 lg:grid-cols-4">
+          {STEPS.map((step, index) => (
+            <Reveal key={step.number} delay={index * 0.06} className="bg-card">
+              <div className="flex h-full flex-col gap-4 p-6">
+                <span className="font-mono text-[11px] font-medium tracking-[0.12em] text-primary">
+                  {step.number}
+                </span>
+                <div>
+                  <h3 className="text-[15px] font-semibold text-foreground">{step.title}</h3>
+                  <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
+                    {step.description}
+                  </p>
+                </div>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </section>
+
+      {/* ── Product surface ─────────────────────────────────────────────── */}
+      <section className="border-t border-border bg-subtle py-20 lg:py-28" id="features">
+        <div className="container-page">
+          <Reveal className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+            <div className="max-w-xl">
+              <p className="eyebrow">The whole loop</p>
+              <h2 className="mt-4 text-[clamp(1.9rem,3.4vw,2.8rem)] font-semibold tracking-[-0.035em] text-foreground">
+                Everything between the blank page and the offer.
+              </h2>
+            </div>
+            <p className="max-w-sm text-[13.5px] leading-relaxed text-muted-foreground">
+              Resume, rehearsal, and review live in one place — so the feedback is grounded in
+              something real.
+            </p>
+          </Reveal>
+
+          <div className="mt-12 grid gap-4 lg:grid-cols-12">
+            {/* Resume studio */}
+            <Reveal className="lg:col-span-7">
+              <div className="card flex h-full flex-col justify-between overflow-hidden sm:flex-row">
+                <div className="flex max-w-[58%] flex-col p-6 sm:p-8">
+                  <span className="mb-5 flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-subtle text-muted-foreground">
+                    <FileText size={16} />
+                  </span>
+                  <h3 className="text-[17px] font-semibold text-foreground">Resume studio</h3>
+                  <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
+                    Build an ATS-ready resume from plain language, then switch templates without
+                    losing a line. Export a clean PDF when it is ready.
+                  </p>
+                  <Link
+                    to="/builder"
+                    className="mt-5 inline-flex items-center gap-1.5 text-[13px] font-medium text-primary hover:underline"
+                  >
+                    Open the studio <ArrowUpRight size={13} />
+                  </Link>
+                </div>
+                <div className="relative mx-6 mb-6 mt-2 flex-1 self-stretch overflow-hidden rounded-lg border border-border bg-white p-4 shadow-xs sm:mx-0 sm:mb-0 sm:mt-6 sm:rounded-r-none sm:border-r-0">
+                  <div className="h-2 w-24 rounded-full bg-[#1c2924]" />
+                  <div className="mt-1.5 h-1 w-16 rounded-full bg-[#b9c3bd]" />
+                  <div className="mt-4 h-px w-full bg-[#e6e4dd]" />
+                  <div className="mt-3 h-1 w-full rounded-full bg-[#e6e4dd]" />
+                  <div className="mt-1.5 h-1 w-5/6 rounded-full bg-[#e6e4dd]" />
+                  <div className="mt-1.5 h-1 w-4/6 rounded-full bg-[#e6e4dd]" />
+                  <div className="mt-4 h-1.5 w-20 rounded-full bg-[#1c2924]" />
+                  <div className="mt-2 h-1 w-full rounded-full bg-[#e6e4dd]" />
+                  <div className="mt-1.5 h-1 w-11/12 rounded-full bg-[#e6e4dd]" />
+                  <div className="mt-1.5 h-1 w-3/4 rounded-full bg-[#e6e4dd]" />
+                  <div className="mt-4 flex gap-1.5">
+                    <span className="h-4 w-12 rounded-full bg-[#e8f1ec]" />
+                    <span className="h-4 w-10 rounded-full bg-[#e8f1ec]" />
+                    <span className="h-4 w-14 rounded-full bg-[#e8f1ec]" />
+                  </div>
+                </div>
+              </div>
+            </Reveal>
+
+            {/* Technical rounds */}
+            <Reveal delay={0.06} className="lg:col-span-5">
+              <div className="card flex h-full flex-col p-6 sm:p-8">
+                <span className="mb-5 flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-subtle text-muted-foreground">
+                  <Code2 size={16} />
+                </span>
+                <h3 className="text-[17px] font-semibold text-foreground">Technical rounds</h3>
+                <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
+                  Name the languages you want to be pushed on. Choose a complexity level and get a
+                  focused engineering screen.
+                </p>
+                <div className="mt-5 flex flex-wrap gap-1.5">
+                  {LANGUAGES.map((language) => (
+                    <span key={language} className="badge text-[11px]">
+                      {language}
+                    </span>
+                  ))}
+                  <span className="badge badge-primary text-[11px]">+ add your own</span>
+                </div>
+                <Link
+                  to="/tech-interview"
+                  className="mt-auto inline-flex items-center gap-1.5 pt-6 text-[13px] font-medium text-primary hover:underline"
+                >
+                  Configure a round <ArrowUpRight size={13} />
+                </Link>
+              </div>
+            </Reveal>
+
+            {/* Transcript */}
+            <Reveal delay={0.08} className="lg:col-span-5">
+              <div className="card flex h-full flex-col p-6 sm:p-8">
+                <span className="mb-5 flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-subtle text-muted-foreground">
+                  <MessagesSquare size={16} />
+                </span>
+                <h3 className="text-[17px] font-semibold text-foreground">Live transcript</h3>
+                <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
+                  Watch the conversation as it happens. Say something you want to revisit? It is
+                  already written down.
+                </p>
+                <div className="mt-5 space-y-2 rounded-lg border border-border bg-subtle p-3">
+                  <div className="flex gap-2">
+                    <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                    <p className="text-[11.5px] leading-relaxed text-muted-foreground">
+                      How would you make this component resilient to slow networks?
+                    </p>
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <p className="max-w-[85%] rounded-lg bg-primary px-2.5 py-1.5 text-[11.5px] leading-relaxed text-primary-foreground">
+                      Start with optimistic UI, then reconcile…
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </Reveal>
+
+            {/* Feedback */}
+            <Reveal delay={0.1} className="lg:col-span-7">
+              <div className="card flex h-full flex-col p-6 sm:p-8">
+                <span className="mb-5 flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-subtle text-muted-foreground">
+                  <BarChart3 size={16} />
+                </span>
+                <h3 className="text-[17px] font-semibold text-foreground">Feedback report</h3>
+                <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
+                  At the end, the transcript becomes notes: what landed, what wobbled, and what to
+                  rehearse next.
+                </p>
+                <div className="mt-5 grid gap-2.5 sm:grid-cols-3">
+                  {[
+                    ['Strengths', 'Clear structure and tradeoffs', 'success'],
+                    ['Weaknesses', 'Rushed the edge cases', 'danger'],
+                    ['Next', 'Rehearse failure modes', 'warning'],
+                  ].map(([title, copy, tone]) => (
+                    <div
+                      key={title}
+                      className={`rounded-lg border border-border border-t-2 bg-subtle p-3 ${
+                        tone === 'success'
+                          ? 'border-t-success'
+                          : tone === 'danger'
+                            ? 'border-t-danger'
+                            : 'border-t-warning'
+                      }`}
+                    >
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                        {title}
+                      </p>
+                      <p className="mt-1.5 text-[11.5px] leading-relaxed text-foreground">{copy}</p>
+                    </div>
                   ))}
                 </div>
               </div>
-              <div className="landing-mock-messages">
-                <motion.div className="landing-mock-msg landing-mock-msg--ai" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 1.2, duration: 0.5 }}>
-                  <Bot size={14} /><span>Tell me about a challenging project you've worked on and how you handled it.</span>
-                </motion.div>
-                <motion.div className="landing-mock-msg landing-mock-msg--user" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 2, duration: 0.5 }}>
-                  <span>I led a team of five to deliver a key feature under a tight deadline. We prioritized tasks and communicated closely to succeed.</span>
-                </motion.div>
+            </Reveal>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Closing CTA ─────────────────────────────────────────────────── */}
+      <section className="container-page py-16 lg:py-24">
+        <Reveal>
+          <div className="relative overflow-hidden rounded-2xl bg-primary px-6 py-14 text-primary-foreground sm:px-12 sm:py-16 lg:px-16">
+            <div
+              className="pointer-events-none absolute inset-0 opacity-[0.13]"
+              style={{
+                backgroundImage:
+                  'radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)',
+                backgroundSize: '22px 22px',
+              }}
+              aria-hidden="true"
+            />
+            <div className="relative max-w-2xl">
+              <p className="font-mono text-[10.5px] uppercase tracking-[0.16em] opacity-70">
+                Rehearsal beats repetition
+              </p>
+              <h2 className="display mt-4 text-[clamp(2.2rem,5vw,3.6rem)] text-primary-foreground">
+                Your next interview should be a <span className="italic">rehearsal</span>.
+              </h2>
+              <p className="mt-5 max-w-lg text-[14.5px] leading-relaxed opacity-80">
+                Start with your resume or skip straight to a technical round. The first session
+                takes about twelve minutes.
+              </p>
+              <div className="mt-8 flex flex-wrap items-center gap-3">
+                <Button
+                  as={Link}
+                  to="/upload"
+                  variant="secondary"
+                  size="lg"
+                  className="border-transparent bg-primary-foreground text-primary hover:bg-primary-foreground/90"
+                >
+                  Start a mock interview
+                  <ArrowRight size={16} />
+                </Button>
+                <Button
+                  as={Link}
+                  to="/tech-interview"
+                  variant="outline"
+                  size="lg"
+                  className="border-primary-foreground/25 bg-transparent text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
+                >
+                  Technical round
+                </Button>
               </div>
+              <p className="mt-6 font-mono text-[10px] uppercase tracking-[0.12em] opacity-60">
+                No account · Local-first · Free to use
+              </p>
             </div>
           </div>
-        </motion.div>
-
-        <div className="landing-scroll-hint"><ChevronDown size={20} /></div>
-      </motion.section>
-
-      <section className="landing-section" id="features">
-        <motion.div className="landing-section-header" initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} variants={stagger}>
-          <motion.span className="landing-section-tag" variants={fadeUp}>Features</motion.span>
-          <motion.h2 className="landing-section-title" variants={fadeUp} custom={1}>
-            Everything you need to<br /><span className="landing-hero-gradient">ace your next interview</span>
-          </motion.h2>
-          <motion.p className="landing-section-sub" variants={fadeUp} custom={2}>
-            From building your resume to practicing with realistic AI interviews, we give you the tools to succeed.
-          </motion.p>
-        </motion.div>
-
-        <motion.div className="landing-features-grid" initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-60px' }} variants={stagger}>
-          {features.map((f, i) => (
-            <motion.div
-              key={i} className="landing-feature-card" variants={scaleIn} custom={i}
-              whileHover={{ y: -6, boxShadow: `0 12px 40px ${f.color}15` }}
-              onClick={f.action || undefined} style={f.action ? { cursor: 'pointer' } : {}}
-            >
-              <div className="landing-feature-icon" style={{ background: `${f.color}15`, color: f.color }}>{f.icon}</div>
-              <h3 className="landing-feature-title">{f.title}</h3>
-              <p className="landing-feature-desc">{f.desc}</p>
-              {f.action && <div className="mt-3 text-xs font-semibold" style={{ color: f.color }}>Try It →</div>}
-            </motion.div>
-          ))}
-        </motion.div>
+        </Reveal>
       </section>
-
-      <section className="landing-section landing-section--alt" id="how-it-works">
-        <motion.div className="landing-section-header" initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} variants={stagger}>
-          <motion.span className="landing-section-tag" variants={fadeUp}>How it Works</motion.span>
-          <motion.h2 className="landing-section-title" variants={fadeUp} custom={1}>
-            From preparation to success<br /><span className="landing-hero-gradient">in four simple steps</span>
-          </motion.h2>
-        </motion.div>
-        <div className="landing-steps">
-          {steps.map((s, i) => (
-            <motion.div key={i} className="landing-step" initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-40px' }} variants={fadeUp} custom={i}>
-              <div className="landing-step-num">{s.num}</div>
-              <div className="landing-step-icon-wrap">
-                {s.icon}
-                {i < steps.length - 1 && <div className="landing-step-connector" />}
-              </div>
-              <h3 className="landing-step-title">{s.title}</h3>
-              <p className="landing-step-desc">{s.desc}</p>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      <section className="landing-section" id="advantages">
-        <motion.div className="landing-section-header" initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} variants={stagger}>
-          <motion.span className="landing-section-tag" variants={fadeUp}>Advantages</motion.span>
-          <motion.h2 className="landing-section-title" variants={fadeUp} custom={1}>
-            Why job seekers choose<br /><span className="landing-hero-gradient">HireIQ</span>
-          </motion.h2>
-          <motion.p className="landing-section-sub" variants={fadeUp} custom={2}>
-            Practice until you're interview-ready — completely free, forever.
-          </motion.p>
-        </motion.div>
-        <motion.div className="landing-advantages-grid" initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-60px' }} variants={stagger}>
-          {advantages.map((a, i) => (
-            <motion.div key={i} className="landing-advantage-item" variants={fadeUp} custom={i} whileHover={{ x: 4 }}>
-              <div className="landing-advantage-icon">{a.icon}</div>
-              <div>
-                <h3 className="landing-advantage-title">{a.title}</h3>
-                <p className="landing-advantage-desc">{a.desc}</p>
-              </div>
-            </motion.div>
-          ))}
-        </motion.div>
-      </section>
-
-      <section className="landing-cta-section">
-        <motion.div className="landing-cta-card" initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-60px' }} variants={stagger}>
-          <div className="landing-cta-glow" aria-hidden="true" />
-          <motion.h2 className="landing-cta-title" variants={fadeUp}>Ready to ace your next interview?</motion.h2>
-          <motion.p className="landing-cta-sub" variants={fadeUp} custom={1}>
-            Upload your resume and get instant, personalized interview practice. No sign-up required — start right now.
-          </motion.p>
-          <motion.button className="landing-btn-primary landing-btn-primary--lg" variants={fadeUp} custom={2}
-            onClick={() => navigate('/upload')}
-            whileHover={{ scale: 1.04, boxShadow: '0 8px 48px rgba(79,142,247,0.45)' }} whileTap={{ scale: 0.97 }}>
-            <Zap size={20} /> Launch Interview Now <ArrowRight size={18} />
-          </motion.button>
-          <motion.p className="landing-cta-note" variants={fadeIn} custom={3}>
-            <CheckCircle size={14} /> No account needed · 100% free · Your data stays private
-          </motion.p>
-        </motion.div>
-      </section>
-
-      <footer className="landing-footer">
-        <div className="landing-footer-inner">
-          <div className="landing-footer-brand"><div className="landing-nav-logo-icon"><Zap size={14} color="#fff" /></div><span className="landing-nav-logo-text">HireIQ</span></div>
-          <p className="landing-footer-copy">&copy; {new Date().getFullYear()} HireIQ. Your career journey starts here.</p>
-        </div>
-      </footer>
     </div>
   );
 }

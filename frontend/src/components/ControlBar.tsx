@@ -1,6 +1,26 @@
-import React from 'react';
+import type { ReactNode } from 'react';
 import { Mic, MicOff, MessageSquare, PhoneOff, Video, VideoOff } from 'lucide-react';
 import { cn } from '../lib/cn';
+
+export interface ControlBarProps {
+  micOn: boolean;
+  toggleMic: () => void;
+  camOn: boolean;
+  toggleCam: () => void;
+  transcriptOpen: boolean;
+  toggleTranscript: () => void;
+  onEndCall: () => void;
+  recording: boolean;
+  wsReady: boolean;
+}
+
+interface CtrlBtnProps {
+  icon: ReactNode;
+  label: string;
+  tone?: 'primary' | 'danger' | null;
+  onClick: () => void;
+  badge?: ReactNode;
+}
 
 /**
  * ControlBar — bottom bar with mic, cam, transcript, and end-call controls.
@@ -15,15 +35,13 @@ export default function ControlBar({
   onEndCall,
   recording,
   wsReady,
-}) {
+}: ControlBarProps) {
   return (
     <div className="ctrl-bar">
       <div className="ctrl-status">
         <span
           className="ctrl-dot"
-          style={{
-            background: wsReady ? 'var(--color-success)' : 'var(--color-warning)',
-          }}
+          style={{ background: wsReady ? 'var(--color-success)' : 'var(--color-warning)' }}
         />
         <span className="ctrl-status-text">{wsReady ? 'Live' : 'Connecting'}</span>
       </div>
@@ -58,7 +76,7 @@ export default function ControlBar({
   );
 }
 
-function CtrlBtn({ icon, label, tone, onClick, badge }) {
+function CtrlBtn({ icon, label, tone, onClick, badge }: CtrlBtnProps) {
   return (
     <button
       type="button"

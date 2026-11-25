@@ -5,6 +5,7 @@ import { resolve } from 'path';
 export default defineConfig({
   plugins: [react()],
   resolve: {
+    extensions: ['.mjs', '.ts', '.tsx', '.js', '.jsx', '.json'],
     alias: {
       '@': resolve(__dirname, 'src'),
       '@types': resolve(__dirname, 'src/types'),
