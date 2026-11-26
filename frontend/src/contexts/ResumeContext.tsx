@@ -25,9 +25,19 @@ const initialResume: Resume = {
 function loadSavedResumes(): SavedResume[] {
   try {
     const raw = localStorage.getItem('savedResumes');
-    return raw ? (JSON.parse(raw) as SavedResume[]) : [];
+    if (!raw) return [];
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as SavedResume[]) : [];
   } catch {
     return [];
+  }
+}
+
+function persistSavedResumes(resumes: SavedResume[]) {
+  try {
+    localStorage.setItem('savedResumes', JSON.stringify(resumes));
+  } catch {
+    /* storage may be unavailable or full */
   }
 }
 
@@ -74,7 +84,7 @@ function reducer(state: ResumeState, action: ResumeAction): ResumeState {
         },
         ...state.savedResumes,
       ].slice(0, 10);
-      localStorage.setItem('savedResumes', JSON.stringify(saved));
+      persistSavedResumes(saved);
       return { ...state, savedResumes: saved };
     }
     case 'LOAD_RESUME':
@@ -85,7 +95,7 @@ function reducer(state: ResumeState, action: ResumeAction): ResumeState {
       };
     case 'DELETE_RESUME': {
       const saved = state.savedResumes.filter((r) => r.id !== action.id);
-      localStorage.setItem('savedResumes', JSON.stringify(saved));
+      persistSavedResumes(saved);
       return { ...state, savedResumes: saved };
     }
     case 'RESET':

@@ -211,7 +211,7 @@ export default function LandingPage() {
               transition={{ duration: 0.55, delay: 0.18, ease: EASE }}
             >
               HireIQ reads your resume, runs a realistic voice interview, and hands back a
-              transcript you can actually learn from. No scripts. No pressure. No account.
+              transcript you can actually learn from. No scripts. No pressure.
             </motion.p>
 
             <motion.div
@@ -498,9 +498,6 @@ export default function LandingPage() {
                   Technical round
                 </Button>
               </div>
-              <p className="mt-6 font-mono text-[10px] uppercase tracking-[0.12em] opacity-60">
-                No account · Local-first · Free to use
-              </p>
             </div>
           </div>
         </Reveal>

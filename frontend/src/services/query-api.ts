@@ -1,7 +1,8 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { queryClient } from '../utils/query-client';
 import { queryKeys } from '../utils/query-keys';
 import { generateResume, improveSection } from './api';
+import { fetchCodingCatalog } from './coding-api';
 import { API_BASE } from '../utils/constants';
 import type {
   GenerateResumeResponse,
@@ -21,9 +22,9 @@ import type {
 
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(url, options);
-  const data = await res.json();
+  const data = (await res.json().catch(() => ({}))) as { detail?: string };
   if (!res.ok) throw new Error(data.detail || `Request failed: ${res.status}`);
-  return data;
+  return data as T;
 }
 
 export function useGenerateResume() {
@@ -139,6 +140,15 @@ export function useGenerateJobRoadmap() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       }),
+  });
+}
+
+export function useCodingCatalog() {
+  return useQuery({
+    queryKey: queryKeys.coding.catalog,
+    queryFn: ({ signal }) => fetchCodingCatalog(signal),
+    staleTime: 30 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
   });
 }
 

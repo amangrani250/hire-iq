@@ -5,6 +5,9 @@ export const queryKeys = {
   improve: {
     section: (section: string) => ['improve', section] as const,
   },
+  coding: {
+    catalog: ['coding', 'catalog'] as const,
+  },
 } as const;
 
 export type QueryKeyType = ReturnType<(typeof queryKeys)[keyof typeof queryKeys][keyof (typeof queryKeys)[keyof typeof queryKeys]]>;

@@ -91,7 +91,7 @@ export default function JobRoadmapPage() {
       setRoadmap(data);
       saveProgress(jobTitle, experienceLevel, durationDays, { roadmap: data, completedTasks: {} });
       setCompletedTasks({});
-      toast.success('Roadmap generated! Let\'s get started ??');
+      toast.success("Roadmap generated. Let's get started.");
     } catch (err) {
       setError((err as Error).message || 'Failed to generate roadmap');
     } finally {
@@ -214,8 +214,8 @@ export default function JobRoadmapPage() {
           <p className="text-muted-foreground text-sm">{error}</p>
         </div>
         <div className="flex gap-3">
-          <button onClick={() => navigate('/job-prep')} className="px-4 py-2 rounded-xl border border-border text-sm font-medium text-muted-foreground hover:bg-muted">
-            ? Choose Another Role
+          <button onClick={() => navigate('/job-prep')} className="px-4 py-2 rounded-xl border border-border text-sm font-medium text-muted-foreground hover:bg-muted inline-flex items-center gap-2">
+            <ArrowRight size={15} className="rotate-180" /> Choose Another Role
           </button>
           <button onClick={() => generateRoadmap(true)} className="px-4 py-2 rounded-xl bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 flex items-center gap-2">
             <RotateCcw size={15} /> Try Again
@@ -260,7 +260,7 @@ export default function JobRoadmapPage() {
                 </button>
                 <button onClick={() => navigate('/job-prep')}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-medium border border-white/20 transition-all">
-                  ? Change Role
+                  <ArrowRight size={13} className="rotate-180" /> Change Role
                 </button>
               </div>
             </div>
@@ -360,10 +360,11 @@ export default function JobRoadmapPage() {
                           const done = !!completedTasks[task.id];
                           const meta = TASK_TYPE_META[task.type] || TASK_TYPE_META.learn;
                           return (
-                            <motion.div key={task.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
-                              className={`flex gap-3 p-4 rounded-xl border transition-all cursor-pointer ${
+                            <motion.button key={task.id} type="button" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
+                              aria-pressed={done}
+                              className={`w-full text-left flex gap-3 p-4 rounded-xl border transition-all ${
                                 done ? 'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800/30' :
-                                'bg-muted/50 border-border hover:border-brand-300 dark:hover:border-border'
+                                'bg-muted/50 border-border hover:border-primary/40'
                               }`} onClick={() => toggleTask(task.id)}>
                               <div className="shrink-0 mt-0.5">
                                 {done ? <CheckCircle2 size={20} className="text-green-500" /> : <Circle size={20} className="text-muted-foreground/50" />}
@@ -376,18 +377,18 @@ export default function JobRoadmapPage() {
                                   </span>
                                   <span className="flex items-center gap-1 text-[11px] text-muted-foreground"><Clock size={11} /> {task.duration_mins} min</span>
                                 </div>
-                                <p className={`text-xs leading-relaxed ${done ? 'text-muted-foreground' : 'text-muted-foreground'}`}>{task.description}</p>
+                                <p className="text-xs leading-relaxed text-muted-foreground">{task.description}</p>
                                 {task.resources?.length > 0 && (
                                   <div className="flex flex-wrap gap-1.5 mt-2">
                                     {task.resources.map((r, ri) => (
-                                      <span key={ri} className="text-[11px] px-2 py-0.5 bg-card border border-border rounded text-muted-foreground">
-                                        {'??'} {r}
+                                      <span key={ri} className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 bg-card border border-border rounded text-muted-foreground">
+                                        <BookOpen size={11} className="shrink-0" /> {r}
                                       </span>
                                     ))}
                                   </div>
                                 )}
                               </div>
-                            </motion.div>
+                            </motion.button>
                           );
                         })}
                       </div>
@@ -407,7 +408,7 @@ export default function JobRoadmapPage() {
               <div className="relative">
                 <div className="flex items-center gap-4 mb-4">
                   <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center"><Trophy size={28} className="text-white" /></div>
-                  <div><div className="font-bold text-lg">{'??'} Roadmap Complete!</div><div className="text-sm opacity-80">All {totalTasks} tasks done. You're interview-ready!</div></div>
+                  <div><div className="font-bold text-lg">Roadmap Complete!</div><div className="text-sm opacity-80">All {totalTasks} tasks done. You're interview-ready!</div></div>
                 </div>
                 <p className="text-sm opacity-80 mb-5 leading-relaxed">
                   You've completed your entire {durationDays}-day preparation plan for <strong>{jobTitle}</strong>. Your AI interview is ready!

@@ -5,7 +5,7 @@ import type { TemplateType } from '../types';
 
 const api: AxiosInstance = axios.create({
   baseURL: `${API_BASE.replace(/\/$/, '')}/api`,
-  timeout: 30000,
+  timeout: 90000,
   headers: { 'Content-Type': 'application/json' },
 });
 

@@ -188,6 +188,7 @@ export default function UploadScreen() {
   const [error, setError] = useState('');
   const [analysis, setAnalysis] = useState(null);
   const resultsRef = useRef(null);
+  const analysisAbortRef = useRef(null);
 
   const handleFile = async (nextFile) => {
     if (!nextFile) return;
@@ -213,6 +214,12 @@ export default function UploadScreen() {
   const handleAnalyze = useCallback(async (fileObj) => {
     const targetFile = fileObj || file;
     if (!targetFile) return;
+
+    analysisAbortRef.current?.abort();
+    const controller = new AbortController();
+    analysisAbortRef.current = controller;
+    const timeout = window.setTimeout(() => controller.abort(), 90000);
+
     setLoading(true);
     setError('');
     try {
@@ -221,20 +228,30 @@ export default function UploadScreen() {
       const res = await fetch(`${API_BASE}/api/analyze-resume`, {
         method: 'POST',
         body: form,
+        signal: controller.signal,
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || 'Analysis failed');
-      setAnalysis(data);
+      if (!controller.signal.aborted) setAnalysis(data);
     } catch (err) {
+      if (controller.signal.aborted && analysisAbortRef.current !== controller) return;
       setError(
-        err.message === 'Failed to fetch'
-          ? 'We could not reach the analysis service. Check your connection and try again.'
-          : err.message
+        err.name === 'AbortError'
+          ? 'Analysis took too long. Please try again.'
+          : err.message === 'Failed to fetch'
+            ? 'We could not reach the analysis service. Check your connection and try again.'
+            : err.message
       );
     } finally {
-      setLoading(false);
+      window.clearTimeout(timeout);
+      if (analysisAbortRef.current === controller) {
+        analysisAbortRef.current = null;
+        setLoading(false);
+      }
     }
   }, [file]);
+
+  useEffect(() => () => analysisAbortRef.current?.abort(), []);
 
   const handleStartInterview = () => {
     if (!analysis || !analysis.session_id) {
@@ -345,6 +362,7 @@ export default function UploadScreen() {
               type="file"
               accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
               hidden
+              onClick={(event) => event.stopPropagation()}
               onChange={(event) => {
                 const selectedFile = event.target.files?.[0];
                 event.target.value = '';
@@ -385,10 +403,6 @@ export default function UploadScreen() {
           )}
 
           <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
-            <p className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.1em] text-muted-foreground">
-              <Lock size={11} />
-              No account required
-            </p>
             <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-muted-foreground/80">
               Private practice session
             </p>

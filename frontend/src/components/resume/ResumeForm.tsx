@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Plus, Trash2, Wand2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Trash2, Wand2, ChevronDown } from 'lucide-react';
 import { useForm } from '@tanstack/react-form';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useResumeActions, useResumeDocument } from '../../contexts/ResumeContext';
 import { useGenerateResume, useImproveSection } from '../../services/query-api';
 import { required, email, url, phone } from '../../utils/form-helpers';
@@ -90,7 +90,7 @@ function ImprovableTextarea({
           onChange(result.data.improved_content);
           toast.success('Section improved!');
         },
-        onError: () => toast.error('Improvement failed. Check your API key.'),
+        onError: () => toast.error('Could not improve this section. Please try again.'),
       }
     );
   };
@@ -103,7 +103,7 @@ function ImprovableTextarea({
           type="button"
           onClick={handleImprove}
           disabled={improveMutation.isPending}
-          className="flex items-center gap-1 text-xs text-brand-600 hover:text-brand-700 disabled:opacity-50 transition-colors"
+          className="flex items-center gap-1 text-xs text-primary hover:opacity-80 disabled:opacity-50 transition-opacity"
         >
           <Wand2 size={12} />
           {improveMutation.isPending ? 'Improving...' : 'AI Improve'}
@@ -113,11 +113,12 @@ function ImprovableTextarea({
         rows={rows}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        aria-label={label}
         placeholder={placeholder}
         data-field={data_field ? dataField(data_field) : undefined}
-        className={`input-field resize-none ${error ? 'border-red-400 focus:ring-red-400' : ''}`}
+        className={`input-field resize-none ${error ? 'border-danger focus:border-danger focus:ring-danger/10' : ''}`}
       />
-      {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
+      {error && <p className="text-xs text-danger mt-1">{error}</p>}
     </div>
   );
 }
@@ -157,21 +158,26 @@ export default function ResumeForm({ jobRole, focusField }: { jobRole: string; f
       }
     }
 
+    let ringTimer = 0;
     const tryFocus = () => {
       const el = document.querySelector(`[data-field="${fieldPath}"]`);
       if (el instanceof HTMLElement) {
         el.focus({ preventScroll: true });
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        el.classList.add('ring-2', 'ring-brand-500');
-        setTimeout(() => {
-          el.classList.remove('ring-2', 'ring-brand-500');
+        el.classList.add('ring-2', 'ring-primary');
+        ringTimer = window.setTimeout(() => {
+          el.classList.remove('ring-2', 'ring-primary');
         }, 2000);
         return true;
       }
       return false;
     };
 
-    setTimeout(tryFocus, 400);
+    const focusTimer = window.setTimeout(tryFocus, 400);
+    return () => {
+      window.clearTimeout(focusTimer);
+      window.clearTimeout(ringTimer);
+    };
   }, [focusField]);
 
   const form = useForm({
@@ -283,10 +289,10 @@ export default function ResumeForm({ jobRole, focusField }: { jobRole: string; f
                         }}
                         onBlur={field.handleBlur}
                         data-field={dataField(`personal_info.${key}`)}
-                        className={`input-field ${err ? 'border-red-400 focus:ring-red-400' : ''}`}
-                        placeholder={label}
+                        className={`input-field ${err ? 'border-danger focus:ring-danger/20' : ''}`}
+                        aria-label={label} placeholder={label}
                       />
-                      {err && <p className="text-xs text-red-500 mt-1">{err}</p>}
+                      {err && <p className="text-xs text-danger mt-1">{err}</p>}
                     </>
                   );
                 }}
@@ -361,7 +367,7 @@ export default function ResumeForm({ jobRole, focusField }: { jobRole: string; f
                         }}
                         data-field={dataField(`experience[${i}].${key}`)}
                         className="input-field"
-                        placeholder={label}
+                        aria-label={label} placeholder={label}
                       />
                     )}
                   </form.Field>
@@ -414,7 +420,7 @@ export default function ResumeForm({ jobRole, focusField }: { jobRole: string; f
                         }}
                         data-field={dataField(`projects[${i}].${key}`)}
                         className="input-field"
-                        placeholder={label}
+                        aria-label={label} placeholder={label}
                       />
                     )}
                   </form.Field>
@@ -467,7 +473,7 @@ export default function ResumeForm({ jobRole, focusField }: { jobRole: string; f
                         }}
                         data-field={dataField(`education[${i}].${key}`)}
                         className="input-field"
-                        placeholder={label}
+                        aria-label={label} placeholder={label}
                       />
                     )}
                   </form.Field>
@@ -504,7 +510,7 @@ export default function ResumeForm({ jobRole, focusField }: { jobRole: string; f
                         }}
                         data-field={dataField(`certifications[${i}].${key}`)}
                         className="input-field"
-                        placeholder={label}
+                        aria-label={label} placeholder={label}
                       />
                     )}
                   </form.Field>

@@ -1,8 +1,9 @@
-import { useEffect } from 'react';
+import { useDocumentMeta } from './useDocumentMeta';
 
-/** Sets the document title for the lifetime of a route. */
+/**
+ * Backwards-compatible title hook. Prefer useDocumentMeta for new pages so
+ * title and description are managed together.
+ */
 export default function usePageTitle(title: string): void {
-  useEffect(() => {
-    if (title) document.title = `${title} — HireIQ`;
-  }, [title]);
+  useDocumentMeta(title);
 }

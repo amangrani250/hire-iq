@@ -122,8 +122,13 @@ export default function BuilderPage() {
       setResume({ ...resume, ...mapped } as Resume);
       setAts(data.ats.overall_score, data.ats.top_suggestions);
       toast.success('Resume imported successfully!');
-    } catch {
-      toast.error('Failed to import resume');
+    } catch (error) {
+      const raw = error instanceof Error ? error.message : '';
+      toast.error(
+        /network|timeout|failed to fetch/i.test(raw)
+          ? 'The resume could not be imported. Check your connection and try again.'
+          : raw || 'The resume could not be imported. Please try another file.'
+      );
     }
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
@@ -142,7 +147,7 @@ export default function BuilderPage() {
     setTimeout(() => { w.print(); w.close(); }, 300);
   };
 
-  const handleCopy = () => {
+  const handleCopy = async () => {
     const pi = resume.personal_info || {};
     const text = [
       pi.full_name, pi.title, pi.email, pi.phone, pi.location, '',
@@ -152,8 +157,12 @@ export default function BuilderPage() {
         `${e.role} at ${e.company} (${e.start_date} – ${e.end_date})\n${e.description}`
       ).join('\n\n')}`,
     ].filter(Boolean).join('\n');
-    navigator.clipboard.writeText(text);
-    toast.success('Copied to clipboard!');
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success('Copied to clipboard!');
+    } catch {
+      toast.error('Copy is unavailable in this browser. Select the text and copy manually.');
+    }
   };
 
   return (
@@ -162,13 +171,14 @@ export default function BuilderPage() {
         <div className="max-w-[1400px] mx-auto px-4">
           <div className="h-12 flex items-center justify-between gap-3">
             <input type="text" value={jobRole} onChange={(e) => setJobRole(e.target.value)}
+              aria-label="Target job role"
               placeholder="Target job role" className="input-field w-full min-w-0 max-w-[200px] sm:max-w-xs h-9 py-1.5 text-sm" />
 
             <div className="flex items-center gap-2">
               <button onClick={() => fileInputRef.current?.click()}
                 disabled={analyzeMutation.isPending}
                 className="btn btn-secondary btn-sm shrink-0"
-                title="Import existing resume from PDF">
+                title="Import an existing PDF or Word resume">
                 <Upload size={13} /> <span className="hidden sm:inline">{analyzeMutation.isPending ? 'Importing...' : 'Import'}</span>
               </button>
 
@@ -182,7 +192,8 @@ export default function BuilderPage() {
               </button>
             </div>
 
-            <input ref={fileInputRef} type="file" accept=".pdf,.txt"
+            <input ref={fileInputRef} type="file"
+              accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
               onChange={handleFileImport} className="hidden" />
           </div>
 

@@ -1,17 +1,23 @@
-import { useState, useId } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Terminal, Code, Cpu, ArrowRight, X, AlertCircle, Plus } from 'lucide-react';
+import { Terminal, Code, Cpu, ArrowRight, X, AlertCircle, Plus, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { API_BASE, POPULAR_LANGUAGES } from '../utils';
 import { useDocumentMeta } from '../hooks/useDocumentMeta';
+import PageHeader from '../components/ui/PageHeader';
+import Card from '../components/ui/Card';
+import Button from '../components/ui/Button';
+
+const COMPLEXITY_LEVELS = ['low', 'medium', 'high'] as const;
+type Complexity = (typeof COMPLEXITY_LEVELS)[number];
 
 export default function TechInterviewSetup() {
   useDocumentMeta('Tech Interview Setup', 'Configure your technical interview parameters');
   const navigate = useNavigate();
   const [languages, setLanguages] = useState<string[]>([]);
   const [inputValue, setInputValue] = useState('');
-  const [complexity, setComplexity] = useState<'low' | 'medium' | 'high'>('medium');
+  const [complexity, setComplexity] = useState<Complexity>('medium');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -36,11 +42,9 @@ export default function TechInterviewSetup() {
   };
 
   const togglePopular = (lang: string) => {
-    if (languages.includes(lang)) {
-      setLanguages((prev) => prev.filter((l) => l !== lang));
-    } else {
-      setLanguages((prev) => [...prev, lang]);
-    }
+    setLanguages((prev) =>
+      prev.includes(lang) ? prev.filter((item) => item !== lang) : [...prev, lang]
+    );
     if (error) setError('');
   };
 
@@ -49,7 +53,7 @@ export default function TechInterviewSetup() {
   };
 
   const startInterview = async () => {
-    let finalLanguages = [...languages];
+    const finalLanguages = [...languages];
     const typedLang = inputValue.trim();
     if (typedLang && !finalLanguages.includes(typedLang)) {
       finalLanguages.push(typedLang);
@@ -65,129 +69,195 @@ export default function TechInterviewSetup() {
     setLoading(true);
     setError('');
 
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 25000);
+
     try {
       const res = await fetch(`${API_BASE}/api/setup-tech-interview`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ languages: finalLanguages, complexity }),
+        signal: controller.signal,
       });
-      if (!res.ok) throw new Error('Failed to setup interview');
+      if (!res.ok) throw new Error('We could not set up the interview. Please try again.');
       const data = await res.json();
       navigate('/interview', {
         state: { sessionId: data.session_id, candidate: data.candidate },
       });
     } catch (err) {
-      const message = (err as Error).message;
+      const message =
+        (err as Error).name === 'AbortError'
+          ? 'Setup took too long. Check your connection and try again.'
+          : (err as Error).message || 'We could not set up the interview. Please try again.';
       setError(message);
       toast.error(message);
-    } finally {
       setLoading(false);
+    } finally {
+      window.clearTimeout(timeout);
     }
   };
 
   return (
     <div className="container-page py-10 lg:py-14">
-      <div className="max-w-2xl mx-auto">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-          className="card p-6 sm:p-8">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-11 h-11 bg-accent rounded-xl flex items-center justify-center">
-              <Terminal size={20} className="text-accent-foreground" />
-            </div>
+      <PageHeader
+        eyebrow="Technical round"
+        title="Configure your technical interview."
+        description="Pick the languages you want to be tested on and how deep the interviewer should probe."
+      />
+
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mt-8 max-w-2xl"
+      >
+        <Card className="p-6 sm:p-8">
+          <div className="flex items-center gap-3">
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <Terminal size={20} />
+            </span>
             <div>
-              <h1 className="text-2xl font-semibold tracking-[-0.03em] text-foreground">Technical Interview Config</h1>
-              <p className="text-muted-foreground text-sm">Set up your customized technical interview parameters.</p>
+              <h2 className="text-[17px] font-semibold text-foreground">Interview parameters</h2>
+              <p className="text-[13px] text-muted-foreground">You can adjust these before starting.</p>
             </div>
           </div>
 
           {error && (
-            <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}
-              className="mb-6 p-4 bg-danger/10 text-danger border border-danger/20 rounded-xl flex items-center gap-2">
-              <AlertCircle size={18} /><span className="text-sm font-medium">{error}</span>
+            <motion.div
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              role="alert"
+              className="mt-6 flex items-center gap-2 rounded-xl border border-danger/20 bg-danger/10 p-4 text-danger"
+            >
+              <AlertCircle size={18} />
+              <span className="text-sm font-medium">{error}</span>
             </motion.div>
           )}
 
-          <div className="space-y-8">
+          <div className="mt-8 space-y-8">
             <div>
-              <label className="block text-sm font-medium text-foreground mb-2 flex items-center gap-2">
-                <Code size={16} /> Programming Languages
+              <label className="mb-2 flex items-center gap-2 text-sm font-medium text-foreground">
+                <Code size={16} /> Programming languages
               </label>
 
-              <div className="flex flex-wrap gap-2 mb-3">
-                {[...POPULAR_LANGUAGES].map((lang) => (
-                  <button key={lang} type="button" onClick={() => togglePopular(lang)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
-                      languages.includes(lang)
-                        ? 'bg-primary text-primary-foreground border-primary shadow-sm'
-                        : 'bg-muted text-muted-foreground border-border hover:border-primary/40 hover:text-primary'
-                    }`}>
-                    {languages.includes(lang) ? '✓ ' : '+ '}{lang}
-                  </button>
-                ))}
+              <div className="mb-3 flex flex-wrap gap-2">
+                {[...POPULAR_LANGUAGES].map((lang) => {
+                  const selected = languages.includes(lang);
+                  return (
+                    <button
+                      key={lang}
+                      type="button"
+                      onClick={() => togglePopular(lang)}
+                      aria-pressed={selected}
+                      className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
+                        selected
+                          ? 'border-primary bg-primary text-primary-foreground shadow-sm'
+                          : 'border-border bg-subtle text-muted-foreground hover:border-primary/40 hover:text-primary'
+                      }`}
+                    >
+                      {selected ? '✓ ' : '+ '}
+                      {lang}
+                    </button>
+                  );
+                })}
               </div>
 
               <div className="flex gap-2">
-                <input type="text" value={inputValue}
-                  onChange={(e) => { setInputValue(e.target.value); if (error) setError(''); }}
-                  onKeyDown={handleKeyDown} onBlur={handleBlur}
+                <input
+                  type="text"
+                  value={inputValue}
+                  onChange={(e) => {
+                    setInputValue(e.target.value);
+                    if (error) setError('');
+                  }}
+                  onKeyDown={handleKeyDown}
+                  onBlur={handleBlur}
                   placeholder="Or type a custom language and press Enter…"
-                  className="input-field flex-1" />
-                <button type="button" onClick={() => commitInput()}
-                  className="px-3.5 rounded-xl border border-border bg-card hover:bg-accent text-muted-foreground hover:text-primary transition-all"
-                  title="Add language">
+                  aria-label="Add a programming language"
+                  className="input-field flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => commitInput()}
+                  aria-label="Add language"
+                >
                   <Plus size={18} />
-                </button>
+                </Button>
               </div>
 
-              <div className="flex flex-wrap gap-2 mt-4">
-                {languages.map((lang, i) => (
-                  <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} key={i}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-accent text-accent-foreground rounded-lg border border-primary/15 text-sm font-medium">
+              <div className="mt-4 flex flex-wrap gap-2">
+                {languages.map((lang) => (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.85 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    key={lang}
+                    className="flex items-center gap-1.5 rounded-lg border border-primary/15 bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary"
+                  >
                     {lang}
-                    <button onClick={() => removeLanguage(lang)} className="hover:text-danger focus:outline-none transition-colors ml-1">
+                    <button
+                      type="button"
+                      onClick={() => removeLanguage(lang)}
+                      aria-label={`Remove ${lang}`}
+                      className="ml-1 transition-colors hover:text-danger focus-visible:outline-none"
+                    >
                       <X size={14} />
                     </button>
                   </motion.div>
                 ))}
                 {languages.length === 0 && (
-                  <span className="text-sm text-muted-foreground italic mt-1 inline-block">
-                    No languages selected yet — click a chip above or type below.
+                  <span className="mt-1 inline-block text-sm italic text-muted-foreground">
+                    No languages selected yet — click a chip above or type your own.
                   </span>
                 )}
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-3 flex items-center gap-2">
-                <Cpu size={16} /> Complexity Level
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {(['low', 'medium', 'high'] as const).map((level) => (
-                  <div key={level} onClick={() => setComplexity(level)}
-                    className={`cursor-pointer border rounded-xl p-4 text-center transition-all ${
-                      complexity === level
-                        ? 'border-primary bg-accent text-accent-foreground shadow-sm'
-                        : 'border-border hover:border-primary/30 text-muted-foreground hover:bg-muted'
-                    }`}>
-                    <span className="capitalize font-semibold text-sm block">{level}</span>
-                  </div>
-                ))}
+              <span id="complexity-label" className="mb-3 flex items-center gap-2 text-sm font-medium text-foreground">
+                <Cpu size={16} /> Complexity level
+              </span>
+              <div role="radiogroup" aria-labelledby="complexity-label" className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                {COMPLEXITY_LEVELS.map((level) => {
+                  const selected = complexity === level;
+                  return (
+                    <button
+                      key={level}
+                      type="button"
+                      role="radio"
+                      aria-checked={selected}
+                      onClick={() => setComplexity(level)}
+                      className={`rounded-xl border p-4 text-center transition-all ${
+                        selected
+                          ? 'border-primary bg-primary/10 text-primary shadow-sm'
+                          : 'border-border text-muted-foreground hover:border-primary/30 hover:bg-subtle'
+                      }`}
+                    >
+                      <span className="block text-sm font-semibold capitalize">{level}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            <div className="pt-4 flex justify-end">
-              <button onClick={startInterview} disabled={loading}
-                className="btn btn-primary w-full px-8 text-sm disabled:opacity-70 disabled:cursor-not-allowed">
+            <div className="flex justify-end border-t border-border pt-6">
+              <Button onClick={startInterview} disabled={loading} size="lg" className="w-full px-8 sm:w-auto">
                 {loading ? (
-                  <span className="animate-pulse">Setting up Interview Room...</span>
+                  <>
+                    <Loader2 size={18} className="animate-spin" />
+                    Setting up the interview…
+                  </>
                 ) : (
-                  <><ArrowRight size={18} /> Start Technical Interview</>
+                  <>
+                    Start technical interview
+                    <ArrowRight size={18} />
+                  </>
                 )}
-              </button>
+              </Button>
             </div>
           </div>
-        </motion.div>
-      </div>
+        </Card>
+      </motion.div>
     </div>
   );
 }

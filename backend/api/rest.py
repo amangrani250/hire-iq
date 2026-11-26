@@ -9,7 +9,7 @@ from typing import List
 from core.config import settings, log
 from core.session import sessions
 from utils.pdf_extractor import extract_resume_text
-from utils.json_utils import safe_json
+from utils.json_utils import safe_json, extract_json
 from utils.system_msg import build_system_message
 from services.llm_service import call_llm
 from services.audio_service import transcribe_audio_bytes, text_to_speech_bytes
@@ -89,9 +89,13 @@ async def upload_resume(file: UploadFile = File(...)):
         {"role": "user", "content": resume_text[:3000]},
     ]
     try:
-        raw = await call_llm(summary_messages, task="analysis")
-        raw = raw.strip().lstrip("```json").lstrip("```").rstrip("```").strip()
-        candidate_info = orjson.loads(raw)
+        raw = await call_llm(summary_messages, task="analysis", json_mode=True)
+        parsed = extract_json(raw)
+        candidate_info = (
+            parsed
+            if isinstance(parsed, dict) and parsed.get("name")
+            else {"name": "Candidate", "role": "Professional", "skills": [], "years": ""}
+        )
     except Exception:
         candidate_info = {"name": "Candidate", "role": "Professional", "skills": [], "years": ""}
 
@@ -205,14 +209,14 @@ async def analyze_resume(file: UploadFile = File(...)):
 
     try:
         profile_raw, ats_raw = await asyncio.gather(
-            call_llm(profile_prompt, max_tokens=2000, task="analysis"),
-            call_llm(ats_prompt, max_tokens=1500, task="analysis"),
+            call_llm(profile_prompt, max_tokens=2000, task="analysis", json_mode=True),
+            call_llm(ats_prompt, max_tokens=1500, task="analysis", json_mode=True),
         )
     except Exception as e:
         log.error("Resume analysis LLM error: %s", e)
         raise HTTPException(status_code=500, detail="Failed to analyze resume. Please try again.")
 
-    profile = safe_json(profile_raw, {
+    profile_fallback = {
         "name": "Candidate",
         "role": "Professional",
         "email": "",
@@ -226,8 +230,8 @@ async def analyze_resume(file: UploadFile = File(...)):
         "education": [],
         "certifications": [],
         "total_years": "N/A",
-    })
-    ats = safe_json(ats_raw, {
+    }
+    ats_fallback = {
         "overall_score": 65,
         "breakdown": {
             "keyword_optimization": {"score": 65, "feedback": "Analysis unavailable"},
@@ -237,7 +241,13 @@ async def analyze_resume(file: UploadFile = File(...)):
             "readability": {"score": 65, "feedback": "Analysis unavailable"},
         },
         "top_suggestions": ["Unable to generate suggestions at this time."],
-    })
+    }
+    profile = safe_json(profile_raw, profile_fallback)
+    ats = safe_json(ats_raw, ats_fallback)
+    if not isinstance(profile, dict):
+        profile = profile_fallback
+    if not isinstance(ats, dict):
+        ats = ats_fallback
 
     session_id = str(uuid.uuid4())
     sessions[session_id] = {
@@ -253,7 +263,14 @@ async def analyze_resume(file: UploadFile = File(...)):
     log.info("Session created from analysis: %s (resume: %d chars)", session_id[:8], len(trimmed))
 
     try:
-        skills_list = profile.get("skills", {}).get("languages", []) + profile.get("skills", {}).get("frameworks", [])
+        skills_block = profile.get("skills")
+        if not isinstance(skills_block, dict):
+            skills_block = {}
+        skills_list = [
+            str(skill)
+            for key in ("languages", "frameworks")
+            for skill in (skills_block.get(key) or [])
+        ][:8]
     except Exception:
         skills_list = []
 
@@ -278,6 +295,10 @@ async def analyze_resume(file: UploadFile = File(...)):
 @router.post("/api/transcribe")
 async def transcribe_audio(file: UploadFile = File(...)):
     audio_bytes = await file.read()
+    if not audio_bytes:
+        raise HTTPException(status_code=400, detail="No audio was received.")
+    if len(audio_bytes) > 20 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Audio is too large. Keep it under 20 MB.")
     text = await transcribe_audio_bytes(audio_bytes, file.content_type or "")
     return {"transcript": text}
 
@@ -359,6 +380,20 @@ def _proctor_summary(events: list[dict]) -> str:
     return "\n".join(lines)
 
 
+def _as_text(value: object) -> str:
+    """Coerce a model field into readable text (models sometimes return lists)."""
+    if isinstance(value, list):
+        parts = []
+        for item in value:
+            text = _as_text(item)
+            if text:
+                parts.append(f"• {text}")
+        return "\n".join(parts)
+    if isinstance(value, dict):
+        return "; ".join(f"{key}: {_as_text(item)}" for key, item in value.items())
+    return str(value or "").strip()
+
+
 @router.post("/api/interview-feedback")
 async def get_interview_feedback(req: FeedbackRequest):
     if not req.transcript:
@@ -398,10 +433,15 @@ async def get_interview_feedback(req: FeedbackRequest):
     ]
 
     try:
-        raw = await call_llm(prompt, max_tokens=1000, task="feedback")
-        raw = raw.strip().lstrip("```json").lstrip("```").rstrip("```").strip()
-        data = orjson.loads(raw)
-        return data
+        raw = await call_llm(prompt, max_tokens=1000, task="feedback", json_mode=True)
+        data = extract_json(raw)
+        if not isinstance(data, dict):
+            raise ValueError("Feedback response was not a JSON object.")
+        return {
+            "good_points": _as_text(data.get("good_points")) or "No strengths were recorded.",
+            "bad_points": _as_text(data.get("bad_points")) or "No weaknesses were recorded.",
+            "improvements": _as_text(data.get("improvements")) or "Keep practising with a full mock interview.",
+        }
     except Exception as e:
         log.error("Feedback LLM error: %s", e)
 

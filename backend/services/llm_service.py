@@ -82,6 +82,7 @@ async def _call_groq(
     max_tokens: int,
     task: str,
     temperature: float,
+    json_mode: bool = False,
 ) -> str:
     """Try the task's primary Groq model, then global fallbacks, with retries."""
     models = settings.models_for_task(task)
@@ -89,9 +90,16 @@ async def _call_groq(
     last_error = "No Groq models configured."
 
     for attempt in range(retries + 1):
-        retry_attempt = False
-
         for model in models:
+            body: dict = {
+                "model": model,
+                "messages": messages,
+                "temperature": temperature,
+                "max_tokens": max_tokens,
+            }
+            if json_mode:
+                body["response_format"] = {"type": "json_object"}
+
             try:
                 response = await client.post(
                     "https://api.groq.com/openai/v1/chat/completions",
@@ -99,38 +107,31 @@ async def _call_groq(
                         "Authorization": f"Bearer {settings.GROQ_API_KEY}",
                         "Content-Type": "application/json",
                     },
-                    json={
-                        "model": model,
-                        "messages": messages,
-                        "temperature": temperature,
-                        "max_tokens": max_tokens,
-                    },
+                    json=body,
                 )
             except httpx.RequestError as exc:
                 last_error = f"{model}: {exc}"
                 log.error("Groq request failed for %s: %s", model, exc)
-                retry_attempt = True
-                break
+                continue
 
-            if response.status_code == 404 or (
-                response.status_code == 400
-                and any(
-                    marker in response.text.lower()
-                    for marker in ("model_not_found", "does not exist", "decommissioned")
-                )
-            ):
-                last_error = f"model {model} is unavailable"
-                log.warning("Groq model %s is unavailable; trying the next configured model.", model)
+            if response.status_code in {400, 404}:
+                # Per-model request problems (missing model, unsupported
+                # response format) should fall through to the next model.
+                last_error = f"{model} returned HTTP {response.status_code}"
+                log.warning("Groq %s %d: %s", model, response.status_code, response.text[:300])
+                continue
+
+            if response.status_code in RETRYABLE_STATUS:
+                # Rate limits and upstream errors are often model-specific (for
+                # example a per-model output-token limit). Try the fallback
+                # models right away instead of hammering the same one.
+                last_error = f"{model} returned HTTP {response.status_code}"
+                log.warning("Groq %s %d: %s", model, response.status_code, response.text[:300])
                 continue
 
             if response.status_code != 200:
                 last_error = f"{model} returned HTTP {response.status_code}"
                 log.warning("Groq %s %d: %s", model, response.status_code, response.text[:300])
-
-                if response.status_code in RETRYABLE_STATUS and attempt < retries:
-                    retry_attempt = True
-                    break
-
                 raise HTTPException(
                     status_code=502,
                     detail="The AI provider rejected the request. Please try again.",
@@ -155,11 +156,8 @@ async def _call_groq(
             last_error = f"{model} returned an empty response"
             log.warning("Groq model %s returned an empty response; trying the next model.", model)
 
-        if retry_attempt and attempt < retries:
+        if attempt < retries:
             await asyncio.sleep(0.5 * (attempt + 1))
-            continue
-
-        break
 
     log.error("All configured Groq models failed: %s", last_error)
     raise HTTPException(
@@ -174,12 +172,21 @@ async def _call_openai(
     retries: int,
     max_tokens: int,
     temperature: float,
+    json_mode: bool = False,
 ) -> str:
     if not settings.OPENAI_API_KEY:
         raise HTTPException(status_code=500, detail="No AI provider is configured.")
 
     last_error = None
     for attempt in range(retries + 1):
+        body: dict = {
+            "model": settings.OPENAI_CHAT_MODEL,
+            "messages": messages,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+        }
+        if json_mode:
+            body["response_format"] = {"type": "json_object"}
         try:
             response = await client.post(
                 "https://api.openai.com/v1/chat/completions",
@@ -187,12 +194,7 @@ async def _call_openai(
                     "Authorization": f"Bearer {settings.OPENAI_API_KEY}",
                     "Content-Type": "application/json",
                 },
-                json={
-                    "model": settings.OPENAI_CHAT_MODEL,
-                    "messages": messages,
-                    "temperature": temperature,
-                    "max_tokens": max_tokens,
-                },
+                json=body,
             )
 
             if response.status_code != 200:
@@ -224,6 +226,7 @@ async def call_llm(
     max_tokens: int = 800,
     task: str = "analysis",
     temperature: float | None = None,
+    json_mode: bool = False,
 ) -> str:
     """Call the task-appropriate AI model, with model fallbacks for Groq."""
     client = await get_http_client()
@@ -233,9 +236,9 @@ async def call_llm(
 
     if settings.LLM_BACKEND == "groq" and settings.GROQ_API_KEY:
         return await _call_groq(
-            client, messages, retries, max_tokens, task, resolved_temperature
+            client, messages, retries, max_tokens, task, resolved_temperature, json_mode
         )
 
     return await _call_openai(
-        client, messages, retries, max_tokens, resolved_temperature
+        client, messages, retries, max_tokens, resolved_temperature, json_mode
     )

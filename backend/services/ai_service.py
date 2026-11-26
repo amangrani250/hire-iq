@@ -1,18 +1,6 @@
-import json
-import re
 from models.resume import ResumeData, GenerateResumeResponse, ImproveSectionResponse
 from services.llm_service import call_llm
-
-
-def _extract_json(text: str) -> dict:
-    """Extract JSON from model output, stripping markdown fences if present."""
-    text = text.strip()
-    # Remove ```json ... ``` or ``` ... ``` fences
-    text = re.sub(r"^```(?:json)?\s*", "", text)
-    text = re.sub(r"\s*```$", "", text)
-    return json.loads(text)
-from utils.json_utils import safe_json
-from services.llm_service import call_llm
+from utils.json_utils import extract_json
 
 
 async def generate_resume(raw_input: str, job_role: str = "") -> GenerateResumeResponse:
@@ -90,8 +78,11 @@ Rules:
         [{"role": "user", "content": prompt}],
         max_tokens=2000,
         task="resume",
+        json_mode=True,
     )
-    data = _extract_json(content)
+    data = extract_json(content)
+    if not isinstance(data, dict):
+        raise ValueError("The resume model returned an invalid response.")
 
     resume_data = ResumeData(
         personal_info=data.get("personal_info", {}),
@@ -138,8 +129,11 @@ Rules:
         [{"role": "user", "content": prompt}],
         max_tokens=800,
         task="resume",
+        json_mode=True,
     )
-    data = _extract_json(content_resp)
+    data = extract_json(content_resp)
+    if not isinstance(data, dict):
+        raise ValueError("The resume model returned an invalid response.")
 
     return ImproveSectionResponse(
         improved_content=data.get("improved_content", content),

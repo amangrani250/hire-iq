@@ -4,11 +4,7 @@ const BASE_TITLE = 'HireIQ';
 
 export function useDocumentMeta(title?: string, description?: string) {
   useEffect(() => {
-    if (title) {
-      document.title = `${title} | ${BASE_TITLE}`;
-    } else {
-      document.title = BASE_TITLE;
-    }
+    document.title = title ? `${title} — ${BASE_TITLE}` : BASE_TITLE;
   }, [title]);
 
   useEffect(() => {

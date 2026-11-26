@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   AlertTriangle,
@@ -30,11 +30,16 @@ import toast from 'react-hot-toast';
 import Button from '../components/ui/Button';
 import Badge, { type BadgeTone } from '../components/ui/Badge';
 import Spinner from '../components/ui/Spinner';
+import Tabs from '../components/ui/Tabs';
+import MetricCard from '../components/ui/MetricCard';
+import AiraAvatar from '../components/ui/AiraAvatar';
+import CodeBlock from '../components/ui/CodeBlock';
+import ElapsedClock from '../components/ui/ElapsedClock';
 import { useTheme } from '../contexts/ThemeContext';
 import { useDocumentMeta } from '../hooks/useDocumentMeta';
-import { useInterval } from '../hooks/useInterval';
 import { cn } from '../lib/cn';
-import { fetchCodingCatalog, reviewCodingSolution, runCodingSolution } from '../services/coding-api';
+import { reviewCodingSolution, runCodingSolution } from '../services/coding-api';
+import { useCodingCatalog } from '../services/query-api';
 import type {
   CodingChallenge,
   CodingCatalog,
@@ -72,12 +77,6 @@ type BriefTab = 'warmup' | 'problem' | 'hints';
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
-function formatClock(totalSeconds: number): string {
-  const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
-  const seconds = String(totalSeconds % 60).padStart(2, '0');
-  return `${minutes}:${seconds}`;
-}
-
 function languageMark(language: CodingLanguage): string {
   return LANGUAGE_MARKS[language.id] ?? language.label.slice(0, 2);
 }
@@ -101,17 +100,6 @@ function asList(value: unknown): string[] {
   if (Array.isArray(value)) return value.map(String);
   if (typeof value === 'string' && value.trim()) return [value];
   return [];
-}
-
-function OutputBlock({ title, children }: { title: string; children: string }) {
-  return (
-    <div className="min-w-0">
-      <p className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-muted-foreground">{title}</p>
-      <pre className="mt-1 max-h-32 overflow-auto whitespace-pre-wrap break-words rounded-lg border border-border bg-subtle p-2.5 font-mono text-[11.5px] leading-relaxed text-foreground">
-        {children || '—'}
-      </pre>
-    </div>
-  );
 }
 
 function SelectionScreen({
@@ -161,16 +149,13 @@ function SelectionScreen({
             </div>
           </div>
           <div className="grid grid-cols-3 gap-3">
-            {[
-              [String(catalog.challenges.length), 'challenges'],
-              [String(catalog.languages.filter((item) => item.available).length), 'languages'],
-              ['~15m', 'per session'],
-            ].map(([value, label]) => (
-              <div key={label} className="rounded-xl border border-border bg-subtle/80 p-3">
-                <p className="font-display text-[20px] font-semibold tracking-[-0.03em] text-foreground">{value}</p>
-                <p className="mt-0.5 text-[10.5px] text-muted-foreground">{label}</p>
-              </div>
-            ))}
+            <MetricCard label="Challenges" value={catalog.challenges.length} hint="curated" />
+            <MetricCard
+              label="Runtimes"
+              value={catalog.languages.filter((item) => item.available).length}
+              hint="detected"
+            />
+            <MetricCard label="Session" value="~15m" hint="per challenge" />
           </div>
         </div>
       </motion.div>
@@ -307,7 +292,7 @@ function SelectionScreen({
         <aside className="space-y-4">
           <div className="card overflow-hidden">
             <div className="flex items-center gap-3 border-b border-border bg-subtle/60 p-4">
-              <AiraAvatar />
+              <AiraAvatar online />
               <div className="min-w-0 flex-1">
                 <p className="text-[13px] font-semibold text-foreground">Aira</p>
                 <p className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-muted-foreground">
@@ -378,28 +363,22 @@ function SelectionScreen({
   );
 }
 
-function AiraAvatar() {
-  return (
-    <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-primary/25 bg-primary/10">
-      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary font-display text-[13px] font-semibold text-primary-foreground">
-        A
-      </span>
-    </span>
-  );
-}
-
 export default function CodingLabPage() {
   useDocumentMeta('Coding Lab', 'Language-aware coding interview with a real judge and AI review');
   const { theme } = useTheme();
-  const [catalog, setCatalog] = useState<CodingCatalog | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState('');
+  const {
+    data: catalog = null,
+    isLoading: loading,
+    error: catalogError,
+    refetch: refetchCatalog,
+  } = useCodingCatalog();
+  const loadError = catalogError instanceof Error ? catalogError.message : '';
   const [languageId, setLanguageId] = useState('python');
   const [difficulty, setDifficulty] = useState<CodingDifficulty>('easy');
   const [challengeId, setChallengeId] = useState('pair-sum');
   const [started, setStarted] = useState(false);
+  const [startedAt, setStartedAt] = useState<number | null>(null);
   const [code, setCode] = useState('');
-  const [seconds, setSeconds] = useState(0);
   const [results, setResults] = useState<CodingRunResult | null>(null);
   const [judgeError, setJudgeError] = useState('');
   const [runningMode, setRunningMode] = useState<CodingRunMode | null>(null);
@@ -411,7 +390,9 @@ export default function CodingLabPage() {
   const [review, setReview] = useState<CodingReview | null>(null);
   const [reviewing, setReviewing] = useState(false);
   const [reviewError, setReviewError] = useState('');
-  const runRef = useRef<(mode: CodingRunMode) => void>(() => {});
+  const [resultsStale, setResultsStale] = useState(false);
+  const runInFlightRef = useRef(false);
+  const reviewInFlightRef = useRef(false);
 
   const language = useMemo(
     () => catalog?.languages.find((item) => item.id === languageId) ?? catalog?.languages.find((item) => item.available),
@@ -422,30 +403,16 @@ export default function CodingLabPage() {
     [catalog, challengeId]
   );
 
-  const loadCatalog = useCallback(async () => {
-    setLoading(true);
-    setLoadError('');
-    try {
-      const data = await fetchCodingCatalog();
-      setCatalog(data);
-      const available = data.languages.filter((item) => item.available);
-      if (available.length && !available.some((item) => item.id === languageId)) {
-        setLanguageId(available[0].id);
-      }
-      if (!data.challenges.some((item) => item.id === challengeId)) {
-        setChallengeId(data.challenges[0]?.id ?? '');
-      }
-    } catch (error) {
-      setLoadError(error instanceof Error ? error.message : 'Could not load the coding lab.');
-    } finally {
-      setLoading(false);
-    }
-  }, [challengeId, languageId]);
-
   useEffect(() => {
-    void loadCatalog();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (!catalog) return;
+    const available = catalog.languages.filter((item) => item.available);
+    if (available.length && !available.some((item) => item.id === languageId)) {
+      setLanguageId(available[0].id);
+    }
+    if (!catalog.challenges.some((item) => item.id === challengeId)) {
+      setChallengeId(catalog.challenges[0]?.id ?? '');
+    }
+  }, [catalog, languageId, challengeId]);
 
   useEffect(() => {
     if (!catalog) return;
@@ -455,18 +422,24 @@ export default function CodingLabPage() {
     }
   }, [catalog, difficulty, challengeId]);
 
-  useInterval(() => setSeconds((value) => value + 1), started ? 1000 : null);
+
 
   useEffect(() => {
     if (!started || !challenge || !language) return;
     const draftKey = `hireiq:coding:draft:${challenge.id}:${language.id}`;
     const warmKey = `hireiq:coding:warmup:${challenge.id}:${language.id}`;
-    setCode(localStorage.getItem(draftKey) ?? challenge.starters[language.id] ?? '');
+    let draft = challenge.starters[language.id] ?? '';
+    try {
+      draft = localStorage.getItem(draftKey) ?? draft;
+    } catch {
+      /* storage can be unavailable */
+    }
+    setCode(draft);
     setResults(null);
     setReview(null);
     setJudgeError('');
     setReviewError('');
-    setSeconds(0);
+    setResultsStale(false);
     setActiveTab('tests');
     setBriefTab('warmup');
     setHintsRevealed(0);
@@ -478,18 +451,29 @@ export default function CodingLabPage() {
     }
   }, [started, challenge?.id, language?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleCodeChange = (value: string) => {
+  const handleCodeChange = useCallback((value: string) => {
     setCode(value);
+    setResultsStale(Boolean(results));
+    setReview(null);
+    setReviewError('');
     if (challenge && language) {
-      localStorage.setItem(`hireiq:coding:draft:${challenge.id}:${language.id}`, value);
+      try {
+        localStorage.setItem(`hireiq:coding:draft:${challenge.id}:${language.id}`, value);
+      } catch {
+        /* storage can be unavailable or full */
+      }
     }
-  };
+  }, [challenge, language, results]);
 
   const handleAnswer = (warmupId: string, value: string) => {
     setAnswers((previous) => {
       const next = { ...previous, [warmupId]: value };
       if (challenge && language) {
-        localStorage.setItem(`hireiq:coding:warmup:${challenge.id}:${language.id}`, JSON.stringify(next));
+        try {
+          localStorage.setItem(`hireiq:coding:warmup:${challenge.id}:${language.id}`, JSON.stringify(next));
+        } catch {
+          /* storage can be unavailable or full */
+        }
       }
       return next;
     });
@@ -497,9 +481,11 @@ export default function CodingLabPage() {
 
   const execute = useCallback(
     async (mode: CodingRunMode) => {
-      if (!challenge || !language) return;
+      if (!challenge || !language || runInFlightRef.current) return;
+      runInFlightRef.current = true;
       setRunningMode(mode);
       setJudgeError('');
+      setResultsStale(false);
       setActiveTab('tests');
       try {
         const result = await runCodingSolution({
@@ -520,21 +506,26 @@ export default function CodingLabPage() {
       } catch (error) {
         const message = error instanceof Error ? error.message : 'The judge could not run your code.';
         setJudgeError(message);
+        // Keep any previous results visible but clearly mark them as not from this run.
+        setResultsStale(true);
         toast.error(message);
       } finally {
+        runInFlightRef.current = false;
         setRunningMode(null);
       }
     },
     [challenge, language, code]
   );
-  runRef.current = execute;
+  const handleShortcut = useEffectEvent((mode: CodingRunMode) => {
+    void execute(mode);
+  });
 
   useEffect(() => {
     if (!started) return undefined;
     const onKeyDown = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
         event.preventDefault();
-        runRef.current(event.shiftKey ? 'submit' : 'run');
+        handleShortcut(event.shiftKey ? 'submit' : 'run');
       }
     };
     window.addEventListener('keydown', onKeyDown);
@@ -542,7 +533,8 @@ export default function CodingLabPage() {
   }, [started]);
 
   const handleReview = async () => {
-    if (!challenge || !language) return;
+    if (!challenge || !language || reviewInFlightRef.current) return;
+    reviewInFlightRef.current = true;
     setReviewing(true);
     setReviewError('');
     setActiveTab('review');
@@ -551,7 +543,7 @@ export default function CodingLabPage() {
         language: language.id,
         challenge_id: challenge.id,
         code,
-        results,
+        results: resultsStale ? null : results,
         warmup_answers: (catalog?.warmups ?? []).map((warmup) => ({
           question_id: warmup.id,
           question: warmup.question.replace('{language}', language.label),
@@ -564,12 +556,14 @@ export default function CodingLabPage() {
       setReviewError(message);
       toast.error(message);
     } finally {
+      reviewInFlightRef.current = false;
       setReviewing(false);
     }
   };
 
   const start = () => {
     if (!challenge || !language?.available) return;
+    setStartedAt(Date.now());
     setStarted(true);
     setShowBrief(false);
   };
@@ -590,14 +584,16 @@ export default function CodingLabPage() {
     );
   }
 
-  if (loadError || !catalog) {
+  if (!catalog) {
     return (
       <div className="container-page py-16">
         <div className="mx-auto max-w-lg rounded-xl border border-danger/25 bg-danger/5 p-6 text-center">
           <AlertTriangle size={22} className="mx-auto text-danger" />
           <h1 className="mt-3 text-lg font-semibold text-foreground">Coding lab unavailable</h1>
-          <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">{loadError}</p>
-          <Button onClick={loadCatalog} className="mt-5" size="sm">Try again</Button>
+          <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
+            {loadError || 'Could not load the coding lab.'}
+          </p>
+          <Button onClick={() => void refetchCatalog()} className="mt-5" size="sm">Try again</Button>
         </div>
       </div>
     );
@@ -653,7 +649,7 @@ export default function CodingLabPage() {
 
           <div className="flex items-center gap-2">
             <span className="hidden items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 font-mono text-[11px] tabular-nums text-muted-foreground sm:flex">
-              <Clock size={12} /> {formatClock(seconds)}
+              <Clock size={12} /> <ElapsedClock startedAt={startedAt} />
             </span>
             <Button variant="ghost" size="sm" className="xl:hidden" onClick={() => setShowBrief((value) => !value)}>
               <PanelLeft size={14} /> Brief
@@ -682,7 +678,7 @@ export default function CodingLabPage() {
         <aside className={cn('min-w-0 space-y-3', showBrief ? 'block' : 'hidden xl:block')}>
           <div className="overflow-hidden rounded-xl border border-border bg-card">
             <div className="flex items-center gap-3 border-b border-border bg-subtle/60 p-3.5">
-              <AiraAvatar />
+              <AiraAvatar online />
               <div className="min-w-0 flex-1">
                 <p className="text-[12.5px] font-semibold text-foreground">Aira</p>
                 <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
@@ -694,27 +690,17 @@ export default function CodingLabPage() {
               </span>
             </div>
 
-            <div className="flex gap-1 border-b border-border p-2">
-              {([
-                ['warmup', 'Warm-up', MessageSquare],
-                ['problem', 'Problem', BookOpen],
-                ['hints', 'Hints', Lightbulb],
-              ] as const).map(([value, label, Icon]) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setBriefTab(value)}
-                  className={cn(
-                    'flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-[11px] font-medium transition-colors',
-                    briefTab === value
-                      ? 'bg-card text-foreground shadow-xs'
-                      : 'text-muted-foreground hover:bg-card/60 hover:text-foreground'
-                  )}
-                >
-                  <Icon size={12} /> {label}
-                </button>
-              ))}
-            </div>
+            <Tabs
+              items={[
+                { value: 'warmup', label: 'Warm-up', icon: MessageSquare },
+                { value: 'problem', label: 'Problem', icon: BookOpen },
+                { value: 'hints', label: 'Hints', icon: Lightbulb },
+              ]}
+              value={briefTab}
+              onChange={setBriefTab}
+              ariaLabel="Interview brief"
+              className="border-b border-border p-2 [&>button]:flex-1 [&>button]:justify-center"
+            />
 
             <div className="max-h-[52vh] overflow-y-auto p-3.5 xl:max-h-[calc(100dvh-14rem)]">
               {briefTab === 'warmup' && (
@@ -774,8 +760,8 @@ export default function CodingLabPage() {
                     {challenge.examples.map((example, index) => (
                       <div key={index} className="rounded-lg border border-border bg-subtle p-2.5">
                         <div className="grid gap-2 sm:grid-cols-2">
-                          <OutputBlock title="Input">{example.input}</OutputBlock>
-                          <OutputBlock title="Output">{example.output}</OutputBlock>
+                          <CodeBlock title="Input">{example.input}</CodeBlock>
+                          <CodeBlock title="Output">{example.output}</CodeBlock>
                         </div>
                         {example.explanation && (
                           <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">{example.explanation}</p>
@@ -819,18 +805,16 @@ export default function CodingLabPage() {
           </div>
 
           <div className="grid grid-cols-2 gap-2">
-            <div className="rounded-lg border border-border bg-card p-3">
-              <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-muted-foreground">Tests</p>
-              <p className="mt-1 text-[14px] font-semibold text-foreground">
-                {results ? `${passed}/${total}` : `—/${challenge.sample_tests.length}`}
-              </p>
-            </div>
-            <div className="rounded-lg border border-border bg-card p-3">
-              <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-muted-foreground">Runtime</p>
-              <p className="mt-1 text-[14px] font-semibold text-foreground">
-                {results ? `${results.duration_ms} ms` : '—'}
-              </p>
-            </div>
+            <MetricCard
+              label="Tests"
+              value={results ? `${passed}/${total}` : `—/${challenge.sample_tests.length}`}
+              hint={results ? (results.mode === 'submit' ? 'hidden suite' : 'samples') : 'not run'}
+            />
+            <MetricCard
+              label="Runtime"
+              value={results ? `${results.duration_ms} ms` : '—'}
+              hint={results?.status ?? 'judge ready'}
+            />
           </div>
         </aside>
 
@@ -899,32 +883,31 @@ export default function CodingLabPage() {
 
           <section className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-2 py-1.5">
-              <div className="flex gap-1">
-                {([
-                  ['tests', 'Test results', ListChecks],
-                  ['output', 'Output', Terminal],
-                  ['review', 'Aira review', Sparkles],
-                ] as const).map(([value, label, Icon]) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => setActiveTab(value)}
-                    className={cn(
-                      'inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[11px] font-medium transition-colors',
-                      activeTab === value
-                        ? 'bg-muted text-foreground'
-                        : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
-                    )}
-                  >
-                    <Icon size={12} /> {label}
-                    {value === 'tests' && results && (
-                      <span className={cn('ml-0.5 rounded-full px-1.5 py-0.5 font-mono text-[9px]', results.status === 'passed' ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger')}>
+              <Tabs
+                items={[
+                  {
+                    value: 'tests',
+                    label: 'Test results',
+                    icon: ListChecks,
+                    badge: results ? (
+                      <span
+                        className={cn(
+                          'ml-0.5 rounded-full px-1.5 py-0.5 font-mono text-[9px]',
+                          results.status === 'passed' ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger'
+                        )}
+                      >
                         {passed}/{total}
                       </span>
-                    )}
-                  </button>
-                ))}
-              </div>
+                    ) : undefined,
+                  },
+                  { value: 'output', label: 'Output', icon: Terminal },
+                  { value: 'review', label: 'Aira review', icon: Sparkles },
+                ]}
+                value={activeTab}
+                onChange={setActiveTab}
+                ariaLabel="Run results and review"
+                variant="muted"
+              />
               {activeTab === 'review' && (
                 <Button
                   variant="ghost"
@@ -977,7 +960,8 @@ export default function CodingLabPage() {
                           {results.status === 'passed' ? <CheckCircle2 size={15} className="text-success" /> : <XCircle size={15} className="text-danger" />}
                           {results.status === 'passed' ? 'All tests passed' : results.status === 'compile_error' ? 'Compilation failed' : `${passed} of ${total} tests passed`}
                         </p>
-                        <span className="font-mono text-[10px] text-muted-foreground">
+                        <span className="flex flex-wrap items-center gap-2 font-mono text-[10px] text-muted-foreground">
+                          {resultsStale && <Badge tone="warning">edited since run</Badge>}
                           {results.duration_ms} ms · {results.mode === 'submit' ? 'hidden suite' : 'samples'}
                         </span>
                       </div>
@@ -1005,10 +989,10 @@ export default function CodingLabPage() {
                             <span className="shrink-0 font-mono text-[9.5px] text-muted-foreground">{test.duration_ms} ms</span>
                           </summary>
                           <div className="grid gap-2.5 border-t border-border p-3 sm:grid-cols-2">
-                            <OutputBlock title="Input">{test.input}</OutputBlock>
-                            <OutputBlock title="Expected">{test.expected}</OutputBlock>
-                            <OutputBlock title="Actual">{test.actual}</OutputBlock>
-                            {test.stderr && <OutputBlock title="stderr">{test.stderr}</OutputBlock>}
+                            <CodeBlock title="Input">{test.input}</CodeBlock>
+                            <CodeBlock title="Expected">{test.expected}</CodeBlock>
+                            <CodeBlock title="Actual">{test.actual}</CodeBlock>
+                            {test.stderr && <CodeBlock title="stderr">{test.stderr}</CodeBlock>}
                           </div>
                         </details>
                       ))}
@@ -1090,7 +1074,7 @@ export default function CodingLabPage() {
               <Zap size={11} className="text-primary" /> {allVisiblePassed ? 'Sample suite green' : 'Judge ready'}
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <Timer size={11} /> {formatClock(seconds)} elapsed · drafts stay on this device
+              <Timer size={11} /> <ElapsedClock startedAt={startedAt} /> elapsed · drafts stay on this device
             </span>
           </div>
         </div>

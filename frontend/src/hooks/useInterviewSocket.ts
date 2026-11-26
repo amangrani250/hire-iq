@@ -83,14 +83,20 @@ export function useInterviewSocket({
     onAudioElementRef.current?.(audio);
     currentAudioRef.current = audio;
 
-    audio.onended = () => {
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
       URL.revokeObjectURL(url);
       currentAudioRef.current = null;
       playNext();
     };
-    audio.play().catch(() => {
-      currentAudioRef.current = null;
-      playNext();
+
+    audio.onended = finish;
+    audio.onerror = finish;
+    audio.play().catch((error) => {
+      console.warn('Interviewer audio could not play.', error);
+      finish();
     });
   }, []);
 
@@ -164,12 +170,18 @@ export function useInterviewSocket({
   const handleRestResponse = useCallback(
     async (text: string | null = null) => {
       setIsThinking(true);
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 45000);
       try {
         const res = await fetch(`${API_BASE}/api/interview/respond`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ session_id: sessionId, text }),
+          signal: controller.signal,
         });
+        if (!res.ok) {
+          throw new Error(`Interview service responded with ${res.status}.`);
+        }
         const data = await res.json();
         const messages: Array<{ text?: string; meta?: MessageMeta }> =
           Array.isArray(data.messages) && data.messages.length
@@ -184,6 +196,7 @@ export function useInterviewSocket({
       } catch (err) {
         console.error('REST Interview Error:', err);
       } finally {
+        window.clearTimeout(timeout);
         setIsThinking(false);
       }
     },

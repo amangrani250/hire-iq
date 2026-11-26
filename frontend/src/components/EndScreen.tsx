@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   AlertTriangle,
@@ -14,9 +14,9 @@ import {
   ThumbsUp,
   Video,
 } from 'lucide-react';
-import html2pdf from 'html2pdf.js';
 import { API_BASE } from '../utils';
 import { useDocumentMeta } from '../hooks/useDocumentMeta';
+import toast from 'react-hot-toast';
 import { getRecording, type RecordingBundle } from '../lib/recording-store';
 import type { AttentionStats, Feedback, Message, ProctorFlag } from '../types';
 
@@ -82,17 +82,22 @@ export default function EndScreen() {
 
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [loadingFeedback, setLoadingFeedback] = useState(false);
+  const [feedbackError, setFeedbackError] = useState('');
   const [recording, setRecording] = useState<RecordingBundle | null>(null);
   const [recordingUrl, setRecordingUrl] = useState('');
   const [loadingRecording, setLoadingRecording] = useState(true);
 
   const pdfRef = useRef<HTMLDivElement>(null);
+  const hasState = Boolean(location.state);
 
   useEffect(() => {
     let active = true;
     getRecording()
       .then((value) => {
-        if (active) setRecording(value);
+        if (!active) return;
+        // Only show the recording that belongs to this interview. Without this
+        // check a failed recording could fall back to the previous session's video.
+        setRecording(value && (!sessionId || value.sessionId === sessionId) ? value : null);
       })
       .finally(() => {
         if (active) setLoadingRecording(false);
@@ -100,7 +105,7 @@ export default function EndScreen() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [sessionId]);
 
   useEffect(() => {
     if (!recording) {
@@ -122,41 +127,71 @@ export default function EndScreen() {
     attentionStats && attentionStats.totalMs > 0 ? attentionStats.focusScore : undefined;
 
   useEffect(() => {
-    if (transcript && transcript.length > 0) {
-      setLoadingFeedback(true);
-      fetch(`${API_BASE}/api/interview-feedback`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          transcript,
-          session_id: sessionId,
-          proctor_events: proctorFlags,
-        }),
+    if (!transcript || transcript.length === 0) return undefined;
+
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 20000);
+    let active = true;
+    setLoadingFeedback(true);
+    setFeedbackError('');
+
+    fetch(`${API_BASE}/api/interview-feedback`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        transcript,
+        session_id: sessionId,
+        proctor_events: proctorFlags,
+      }),
+      signal: controller.signal,
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error('Feedback could not be generated.');
+        return res.json();
       })
-        .then((res) => res.json())
-        .then((data) => {
-          setFeedback(data);
-          setLoadingFeedback(false);
-        })
-        .catch((err) => {
-          console.error('Feedback error:', err);
-          setLoadingFeedback(false);
-        });
-    }
+      .then((data) => {
+        if (active) setFeedback(data);
+      })
+      .catch((err) => {
+        if (!active) return;
+        setFeedbackError(
+          err?.name === 'AbortError'
+            ? 'Feedback took too long. Your transcript is still available.'
+            : 'The feedback service could not be reached. Your transcript is still available.'
+        );
+      })
+      .finally(() => {
+        window.clearTimeout(timeout);
+        if (active) setLoadingFeedback(false);
+      });
+
+    return () => {
+      active = false;
+      window.clearTimeout(timeout);
+      controller.abort();
+    };
   }, [transcript, sessionId, proctorFlags]);
 
   const handleRestart = () => navigate('/upload');
 
-  const handleExportPDF = () => {
+  if (!hasState) return <Navigate to="/" replace />;
+
+  const handleExportPDF = async () => {
     if (!pdfRef.current) return;
-    const opt = {
-      margin: 15,
-      filename: `Interview_Report_${candidateName || 'Candidate'}.pdf`,
-      image: { type: 'jpeg' as const, quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const },
-    };
-    html2pdf().set(opt).from(pdfRef.current).save();
+    try {
+      const { default: html2pdf } = await import('html2pdf.js');
+      const opt = {
+        margin: 15,
+        filename: `Interview_Report_${candidateName || 'Candidate'}.pdf`,
+        image: { type: 'jpeg' as const, quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const },
+      };
+      await html2pdf().set(opt).from(pdfRef.current).save();
+    } catch (error) {
+      console.error('Report export failed:', error);
+      toast.error('The report could not be generated. Please try again.');
+    }
   };
 
   const downloadName = `HireIQ_Interview_${(candidateName || 'Candidate').replace(/[^a-z0-9_-]+/gi, '_')}_${new Date()
@@ -247,12 +282,16 @@ export default function EndScreen() {
             </motion.div>
           ) : (
             <motion.div className="end-tips" variants={fadeUp} custom={3}>
-              <h3 className="end-tips-title"><Sparkles size={14} style={{ display: 'inline', marginRight: 6 }} />What's next?</h3>
-              <ul className="end-list">
-                <li>Review the transcript to see how you answered</li>
-                <li>Note any follow-up questions you struggled with</li>
-                <li>Practice again with a different resume or role</li>
-              </ul>
+              <h3 className="end-tips-title"><Sparkles size={14} style={{ display: 'inline', marginRight: 6 }} />{feedbackError ? 'Feedback unavailable' : "What's next?"}</h3>
+              {feedbackError ? (
+                <p className="text-[13px] leading-relaxed text-muted-foreground">{feedbackError}</p>
+              ) : (
+                <ul className="end-list">
+                  <li>Review the transcript to see how you answered</li>
+                  <li>Note any follow-up questions you struggled with</li>
+                  <li>Practice again with a different resume or role</li>
+                </ul>
+              )}
             </motion.div>
           )}
         </AnimatePresence>

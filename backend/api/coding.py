@@ -164,7 +164,7 @@ async def coding_review(req: ReviewRequest):
     }
 
     try:
-        raw = await call_llm(prompt, max_tokens=1100, task="analysis")
+        raw = await call_llm(prompt, max_tokens=1100, task="analysis", json_mode=True)
         review = extract_json(raw)
         if not isinstance(review, dict):
             return fallback

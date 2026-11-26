@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import toast from 'react-hot-toast';
 
 interface UsePdfExportReturn {
   exportPdf: (elementId: string, filename?: string) => Promise<void>;
@@ -25,6 +26,9 @@ export function usePdfExport(): UsePdfExportReturn {
         })
         .from(el)
         .save();
+    } catch (error) {
+      console.error('PDF export failed:', error);
+      toast.error('The PDF could not be generated. Please try again.');
     } finally {
       setExporting(false);
     }

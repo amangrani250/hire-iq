@@ -5,7 +5,7 @@ from fastapi.responses import ORJSONResponse
 from pydantic import BaseModel
 from typing import List, Optional
 
-from core.config import settings, log
+from core.config import log
 from core.session import sessions
 from services.llm_service import call_llm
 from services.interview_engine import schedule_plan
@@ -78,7 +78,7 @@ async def generate_job_roadmap(req: RoadmapRequest):
     ]
 
     try:
-        raw = await call_llm(prompt, max_tokens=4000)
+        raw = await call_llm(prompt, max_tokens=4000, task="interview", json_mode=True)
         data = extract_json(raw)
         if data is None:
             raise HTTPException(status_code=500, detail="Failed to parse roadmap. Please try again.")

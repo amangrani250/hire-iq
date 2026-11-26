@@ -114,10 +114,14 @@ async def interview_websocket(websocket: WebSocket, session_id: str):
                 await safe_send({"type": "error", "message": "Invalid message format."})
                 continue
 
+            if not isinstance(data, dict):
+                await safe_send({"type": "error", "message": "Invalid message format."})
+                continue
+
             msg_type = data.get("type", "")
 
             if msg_type == "candidate_message":
-                user_text = sanitize_text(data.get("text", ""))
+                user_text = sanitize_text(str(data.get("text") or ""))
                 if not user_text:
                     continue
                 await run_turn(user_text)
@@ -127,9 +131,15 @@ async def interview_websocket(websocket: WebSocket, session_id: str):
                 proctor_events = session.get("proctor_events", [])
                 proctor_lines = ""
                 if proctor_events:
+                    def _duration_seconds(event: dict) -> int:
+                        try:
+                            return round(float(event.get("durationMs", 0)) / 1000)
+                        except (TypeError, ValueError):
+                            return 0
+
                     proctor_lines = "\n".join(
                         f"- {event.get('label', event.get('type', 'flag'))}: "
-                        f"{round(float(event.get('durationMs', 0)) / 1000)}s"
+                        f"{_duration_seconds(event)}s"
                         for event in proctor_events[-20:]
                         if isinstance(event, dict)
                     )

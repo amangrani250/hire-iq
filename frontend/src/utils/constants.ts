@@ -21,7 +21,7 @@ export const APP_CONFIG = {
   AUDIO_SAMPLE_RATE: 16000,
   MAX_HISTORY_LENGTH: 40,
   RECONNECT_ATTEMPTS: 3,
-  SUPPORTED_FILE_TYPES: ['.pdf', '.txt'] as const,
+  SUPPORTED_FILE_TYPES: ['.pdf', '.docx'] as const,
 } as const;
 
 export const ATS_CATEGORIES: Record<string, { label: string; color: string }> = {

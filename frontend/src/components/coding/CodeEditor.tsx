@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import CodeMirror from '@uiw/react-codemirror';
 import { python } from '@codemirror/lang-python';
 import { javascript } from '@codemirror/lang-javascript';
@@ -16,7 +16,7 @@ function languageExtension(languageId: string): Extension[] {
   return extensions;
 }
 
-export default function CodeEditor({
+export default memo(function CodeEditor({
   value,
   languageId,
   dark,
@@ -48,4 +48,4 @@ export default function CodeEditor({
       }}
     />
   );
-}
+});
