@@ -6,10 +6,37 @@ from core.config import log
 from core.session import sessions, touch_session
 from services.llm_service import call_llm
 from services.audio_service import text_to_speech_bytes
+from services.interview_engine import (
+    start_interview,
+    resume_interview,
+    handle_candidate_answer,
+    evaluation_summary,
+    InterviewTurn,
+)
 from utils.pdf_extractor import sanitize_text
 from utils.system_msg import build_system_message
 
 router = APIRouter()
+
+
+def _turn_payload(message) -> dict:
+    payload = {
+        "type": "transcript",
+        "speaker": "interviewer",
+        "text": message.text,
+    }
+    meta = {}
+    if message.verdict:
+        meta["verdict"] = message.verdict
+    if message.score is not None:
+        meta["score"] = message.score
+    if message.question_number:
+        meta["questionNumber"] = message.question_number
+    if message.total_questions:
+        meta["totalQuestions"] = message.total_questions
+    if meta:
+        payload["meta"] = meta
+    return payload
 
 
 @router.websocket("/ws/interview/{session_id}")
@@ -31,55 +58,52 @@ async def interview_websocket(websocket: WebSocket, session_id: str):
         except Exception:
             pass
 
-    async def interviewer_respond(user_text: str | None = None):
+    async def send_turn(turn: InterviewTurn):
+        for message in turn.messages:
+            await safe_send(_turn_payload(message))
+
+        if turn.speech:
+            try:
+                t1 = time.time()
+                audio_bytes = await text_to_speech_bytes(turn.speech)
+                tts_ms = int((time.time() - t1) * 1000)
+                if audio_bytes:
+                    await safe_send({
+                        "type": "audio",
+                        "data": base64.b64encode(audio_bytes).decode(),
+                        "format": "mp3",
+                    })
+                    log.info("TTS generated in %dms (%d KB)", tts_ms, len(audio_bytes) // 1024)
+            except Exception as audio_error:
+                log.error("TTS error: %s", audio_error)
+
+        await safe_send({"type": "interviewer_done"})
+
+    async def run_turn(answer: str | None = None):
+        touch_session(session_id)
         try:
-            touch_session(session_id)
+            if answer is None and not session.get("greeted"):
+                turn = await start_interview(session)
+            elif answer is None:
+                turn = await resume_interview(session)
+            else:
+                turn = await handle_candidate_answer(session, answer or "")
 
-            messages = [system_msg] + session["history"]
-            if user_text:
-                messages.append({"role": "user", "content": user_text})
+            if answer:
+                session["history"].append({"role": "user", "content": answer})
+            session["history"].append({"role": "assistant", "content": turn.speech})
+            session["history"] = session["history"][-40:]
 
-            t0 = time.time()
-            ai_text = await call_llm(messages, task="interview")
-            llm_ms = int((time.time() - t0) * 1000)
-
-            if user_text:
-                session["history"].append({"role": "user", "content": user_text})
-            session["history"].append({"role": "assistant", "content": ai_text})
-            session["question_count"] += 1
-
-            max_history = 40
-            if len(session["history"]) > max_history:
-                session["history"] = session["history"][-max_history:]
-
-            await safe_send({
-                "type": "transcript",
-                "speaker": "interviewer",
-                "text": ai_text,
-            })
-
-            log.info("LLM responded in %dms (%d chars)", llm_ms, len(ai_text))
-
-            t1 = time.time()
-            audio_bytes = await text_to_speech_bytes(ai_text)
-            tts_ms = int((time.time() - t1) * 1000)
-
-            if audio_bytes:
-                audio_b64 = base64.b64encode(audio_bytes).decode()
-                await safe_send({"type": "audio", "data": audio_b64, "format": "mp3"})
-                log.info("TTS generated in %dms (%d KB)", tts_ms, len(audio_bytes) // 1024)
-
-            await safe_send({"type": "interviewer_done"})
-
+            await send_turn(turn)
         except HTTPException as e:
             await safe_send({"type": "error", "message": e.detail})
             await safe_send({"type": "interviewer_done"})
         except Exception as e:
-            log.error("interviewer_respond error: %s", e)
+            log.error("interview turn error: %s", e)
             await safe_send({"type": "error", "message": "Something went wrong processing your response."})
             await safe_send({"type": "interviewer_done"})
 
-    await interviewer_respond()
+    await run_turn()
 
     try:
         while True:
@@ -96,18 +120,17 @@ async def interview_websocket(websocket: WebSocket, session_id: str):
                 user_text = sanitize_text(data.get("text", ""))
                 if not user_text:
                     continue
-                await safe_send({
-                    "type": "transcript",
-                    "speaker": "candidate",
-                    "text": user_text,
-                })
-                await interviewer_respond(user_text)
+                await run_turn(user_text)
 
             elif msg_type == "end_interview":
+                summary = evaluation_summary(session)
                 feedback_prompt = (
-                    "Based on this interview conversation, provide a brief, warm closing "
-                    "message (2-3 sentences) telling the candidate what went well and next steps. "
-                    "Sound like a real human interviewer wrapping up a call."
+                    "Based on this interview conversation and the per-question evaluation "
+                    "record below, provide a brief, warm closing message (2-3 sentences) "
+                    "telling the candidate one strength and one thing to revisit. "
+                    "Sound like a real human interviewer wrapping up a call. "
+                    "Do not ask a question.\n\n"
+                    f"PER-QUESTION EVALUATION:\n{summary}"
                 )
                 messages = [system_msg] + session["history"] + [
                     {"role": "user", "content": feedback_prompt}

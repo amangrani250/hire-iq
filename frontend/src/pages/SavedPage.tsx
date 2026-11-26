@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { ExternalLink, FileText, PlusCircle, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { useResume } from '../contexts/ResumeContext';
+import { useResumeActions, useResumeMeta } from '../contexts/ResumeContext';
 import type { SavedResume } from '../types';
 import PageHeader from '../components/ui/PageHeader';
 import Button from '../components/ui/Button';
@@ -11,7 +11,8 @@ import usePageTitle from '../hooks/usePageTitle';
 
 export default function SavedPage() {
   usePageTitle('Saved resumes');
-  const { savedResumes, loadResume, deleteResume } = useResume();
+  const { savedResumes } = useResumeMeta();
+  const { loadResume, deleteResume } = useResumeActions();
   const navigate = useNavigate();
 
   const handleLoad = (saved: SavedResume) => {

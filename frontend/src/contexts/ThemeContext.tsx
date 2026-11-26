@@ -44,7 +44,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     root.style.colorScheme = resolved;
 
     const meta = document.getElementById('theme-color-meta');
-    if (meta) meta.setAttribute('content', resolved === 'dark' ? '#0d1210' : '#f9f8f4');
+    if (meta) meta.setAttribute('content', resolved === 'dark' ? '#050a17' : '#f7f9fc');
   }, [resolved]);
 
   const setMode = useCallback((next: ThemeMode) => {

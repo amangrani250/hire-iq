@@ -1,4 +1,4 @@
-import { createContext, useContext, useReducer, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useReducer, useCallback, useMemo, type ReactNode } from 'react';
 import type {
   Resume,
   PersonalInfo,
@@ -6,6 +6,7 @@ import type {
   ResumeState,
   ResumeAction,
   ResumeContextValue,
+  SavedResume,
 } from '../types';
 
 const initialResume: Resume = {
@@ -21,6 +22,15 @@ const initialResume: Resume = {
   certifications: [],
 };
 
+function loadSavedResumes(): SavedResume[] {
+  try {
+    const raw = localStorage.getItem('savedResumes');
+    return raw ? (JSON.parse(raw) as SavedResume[]) : [];
+  } catch {
+    return [];
+  }
+}
+
 const initialState: ResumeState = {
   resume: initialResume,
   template: 'minimal',
@@ -28,7 +38,7 @@ const initialState: ResumeState = {
   suggestions: [],
   isGenerating: false,
   isImproving: false,
-  savedResumes: JSON.parse(localStorage.getItem('savedResumes') || '[]'),
+  savedResumes: loadSavedResumes(),
 };
 
 function reducer(state: ResumeState, action: ResumeAction): ResumeState {
@@ -85,7 +95,20 @@ function reducer(state: ResumeState, action: ResumeAction): ResumeState {
   }
 }
 
-const ResumeContext = createContext<ResumeContextValue | null>(null);
+/*
+ * The resume store is split into three contexts so a keystroke in the editor
+ * only re-renders components that actually consume the document. Template and
+ * ATS panels no longer re-render on every character typed.
+ */
+type ResumeMeta = Pick<
+  ResumeState,
+  'template' | 'atsScore' | 'suggestions' | 'isGenerating' | 'isImproving' | 'savedResumes'
+>;
+type ResumeActions = Omit<ResumeContextValue, keyof ResumeState>;
+
+const ResumeDocumentContext = createContext<Resume | null>(null);
+const ResumeMetaContext = createContext<ResumeMeta | null>(null);
+const ResumeActionsContext = createContext<ResumeActions | null>(null);
 
 export function ResumeProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
@@ -114,30 +137,92 @@ export function ResumeProvider({ children }: { children: ReactNode }) {
   const deleteResume = useCallback((id: number) => dispatch({ type: 'DELETE_RESUME', id }), []);
   const reset = useCallback(() => dispatch({ type: 'RESET' }), []);
 
+  const meta = useMemo<ResumeMeta>(
+    () => ({
+      template: state.template,
+      atsScore: state.atsScore,
+      suggestions: state.suggestions,
+      isGenerating: state.isGenerating,
+      isImproving: state.isImproving,
+      savedResumes: state.savedResumes,
+    }),
+    [
+      state.template,
+      state.atsScore,
+      state.suggestions,
+      state.isGenerating,
+      state.isImproving,
+      state.savedResumes,
+    ]
+  );
+
+  const actions = useMemo<ResumeActions>(
+    () => ({
+      setResume,
+      updateField,
+      updatePersonal,
+      setTemplate,
+      setAts,
+      setGenerating,
+      setImproving,
+      saveResume,
+      loadResume,
+      deleteResume,
+      reset,
+    }),
+    [
+      setResume,
+      updateField,
+      updatePersonal,
+      setTemplate,
+      setAts,
+      setGenerating,
+      setImproving,
+      saveResume,
+      loadResume,
+      deleteResume,
+      reset,
+    ]
+  );
+
   return (
-    <ResumeContext
-      value={{
-        ...state,
-        setResume,
-        updateField,
-        updatePersonal,
-        setTemplate,
-        setAts,
-        setGenerating,
-        setImproving,
-        saveResume,
-        loadResume,
-        deleteResume,
-        reset,
-      }}
-    >
-      {children}
-    </ResumeContext>
+    <ResumeActionsContext value={actions}>
+      <ResumeMetaContext value={meta}>
+        <ResumeDocumentContext value={state.resume}>{children}</ResumeDocumentContext>
+      </ResumeMetaContext>
+    </ResumeActionsContext>
   );
 }
 
-export function useResume(): ResumeContextValue {
-  const ctx = useContext(ResumeContext);
-  if (!ctx) throw new Error('useResume must be used within ResumeProvider');
+export function useResumeDocument(): Resume {
+  const ctx = useContext(ResumeDocumentContext);
+  if (!ctx) throw new Error('useResumeDocument must be used within ResumeProvider');
   return ctx;
+}
+
+export function useResumeMeta(): ResumeMeta {
+  const ctx = useContext(ResumeMetaContext);
+  if (!ctx) throw new Error('useResumeMeta must be used within ResumeProvider');
+  return ctx;
+}
+
+export function useResumeActions(): ResumeActions {
+  const ctx = useContext(ResumeActionsContext);
+  if (!ctx) throw new Error('useResumeActions must be used within ResumeProvider');
+  return ctx;
+}
+
+/**
+ * Convenience hook for components that need the whole store. Prefer the
+ * granular hooks above when only one slice is needed.
+ */
+export function useResume(): ResumeContextValue {
+  const resume = useResumeDocument();
+  const meta = useResumeMeta();
+  const actions = useResumeActions();
+
+  return useMemo<ResumeContextValue>(
+    () => ({ resume, ...meta, ...actions }),
+    [resume, meta, actions]
+  );
 }

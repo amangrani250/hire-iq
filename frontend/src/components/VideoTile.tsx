@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { MicOff, Volume2 } from 'lucide-react';
 
 const VIDEO_CONSTRAINTS: MediaTrackConstraints = { facingMode: 'user' };
@@ -38,10 +38,12 @@ function VideoTile({
   accentColor,
 }: VideoTileProps) {
   const color = accentColor || 'var(--color-primary)';
+  const [camFailed, setCamFailed] = useState(false);
+  const showCamera = role === 'candidate' && camOn && !camFailed;
   const background =
     role === 'interviewer'
-      ? 'radial-gradient(circle at 50% 22%, #17241f 0%, #0c1210 68%)'
-      : '#0d1411';
+      ? 'radial-gradient(circle at 50% 20%, #1a2550 0%, #070c18 70%)'
+      : '#070c18';
 
   const rootClass = `tile-root ${large ? 'tile-root--large' : 'tile-root--small'} ${
     speaking ? 'tile-speaking-active' : ''
@@ -50,8 +52,8 @@ function VideoTile({
   return (
     <div className={rootClass}>
       <div className="tile-media" style={{ background }}>
-        {role === 'candidate' && camOn ? (
-          <NativeWebcam videoConstraints={VIDEO_CONSTRAINTS} />
+        {showCamera ? (
+          <NativeWebcam videoConstraints={VIDEO_CONSTRAINTS} onError={() => setCamFailed(true)} />
         ) : (
           <AvatarDisplay
             char={avatarChar || name?.[0] || 'A'}
@@ -107,7 +109,7 @@ function AvatarDisplay({ char, color, speaking, role, name, showMeta }: AvatarDi
 }
 
 /** Webcam element that aggressively manages track destruction. */
-function NativeWebcam({ videoConstraints }: { videoConstraints?: MediaTrackConstraints }) {
+function NativeWebcam({ videoConstraints, onError }: { videoConstraints?: MediaTrackConstraints; onError?: () => void }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
@@ -128,6 +130,7 @@ function NativeWebcam({ videoConstraints }: { videoConstraints?: MediaTrackConst
         if (videoRef.current) videoRef.current.srcObject = stream;
       } catch (err) {
         console.error('Failed to grab camera:', err);
+        if (mounted) onError?.();
       }
     };
 

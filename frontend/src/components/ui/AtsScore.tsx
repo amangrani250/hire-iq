@@ -1,4 +1,4 @@
-import { useResume } from '../../contexts/ResumeContext';
+import { useResumeMeta } from '../../contexts/ResumeContext';
 
 function toneFor(score: number) {
   if (score >= 80) return { color: 'var(--color-success)', label: 'Excellent' };
@@ -7,7 +7,7 @@ function toneFor(score: number) {
 }
 
 export default function AtsScore() {
-  const { atsScore, suggestions } = useResume();
+  const { atsScore, suggestions } = useResumeMeta();
 
   if (!atsScore) return null;
 

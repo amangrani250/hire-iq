@@ -33,14 +33,7 @@ import Badge from './ui/Badge';
 import Card from './ui/Card';
 import Spinner from './ui/Spinner';
 import usePageTitle from '../hooks/usePageTitle';
-
-const getApiBase = () => {
-  if (process.env.REACT_APP_API_URL) return process.env.REACT_APP_API_URL;
-  return window.location.hostname === 'localhost'
-    ? 'http://localhost:8000'
-    : 'https://hire-iq-backend-eight.vercel.app';
-};
-const API_BASE = getApiBase();
+import { API_BASE } from '../utils/constants';
 
 /* Resume upload rules — keep these in sync with the backend. */
 const MAX_RESUME_BYTES = 5 * 1024 * 1024;

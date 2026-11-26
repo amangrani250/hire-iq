@@ -86,42 +86,42 @@ export default function TechInterviewSetup() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pt-24 px-4 pb-12">
-      <div className="max-w-xl mx-auto">
+    <div className="container-page py-10 lg:py-14">
+      <div className="max-w-2xl mx-auto">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-          className="bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-sm border border-gray-100 dark:border-gray-800">
+          className="card p-6 sm:p-8">
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 bg-brand-100 dark:bg-brand-900/30 rounded-xl flex items-center justify-center">
-              <Terminal size={20} className="text-brand-600 dark:text-brand-400" />
+            <div className="w-11 h-11 bg-accent rounded-xl flex items-center justify-center">
+              <Terminal size={20} className="text-accent-foreground" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Technical Interview Config</h1>
-              <p className="text-gray-500 dark:text-gray-400 text-sm">Setup your customized technical interview parameters.</p>
+              <h1 className="text-2xl font-semibold tracking-[-0.03em] text-foreground">Technical Interview Config</h1>
+              <p className="text-muted-foreground text-sm">Set up your customized technical interview parameters.</p>
             </div>
           </div>
 
           {error && (
             <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}
-              className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg flex items-center gap-2">
+              className="mb-6 p-4 bg-danger/10 text-danger border border-danger/20 rounded-xl flex items-center gap-2">
               <AlertCircle size={18} /><span className="text-sm font-medium">{error}</span>
             </motion.div>
           )}
 
           <div className="space-y-8">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+              <label className="block text-sm font-medium text-foreground mb-2 flex items-center gap-2">
                 <Code size={16} /> Programming Languages
               </label>
 
               <div className="flex flex-wrap gap-2 mb-3">
                 {[...POPULAR_LANGUAGES].map((lang) => (
                   <button key={lang} type="button" onClick={() => togglePopular(lang)}
-                    className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
                       languages.includes(lang)
-                        ? 'bg-brand-500 text-white border-brand-500'
-                        : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-brand-400 hover:text-brand-600 dark:hover:text-brand-400'
+                        ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                        : 'bg-muted text-muted-foreground border-border hover:border-primary/40 hover:text-primary'
                     }`}>
-                    {languages.includes(lang) ? '? ' : '+ '}{lang}
+                    {languages.includes(lang) ? '✓ ' : '+ '}{lang}
                   </button>
                 ))}
               </div>
@@ -131,9 +131,9 @@ export default function TechInterviewSetup() {
                   onChange={(e) => { setInputValue(e.target.value); if (error) setError(''); }}
                   onKeyDown={handleKeyDown} onBlur={handleBlur}
                   placeholder="Or type a custom language and press Enter…"
-                  className="flex-1 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 transition-shadow outline-none text-sm" />
+                  className="input-field flex-1" />
                 <button type="button" onClick={() => commitInput()}
-                  className="px-3 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:bg-brand-50 dark:hover:bg-brand-900/20 text-gray-500 hover:text-brand-600 dark:hover:text-brand-400 transition-all"
+                  className="px-3.5 rounded-xl border border-border bg-card hover:bg-accent text-muted-foreground hover:text-primary transition-all"
                   title="Add language">
                   <Plus size={18} />
                 </button>
@@ -142,15 +142,15 @@ export default function TechInterviewSetup() {
               <div className="flex flex-wrap gap-2 mt-4">
                 {languages.map((lang, i) => (
                   <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} key={i}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 rounded-lg border border-brand-100 dark:border-brand-800/30 text-sm font-medium">
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-accent text-accent-foreground rounded-lg border border-primary/15 text-sm font-medium">
                     {lang}
-                    <button onClick={() => removeLanguage(lang)} className="hover:text-red-500 focus:outline-none transition-colors ml-1">
+                    <button onClick={() => removeLanguage(lang)} className="hover:text-danger focus:outline-none transition-colors ml-1">
                       <X size={14} />
                     </button>
                   </motion.div>
                 ))}
                 {languages.length === 0 && (
-                  <span className="text-sm text-gray-400 dark:text-gray-500 italic mt-1 inline-block">
+                  <span className="text-sm text-muted-foreground italic mt-1 inline-block">
                     No languages selected yet — click a chip above or type below.
                   </span>
                 )}
@@ -158,7 +158,7 @@ export default function TechInterviewSetup() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+              <label className="block text-sm font-medium text-foreground mb-3 flex items-center gap-2">
                 <Cpu size={16} /> Complexity Level
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -166,10 +166,10 @@ export default function TechInterviewSetup() {
                   <div key={level} onClick={() => setComplexity(level)}
                     className={`cursor-pointer border rounded-xl p-4 text-center transition-all ${
                       complexity === level
-                        ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-400 shadow-sm'
-                        : 'border-gray-200 dark:border-gray-700 hover:border-brand-300 dark:hover:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                        ? 'border-primary bg-accent text-accent-foreground shadow-sm'
+                        : 'border-border hover:border-primary/30 text-muted-foreground hover:bg-muted'
                     }`}>
-                    <span className="capitalize font-medium text-sm block">{level}</span>
+                    <span className="capitalize font-semibold text-sm block">{level}</span>
                   </div>
                 ))}
               </div>
@@ -177,7 +177,7 @@ export default function TechInterviewSetup() {
 
             <div className="pt-4 flex justify-end">
               <button onClick={startInterview} disabled={loading}
-                className="btn-primary w-full px-8 py-3.5 text-sm font-semibold flex items-center justify-center gap-2 rounded-xl transition-all disabled:opacity-70 disabled:cursor-not-allowed">
+                className="btn btn-primary w-full px-8 text-sm disabled:opacity-70 disabled:cursor-not-allowed">
                 {loading ? (
                   <span className="animate-pulse">Setting up Interview Room...</span>
                 ) : (

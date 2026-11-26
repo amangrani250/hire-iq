@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { Download, Copy, Save, Upload, Printer, Eye, Edit3 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -6,7 +6,7 @@ import ResumeForm from '../components/resume/ResumeForm';
 import ResumePreview from '../components/resume/ResumePreview';
 import TemplateSelector from '../components/ui/TemplateSelector';
 import AtsScore from '../components/ui/AtsScore';
-import { useResume } from '../contexts/ResumeContext';
+import { useResumeActions, useResumeDocument } from '../contexts/ResumeContext';
 import { usePdfExport } from '../hooks/usePdfExport';
 import { useDocumentMeta } from '../hooks/useDocumentMeta';
 import { useIsMobile } from '../hooks/useMediaQuery';
@@ -14,38 +14,12 @@ import { useAnalyzeResume } from '../services';
 import type { ProfileData } from '../types';
 import type { Resume } from '../types';
 
-const fadeUpVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0 },
-};
-
 function FadeUp({ children, delay = 0, className }: { children: React.ReactNode; delay?: number; className?: string }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [inView, setInView] = useState(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setInView(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.1 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
   return (
     <motion.div
-      ref={ref}
-      variants={fadeUpVariants}
-      initial="hidden"
-      animate={inView ? 'visible' : 'hidden'}
-      transition={{ duration: 0.45, ease: [0.25, 0.1, 0.25, 1], delay }}
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1], delay }}
       className={className}
     >
       {children}
@@ -55,13 +29,13 @@ function FadeUp({ children, delay = 0, className }: { children: React.ReactNode;
 
 function EditorPreviewToggle({ mobileView, setMobileView }: { mobileView: 'editor' | 'preview'; setMobileView: (v: 'editor' | 'preview') => void }) {
   return (
-    <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5 shrink-0">
+    <div className="flex items-center rounded-xl bg-muted p-1 shrink-0">
       <button onClick={() => setMobileView('editor')}
-        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${mobileView === 'editor' ? 'bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-white' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}>
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${mobileView === 'editor' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
         <Edit3 size={12} /> Editor
       </button>
       <button onClick={() => setMobileView('preview')}
-        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${mobileView === 'preview' ? 'bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-white' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}>
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${mobileView === 'preview' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
         <Eye size={12} /> Preview
       </button>
     </div>
@@ -119,7 +93,8 @@ function mapProfileToResume(profile: ProfileData): Partial<Resume> {
 export default function BuilderPage() {
   useDocumentMeta('Resume Builder', 'Build and export professional resumes with AI');
   const isMobile = useIsMobile();
-  const { resume, setResume, setAts, saveResume } = useResume();
+  const resume = useResumeDocument();
+  const { setResume, setAts, saveResume } = useResumeActions();
   const { exportPdf, exporting } = usePdfExport();
   const analyzeMutation = useAnalyzeResume();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -182,28 +157,30 @@ export default function BuilderPage() {
   };
 
   return (
-    <div className="min-h-screen pt-[72px] bg-gray-50 dark:bg-gray-950">
-      <div className="sticky top-[72px] z-40 bg-white/80 dark:bg-gray-900/80 backdrop-blur border-b border-gray-100 dark:border-gray-800 no-print">
+    <div className="min-h-screen bg-transparent">
+      <div className="builder-toolbar no-print">
         <div className="max-w-[1400px] mx-auto px-4">
           <div className="h-12 flex items-center justify-between gap-3">
             <input type="text" value={jobRole} onChange={(e) => setJobRole(e.target.value)}
-              placeholder="Target job role" className="input-field max-w-[180px] sm:max-w-xs py-1.5 text-sm h-8 flex-1 sm:flex-1" />
+              placeholder="Target job role" className="input-field w-full min-w-0 max-w-[200px] sm:max-w-xs h-9 py-1.5 text-sm" />
 
-            <button onClick={() => fileInputRef.current?.click()}
-              disabled={analyzeMutation.isPending}
-              className="btn-secondary text-xs py-1.5 px-2.5 shrink-0"
-              title="Import existing resume from PDF">
-              <Upload size={13} /> {analyzeMutation.isPending ? 'Importing...' : 'Import'}
-            </button>
+            <div className="flex items-center gap-2">
+              <button onClick={() => fileInputRef.current?.click()}
+                disabled={analyzeMutation.isPending}
+                className="btn btn-secondary btn-sm shrink-0"
+                title="Import existing resume from PDF">
+                <Upload size={13} /> <span className="hidden sm:inline">{analyzeMutation.isPending ? 'Importing...' : 'Import'}</span>
+              </button>
 
-            <button onClick={handlePrint} className="btn-secondary text-xs py-1.5 px-2.5 shrink-0" title="Print resume">
-              <Printer size={13} /> Print
-            </button>
+              <button onClick={handlePrint} className="btn btn-secondary btn-sm shrink-0 hidden sm:inline-flex" title="Print resume">
+                <Printer size={13} /> Print
+              </button>
 
-            <button onClick={() => exportPdf('resume-preview', `${resume.personal_info?.full_name || 'resume'}.pdf`)}
-              disabled={exporting} className="btn-primary text-xs py-1.5 px-3 sm:px-4 shrink-0">
-              <Download size={13} /> {exporting ? 'Exporting...' : 'PDF'}
-            </button>
+              <button onClick={() => exportPdf('resume-preview', `${resume.personal_info?.full_name || 'resume'}.pdf`)}
+                disabled={exporting} className="btn btn-primary btn-sm shrink-0">
+                <Download size={13} /> {exporting ? 'Exporting...' : 'PDF'}
+              </button>
+            </div>
 
             <input ref={fileInputRef} type="file" accept=".pdf,.txt"
               onChange={handleFileImport} className="hidden" />
@@ -211,10 +188,10 @@ export default function BuilderPage() {
 
           <div className="lg:hidden flex items-center gap-2 pb-2.5">
             <EditorPreviewToggle mobileView={mobileView} setMobileView={setMobileView} />
-            <button onClick={handleCopy} className="btn-secondary text-xs py-1.5 px-2.5 flex-1 justify-center">
+            <button onClick={handleCopy} className="btn btn-secondary btn-sm flex-1 justify-center">
               <Copy size={12} /> Copy
             </button>
-            <button onClick={handleSave} disabled={saving} className="btn-secondary text-xs py-1.5 px-2.5 flex-1 justify-center">
+            <button onClick={handleSave} disabled={saving} className="btn btn-secondary btn-sm flex-1 justify-center">
               <Save size={12} /> {saving ? 'Saved' : 'Save'}
             </button>
           </div>
@@ -232,7 +209,7 @@ export default function BuilderPage() {
                 animate={{ x: 0, opacity: 1 }}
                 exit={{ x: -30, opacity: 0 }}
                 transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
-                className="w-full md:w-1/2 lg:w-5/12 xl:w-4/12 shrink-0 space-y-4 no-print"
+                className="w-full lg:w-[42%] xl:w-[38%] shrink-0 space-y-4 no-print"
               >
                 <FadeUp delay={0.05}><div className="card p-4"><TemplateSelector /></div></FadeUp>
                 <FadeUp delay={0.1}><AtsScore /></FadeUp>
@@ -252,7 +229,7 @@ export default function BuilderPage() {
                 transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
                 className="flex-1 min-w-0"
               >
-                <div className="sticky top-[120px] md:top-[165px] lg:top-[120px]">
+                <div className="sticky top-[calc(var(--nav-height)+16px)] md:top-[calc(var(--nav-height)+24px)] lg:top-[calc(var(--nav-height)+16px)]">
                   <div className="overflow-auto max-h-[calc(100vh-12rem)] md:max-h-[calc(100vh-15rem)] lg:max-h-[calc(100vh-8rem)]"><ResumePreview onFieldDoubleClick={setFocusField} /></div>
                 </div>
               </motion.div>

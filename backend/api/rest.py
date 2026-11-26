@@ -13,6 +13,13 @@ from utils.json_utils import safe_json
 from utils.system_msg import build_system_message
 from services.llm_service import call_llm
 from services.audio_service import transcribe_audio_bytes, text_to_speech_bytes
+from services.interview_engine import (
+    start_interview,
+    resume_interview,
+    handle_candidate_answer,
+    evaluation_summary,
+    schedule_plan,
+)
 
 # FastAPI serializes responses directly via Pydantic; no custom response class needed.
 router = APIRouter()
@@ -87,6 +94,9 @@ async def upload_resume(file: UploadFile = File(...)):
         candidate_info = orjson.loads(raw)
     except Exception:
         candidate_info = {"name": "Candidate", "role": "Professional", "skills": [], "years": ""}
+
+    sessions[session_id]["candidate"] = candidate_info
+    schedule_plan(sessions[session_id])
 
     return {"session_id": session_id, "candidate": candidate_info}
 
@@ -247,17 +257,21 @@ async def analyze_resume(file: UploadFile = File(...)):
     except Exception:
         skills_list = []
 
+    candidate = {
+        "name": profile.get("name", "Candidate"),
+        "role": profile.get("role", "Professional"),
+        "skills": skills_list,
+        "years": profile.get("total_years", ""),
+    }
+    sessions[session_id]["candidate"] = candidate
+    schedule_plan(sessions[session_id])
+
     return {
         "profile": profile,
         "ats": ats,
         "resume_text": trimmed,
         "session_id": session_id,
-        "candidate": {
-            "name": profile.get("name", "Candidate"),
-            "role": profile.get("role", "Professional"),
-            "skills": skills_list,
-            "years": profile.get("total_years", ""),
-        },
+        "candidate": candidate,
     }
 
 
@@ -287,6 +301,12 @@ async def setup_tech_interview(req: TechInterviewRequest):
                 "content": f"Hi, I'm ready for the technical interview. I want {req.complexity} complexity questions on {', '.join(req.languages)}.",
             }
         ],
+        "candidate": {
+            "name": "Candidate",
+            "role": f"{req.complexity.title()} Level Engineer",
+            "skills": req.languages,
+            "years": "",
+        },
         "stage": "greeting",
         "question_count": 0,
         "last_active": time.time(),
@@ -295,6 +315,7 @@ async def setup_tech_interview(req: TechInterviewRequest):
     }
 
     log.info("Tech interview session created: %s", session_id[:8])
+    schedule_plan(sessions[session_id])
 
     return {
         "session_id": session_id,
@@ -315,6 +336,7 @@ class TranscriptMessage(BaseModel):
 
 class FeedbackRequest(BaseModel):
     transcript: List[TranscriptMessage]
+    session_id: str | None = None
 
 
 @router.post("/api/interview-feedback")
@@ -327,19 +349,29 @@ async def get_interview_feedback(req: FeedbackRequest):
         }
 
     text_transcript = "\n".join([f"{m.speaker}: {m.text}" for m in req.transcript])
+    summary = ""
+    if req.session_id and req.session_id in sessions:
+        summary = evaluation_summary(sessions[req.session_id])
 
     prompt = [
         {
             "role": "system",
             "content": (
-                "You are an expert technical interviewer evaluator. Analyze the following interview transcript. "
-                "Return ONLY a valid JSON object, no extra markdown text, with these keys: "
-                "'good_points' (string summarizing strengths), "
+                "You are an expert technical interviewer evaluator. Analyze the following interview transcript "
+                "and the per-question evaluation record. Return ONLY a valid JSON object, no extra markdown text, "
+                "with these keys: 'good_points' (string summarizing strengths), "
                 "'bad_points' (string summarizing weaknesses), "
-                "'improvements' (string with actionable advice)."
+                "'improvements' (string with actionable advice). "
+                "Be specific, reference the candidate's actual answers, and do not invent strengths."
             ),
         },
-        {"role": "user", "content": text_transcript[:10000]},
+        {
+            "role": "user",
+            "content": (
+                f"PER-QUESTION EVALUATION RECORD:\n{summary or 'Not available.'}\n\n"
+                f"TRANSCRIPT:\n{text_transcript[:10000]}"
+            ),
+        },
     ]
 
     try:
@@ -371,34 +403,47 @@ async def interview_respond_rest(req: InterviewMessageRequest):
         raise HTTPException(status_code=404, detail="Session not found.")
 
     session = sessions[session_id]
-    system_msg = build_system_message(session)
 
     try:
-        messages = [system_msg] + session["history"]
-        if user_text:
-            messages.append({"role": "user", "content": user_text})
+        if not session.get("greeted"):
+            turn = await start_interview(session)
+        elif not user_text:
+            turn = await resume_interview(session)
+        else:
+            turn = await handle_candidate_answer(session, user_text or "")
 
-        # Call LLM
-        ai_text = await call_llm(messages, task="interview")
-        
-        # Update history
         if user_text:
             session["history"].append({"role": "user", "content": user_text})
-        session["history"].append({"role": "assistant", "content": ai_text})
-        session["question_count"] += 1
+        session["history"].append({"role": "assistant", "content": turn.speech})
+        session["history"] = session["history"][-40:]
 
-        if len(session["history"]) > 40:
-            session["history"] = session["history"][-40:]
-
-        audio_bytes = await text_to_speech_bytes(ai_text)
+        audio_bytes = await text_to_speech_bytes(turn.speech)
         audio_b64 = base64.b64encode(audio_bytes).decode() if audio_bytes else None
 
         return {
             "type": "interview_response",
             "speaker": "interviewer",
-            "text": ai_text,
+            "text": turn.speech,
+            "messages": [
+                {
+                    "text": message.text,
+                    "meta": {
+                        key: value
+                        for key, value in {
+                            "verdict": message.verdict,
+                            "score": message.score,
+                            "questionNumber": message.question_number,
+                            "totalQuestions": message.total_questions,
+                        }.items()
+                        if value is not None
+                    },
+                }
+                for message in turn.messages
+            ],
             "audio": audio_b64,
             "format": "mp3",
+            "phase": turn.phase,
+            "ended": turn.ended,
         }
 
     except Exception as e:
@@ -414,11 +459,14 @@ async def interview_end_rest(req: InterviewMessageRequest):
 
     session = sessions[session_id]
     system_msg = build_system_message(session)
+    summary = evaluation_summary(session)
 
     feedback_prompt = (
-        "Based on this interview conversation, provide a brief, warm closing "
-        "message (2-3 sentences) telling the candidate what went well and next steps. "
-        "Sound like a real human interviewer wrapping up a call."
+        "Based on this interview conversation and the per-question evaluation record, "
+        "provide a brief, warm closing message (2-3 sentences) telling the candidate "
+        "one strength and one thing to revisit. Sound like a real human interviewer "
+        "wrapping up a call. Do not ask a question.\n\n"
+        f"PER-QUESTION EVALUATION:\n{summary}"
     )
 
     messages = [system_msg] + session["history"] + [{"role": "user", "content": feedback_prompt}]

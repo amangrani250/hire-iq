@@ -24,11 +24,11 @@ export const APP_CONFIG = {
 } as const;
 
 export const ATS_CATEGORIES: Record<string, { label: string; color: string }> = {
-  keyword_optimization: { label: 'Keywords', color: 'var(--accent)' },
-  formatting: { label: 'Formatting', color: 'var(--green)' },
-  section_completeness: { label: 'Sections', color: 'var(--amber)' },
-  impact_metrics: { label: 'Impact Metrics', color: 'var(--accent-2)' },
-  readability: { label: 'Readability', color: '#e06cf5' },
+  keyword_optimization: { label: 'Keywords', color: 'var(--color-primary)' },
+  formatting: { label: 'Formatting', color: 'var(--color-success)' },
+  section_completeness: { label: 'Sections', color: 'var(--color-warning)' },
+  impact_metrics: { label: 'Impact Metrics', color: 'var(--color-info)' },
+  readability: { label: 'Readability', color: 'var(--color-danger)' },
 };
 
 export const EXPERIENCE_LEVELS = [

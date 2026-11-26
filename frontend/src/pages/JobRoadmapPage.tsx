@@ -179,7 +179,7 @@ export default function JobRoadmapPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col items-center justify-center gap-6 px-4">
+      <div className="min-h-screen flex flex-col items-center justify-center gap-6 px-4">
         <div className="relative">
           <div className="w-20 h-20 rounded-full bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center shadow-xl">
             <Brain size={36} className="text-white" />
@@ -189,8 +189,8 @@ export default function JobRoadmapPage() {
           </div>
         </div>
         <div className="text-center">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Building your roadmap...</h2>
-          <p className="text-gray-500 dark:text-gray-400 text-sm max-w-sm">
+          <h2 className="text-xl font-bold text-foreground mb-2">Building your roadmap...</h2>
+          <p className="text-muted-foreground text-sm max-w-sm">
             AI is crafting a personalized {durationDays}-day preparation plan for <strong>{jobTitle}</strong>. This takes a few seconds.
           </p>
         </div>
@@ -205,16 +205,16 @@ export default function JobRoadmapPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col items-center justify-center gap-4 px-4">
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-4">
         <div className="w-16 h-16 rounded-2xl bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
           <AlertCircle size={28} className="text-red-500" />
         </div>
         <div className="text-center">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Failed to generate roadmap</h2>
-          <p className="text-gray-500 dark:text-gray-400 text-sm">{error}</p>
+          <h2 className="text-lg font-bold text-foreground mb-1">Failed to generate roadmap</h2>
+          <p className="text-muted-foreground text-sm">{error}</p>
         </div>
         <div className="flex gap-3">
-          <button onClick={() => navigate('/job-prep')} className="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800">
+          <button onClick={() => navigate('/job-prep')} className="px-4 py-2 rounded-xl border border-border text-sm font-medium text-muted-foreground hover:bg-muted">
             ? Choose Another Role
           </button>
           <button onClick={() => generateRoadmap(true)} className="px-4 py-2 rounded-xl bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 flex items-center gap-2">
@@ -226,7 +226,7 @@ export default function JobRoadmapPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-20">
+    <div className="min-h-screen pb-20">
       <div className="bg-gradient-to-r from-brand-600 via-purple-600 to-indigo-700 text-white">
         <div className="max-w-4xl mx-auto px-4 py-6">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
@@ -271,14 +271,14 @@ export default function JobRoadmapPage() {
       <div className="max-w-4xl mx-auto px-4 mt-6 space-y-4">
         {roadmap?.strategy && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-            className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
+            className="bg-card rounded-2xl border border-border p-5 shadow-sm">
             <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <div className="w-8 h-8 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center shrink-0 mt-0.5">
                 <Target size={16} className="text-amber-600 dark:text-amber-400" />
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">Strategy to Crack This Interview</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{roadmap.strategy}</p>
+                <h3 className="text-sm font-semibold text-foreground mb-1">Strategy to Crack This Interview</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{roadmap.strategy}</p>
               </div>
             </div>
           </motion.div>
@@ -286,10 +286,10 @@ export default function JobRoadmapPage() {
 
         {(roadmap?.key_topics?.length ?? 0) > 0 && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-            className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
+            className="bg-card rounded-2xl border border-border p-5 shadow-sm">
             <div className="flex items-center gap-2 mb-3">
               <Star size={16} className="text-brand-500" />
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Key Topics to Master</h3>
+              <h3 className="text-sm font-semibold text-foreground">Key Topics to Master</h3>
             </div>
             <div className="flex flex-wrap gap-2">
               {roadmap?.key_topics?.map((t, i) => (
@@ -309,27 +309,27 @@ export default function JobRoadmapPage() {
 
             return (
               <motion.div key={day.day} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: dayIndex * 0.04 }}
-                className={`bg-white dark:bg-gray-900 rounded-2xl border shadow-sm transition-all ${
-                  dayComplete ? 'border-green-200 dark:border-green-800/40' : !unlocked ? 'border-gray-100 dark:border-gray-800 opacity-60' : 'border-gray-100 dark:border-gray-800'
+                className={`bg-card rounded-2xl border shadow-sm transition-all ${
+                  dayComplete ? 'border-green-200 dark:border-green-800/40' : !unlocked ? 'border-border opacity-60' : 'border-border'
                 }`}>
                 <button onClick={() => unlocked && setExpandedDay(isExpanded ? null : day.day)} disabled={!unlocked}
                   className="w-full flex items-center gap-4 p-5 text-left">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                    dayComplete ? 'bg-green-100 dark:bg-green-900/30' : !unlocked ? 'bg-gray-100 dark:bg-gray-800' : 'bg-brand-50 dark:bg-brand-900/20'
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                    dayComplete ? 'bg-green-100 dark:bg-green-900/30' : !unlocked ? 'bg-muted' : 'bg-brand-50 dark:bg-brand-900/20'
                   }`}>
-                    {dayComplete ? <CheckCircle2 size={20} className="text-green-500" /> : !unlocked ? <Lock size={16} className="text-gray-400" /> :
+                    {dayComplete ? <CheckCircle2 size={20} className="text-green-500" /> : !unlocked ? <Lock size={16} className="text-muted-foreground" /> :
                       <span className="text-sm font-bold text-brand-600 dark:text-brand-400">{day.day}</span>}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">
-                      <span className={`text-[11px] font-semibold uppercase tracking-wider ${dayComplete ? 'text-green-500' : !unlocked ? 'text-gray-400' : 'text-brand-500'}`}>
+                      <span className={`text-[11px] font-semibold uppercase tracking-wider ${dayComplete ? 'text-green-500' : !unlocked ? 'text-muted-foreground' : 'text-brand-500'}`}>
                         Day {day.day}
                       </span>
-                      {!unlocked && <span className="text-[10px] text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">Complete Day {day.day - 1} to unlock</span>}
+                      {!unlocked && <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded">Complete Day {day.day - 1} to unlock</span>}
                     </div>
-                    <div className="font-semibold text-gray-900 dark:text-white text-sm truncate">{day.theme}</div>
+                    <div className="font-semibold text-foreground text-sm truncate">{day.theme}</div>
                     <div className="flex items-center gap-3 mt-1">
-                      <span className="text-xs text-gray-500 dark:text-gray-400">{dayCompletedCount}/{day.tasks.length} tasks</span>
+                      <span className="text-xs text-muted-foreground">{dayCompletedCount}/{day.tasks.length} tasks</span>
                       <div className="flex gap-1">
                         {[...new Set(day.tasks.map((t) => t.type))].map((type) => {
                           const meta = TASK_TYPE_META[type] || TASK_TYPE_META.learn;
@@ -342,20 +342,20 @@ export default function JobRoadmapPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="hidden sm:flex flex-col items-end gap-1 flex-shrink-0">
-                    <div className="w-20 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                  <div className="hidden sm:flex flex-col items-end gap-1 shrink-0">
+                    <div className="w-20 h-1.5 bg-muted rounded-full overflow-hidden">
                       <div className={`h-full rounded-full transition-all ${dayComplete ? 'bg-green-500' : 'bg-brand-500'}`}
                         style={{ width: `${(dayCompletedCount / day.tasks.length) * 100}%` }} />
                     </div>
-                    <span className="text-xs text-gray-400">{Math.round((dayCompletedCount / day.tasks.length) * 100)}%</span>
+                    <span className="text-xs text-muted-foreground">{Math.round((dayCompletedCount / day.tasks.length) * 100)}%</span>
                   </div>
-                  {unlocked && <div className="text-gray-400 flex-shrink-0">{isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}</div>}
+                  {unlocked && <div className="text-muted-foreground shrink-0">{isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}</div>}
                 </button>
 
                 <AnimatePresence>
                   {isExpanded && unlocked && (
                     <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3 }} className="overflow-hidden">
-                      <div className="px-5 pb-5 space-y-3 border-t border-gray-100 dark:border-gray-800 pt-4">
+                      <div className="px-5 pb-5 space-y-3 border-t border-border pt-4">
                         {day.tasks.map((task) => {
                           const done = !!completedTasks[task.id];
                           const meta = TASK_TYPE_META[task.type] || TASK_TYPE_META.learn;
@@ -363,24 +363,24 @@ export default function JobRoadmapPage() {
                             <motion.div key={task.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
                               className={`flex gap-3 p-4 rounded-xl border transition-all cursor-pointer ${
                                 done ? 'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800/30' :
-                                'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 hover:border-brand-300 dark:hover:border-gray-600'
+                                'bg-muted/50 border-border hover:border-brand-300 dark:hover:border-border'
                               }`} onClick={() => toggleTask(task.id)}>
-                              <div className="flex-shrink-0 mt-0.5">
-                                {done ? <CheckCircle2 size={20} className="text-green-500" /> : <Circle size={20} className="text-gray-300 dark:text-gray-600" />}
+                              <div className="shrink-0 mt-0.5">
+                                {done ? <CheckCircle2 size={20} className="text-green-500" /> : <Circle size={20} className="text-muted-foreground/50" />}
                               </div>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                  <span className={`font-semibold text-sm ${done ? 'line-through text-gray-400' : 'text-gray-900 dark:text-white'}`}>{task.title}</span>
+                                  <span className={`font-semibold text-sm ${done ? 'line-through text-muted-foreground' : 'text-foreground'}`}>{task.title}</span>
                                   <span className="flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md font-medium" style={{ background: meta.bg, color: meta.color }}>
                                     {meta.icon} {meta.label}
                                   </span>
-                                  <span className="flex items-center gap-1 text-[11px] text-gray-400"><Clock size={11} /> {task.duration_mins} min</span>
+                                  <span className="flex items-center gap-1 text-[11px] text-muted-foreground"><Clock size={11} /> {task.duration_mins} min</span>
                                 </div>
-                                <p className={`text-xs leading-relaxed ${done ? 'text-gray-400' : 'text-gray-600 dark:text-gray-400'}`}>{task.description}</p>
+                                <p className={`text-xs leading-relaxed ${done ? 'text-muted-foreground' : 'text-muted-foreground'}`}>{task.description}</p>
                                 {task.resources?.length > 0 && (
                                   <div className="flex flex-wrap gap-1.5 mt-2">
                                     {task.resources.map((r, ri) => (
-                                      <span key={ri} className="text-[11px] px-2 py-0.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded text-gray-500 dark:text-gray-400">
+                                      <span key={ri} className="text-[11px] px-2 py-0.5 bg-card border border-border rounded text-muted-foreground">
                                         {'??'} {r}
                                       </span>
                                     ))}
@@ -424,14 +424,14 @@ export default function JobRoadmapPage() {
 
         {!allDone && completedCount > 0 && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-            className="bg-white dark:bg-gray-900 rounded-2xl border border-brand-100 dark:border-brand-800/30 p-5 shadow-sm">
+            className="bg-card rounded-2xl border border-brand-100 dark:border-brand-800/30 p-5 shadow-sm">
             <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-xl bg-brand-50 dark:bg-brand-900/30 flex items-center justify-center flex-shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-brand-50 dark:bg-brand-900/30 flex items-center justify-center shrink-0">
                 <Sparkles size={18} className="text-brand-500" />
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold text-gray-900 dark:text-white text-sm mb-1">Want to practice with what you've learned so far?</h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                <h3 className="font-semibold text-foreground text-sm mb-1">Want to practice with what you've learned so far?</h3>
+                <p className="text-xs text-muted-foreground mb-3">
                   You've completed {completedCount} tasks. You can take a partial interview based on what you've studied.
                 </p>
                 <button onClick={startInterview} disabled={startingInterview}
@@ -449,10 +449,10 @@ export default function JobRoadmapPage() {
             { icon: <Clock size={18} />, label: 'Days Left', value: `${roadmap?.days.filter((_, i) => !isDayComplete(roadmap!.days[i])).length}/${durationDays}`, color: '#f59e0b' },
             { icon: <Target size={18} />, label: 'Progress', value: `${progressPct}%`, color: '#10b981' },
           ].map((stat) => (
-            <div key={stat.label} className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 text-center shadow-sm">
+            <div key={stat.label} className="bg-card rounded-xl border border-border p-4 text-center shadow-sm">
               <div className="flex justify-center mb-1.5" style={{ color: stat.color }}>{stat.icon}</div>
-              <div className="text-lg font-bold text-gray-900 dark:text-white">{stat.value}</div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">{stat.label}</div>
+              <div className="text-lg font-bold text-foreground">{stat.value}</div>
+              <div className="text-xs text-muted-foreground">{stat.label}</div>
             </div>
           ))}
         </div>

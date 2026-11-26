@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { Plus, Trash2, Wand2, ChevronDown, ChevronUp } from 'lucide-react';
 import { useForm } from '@tanstack/react-form';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useResume } from '../../contexts/ResumeContext';
+import { useResumeActions, useResumeDocument } from '../../contexts/ResumeContext';
 import { useGenerateResume, useImproveSection } from '../../services/query-api';
 import { required, email, url, phone } from '../../utils/form-helpers';
 import VoiceButton from '../ui/VoiceButton';
@@ -42,14 +42,14 @@ function Section({ title, defaultOpen = false, children }: { title: string; defa
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-muted/60 transition-colors"
       >
-        <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">{title}</span>
+        <span className="text-sm font-semibold text-foreground">{title}</span>
         <motion.div
           animate={{ rotate: open ? 180 : 0 }}
           transition={{ duration: 0.25, ease: sectionEase }}
         >
-          <ChevronDown size={16} className="text-gray-400" />
+          <ChevronDown size={16} className="text-muted-foreground" />
         </motion.div>
       </button>
       <motion.div
@@ -57,7 +57,7 @@ function Section({ title, defaultOpen = false, children }: { title: string; defa
         transition={{ duration: 0.3, ease: sectionEase }}
         style={{ overflow: 'hidden' }}
       >
-        <div ref={contentRef} className="px-4 pb-4 space-y-3 border-t border-gray-100 dark:border-gray-800 pt-3">
+        <div ref={contentRef} className="px-4 pb-4 space-y-3 border-t border-border pt-3">
           {children}
         </div>
       </motion.div>
@@ -98,7 +98,7 @@ function ImprovableTextarea({
   return (
     <div>
       <div className="flex items-center justify-between mb-1.5">
-        <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{label}</label>
+        <label className="text-xs font-medium text-muted-foreground">{label}</label>
         <button
           type="button"
           onClick={handleImprove}
@@ -123,7 +123,8 @@ function ImprovableTextarea({
 }
 
 export default function ResumeForm({ jobRole, focusField }: { jobRole: string; focusField?: string | null }) {
-  const { resume, updateField, updatePersonal, setGenerating, setResume, setAts } = useResume();
+  const resume = useResumeDocument();
+  const { updateField, updatePersonal, setGenerating, setResume, setAts } = useResumeActions();
   const generateMutation = useGenerateResume();
 
   const [rawInput, setRawInput] = useState('');
@@ -244,7 +245,7 @@ export default function ResumeForm({ jobRole, focusField }: { jobRole: string; f
           type="button"
           onClick={handleGenerate}
           disabled={generateMutation.isPending}
-          className="btn-primary w-full justify-center text-sm"
+          className="btn btn-primary w-full justify-center text-sm"
         >
           <Wand2 size={16} />
           {generateMutation.isPending ? 'Generating...' : 'Generate with AI'}
@@ -263,7 +264,7 @@ export default function ResumeForm({ jobRole, focusField }: { jobRole: string; f
             ['Website', 'website', url()],
           ] as const).map(([label, key, validator]) => (
             <div key={key} className={key === 'full_name' || key === 'title' ? 'col-span-2' : ''}>
-              <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">{label}</label>
+              <label className="text-xs text-muted-foreground mb-1 block">{label}</label>
               <form.Field
                 name={`personal_info.${key}` as never}
                 validators={validator ? { onBlur: ({ value }) => (value as string) ? validator(value as string) : undefined } : undefined}
@@ -318,7 +319,7 @@ export default function ResumeForm({ jobRole, focusField }: { jobRole: string; f
 
       <Section title="Skills">
         <div>
-          <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Skills (comma-separated)</label>
+          <label className="text-xs text-muted-foreground mb-1 block">Skills (comma-separated)</label>
           <form.Field name="skills">
             {(field) => (
               <textarea
@@ -340,15 +341,15 @@ export default function ResumeForm({ jobRole, focusField }: { jobRole: string; f
 
       <Section title="Experience">
         {(resume.experience || []).map((exp, i) => (
-          <div key={i} className="border border-gray-100 dark:border-gray-800 rounded-xl p-3 space-y-2 relative">
+          <div key={i} className="border border-border rounded-xl p-3 space-y-2 relative">
             <button type="button" onClick={() => removeItem('experience', i)}
-              className="absolute top-2 right-2 text-gray-300 hover:text-red-400 transition-colors">
+              className="absolute top-2 right-2 text-muted-foreground/50 hover:text-danger transition-colors">
               <Trash2 size={14} />
             </button>
             <div className="grid grid-cols-2 gap-2">
               {([['Company', 'company'], ['Role', 'role'], ['Start', 'start_date'], ['End', 'end_date']] as const).map(([label, key]) => (
                 <div key={key}>
-                  <label className="text-xs text-gray-400 mb-1 block">{label}</label>
+                  <label className="text-xs text-muted-foreground mb-1 block">{label}</label>
                   <form.Field name={`experience[${i}].${key}` as never}>
                     {(field) => (
                       <input
@@ -387,21 +388,21 @@ export default function ResumeForm({ jobRole, focusField }: { jobRole: string; f
           </div>
         ))}
         <button type="button" onClick={() => addItem('experience', { company: '', role: '', start_date: '', end_date: '', description: '' })}
-          className="btn-secondary w-full justify-center text-sm py-2">
+          className="btn btn-secondary w-full justify-center text-sm py-2">
           <Plus size={14} /> Add Experience
         </button>
       </Section>
 
       <Section title="Projects">
         {(resume.projects || []).map((proj, i) => (
-          <div key={i} className="border border-gray-100 dark:border-gray-800 rounded-xl p-3 space-y-2 relative">
+          <div key={i} className="border border-border rounded-xl p-3 space-y-2 relative">
             <button type="button" onClick={() => removeItem('projects', i)}
-              className="absolute top-2 right-2 text-gray-300 hover:text-red-400 transition-colors">
+              className="absolute top-2 right-2 text-muted-foreground/50 hover:text-danger transition-colors">
               <Trash2 size={14} />
             </button>
             {([['Name', 'name'], ['Tech Stack', 'tech_stack'], ['Link', 'link']] as const).map(([label, key]) => (
               <div key={key}>
-                <label className="text-xs text-gray-400 mb-1 block">{label}</label>
+                <label className="text-xs text-muted-foreground mb-1 block">{label}</label>
                 <form.Field name={`projects[${i}].${key}` as never}>
                     {(field) => (
                       <input
@@ -439,22 +440,22 @@ export default function ResumeForm({ jobRole, focusField }: { jobRole: string; f
           </div>
         ))}
         <button type="button" onClick={() => addItem('projects', { name: '', description: '', tech_stack: '', link: '' })}
-          className="btn-secondary w-full justify-center text-sm py-2">
+          className="btn btn-secondary w-full justify-center text-sm py-2">
           <Plus size={14} /> Add Project
         </button>
       </Section>
 
       <Section title="Education">
         {(resume.education || []).map((edu, i) => (
-          <div key={i} className="border border-gray-100 dark:border-gray-800 rounded-xl p-3 space-y-2 relative">
+          <div key={i} className="border border-border rounded-xl p-3 space-y-2 relative">
             <button type="button" onClick={() => removeItem('education', i)}
-              className="absolute top-2 right-2 text-gray-300 hover:text-red-400 transition-colors">
+              className="absolute top-2 right-2 text-muted-foreground/50 hover:text-danger transition-colors">
               <Trash2 size={14} />
             </button>
             <div className="grid grid-cols-2 gap-2">
               {([['Institution', 'institution'], ['Degree', 'degree'], ['Field', 'field'], ['Year', 'year'], ['GPA', 'gpa']] as const).map(([label, key]) => (
                 <div key={key} className={key === 'institution' ? 'col-span-2' : ''}>
-                  <label className="text-xs text-gray-400 mb-1 block">{label}</label>
+                  <label className="text-xs text-muted-foreground mb-1 block">{label}</label>
                   <form.Field name={`education[${i}].${key}` as never}>
                     {(field) => (
                       <input
@@ -476,22 +477,22 @@ export default function ResumeForm({ jobRole, focusField }: { jobRole: string; f
           </div>
         ))}
         <button type="button" onClick={() => addItem('education', { institution: '', degree: '', field: '', year: '', gpa: '' })}
-          className="btn-secondary w-full justify-center text-sm py-2">
+          className="btn btn-secondary w-full justify-center text-sm py-2">
           <Plus size={14} /> Add Education
         </button>
       </Section>
 
       <Section title="Certifications">
         {(resume.certifications || []).map((cert, i) => (
-          <div key={i} className="border border-gray-100 dark:border-gray-800 rounded-xl p-3 space-y-2 relative">
+          <div key={i} className="border border-border rounded-xl p-3 space-y-2 relative">
             <button type="button" onClick={() => removeItem('certifications', i)}
-              className="absolute top-2 right-2 text-gray-300 hover:text-red-400 transition-colors">
+              className="absolute top-2 right-2 text-muted-foreground/50 hover:text-danger transition-colors">
               <Trash2 size={14} />
             </button>
             <div className="grid grid-cols-3 gap-2">
               {([['Name', 'name'], ['Issuer', 'issuer'], ['Year', 'year']] as const).map(([label, key]) => (
                 <div key={key} className={key === 'name' ? 'col-span-3' : ''}>
-                  <label className="text-xs text-gray-400 mb-1 block">{label}</label>
+                  <label className="text-xs text-muted-foreground mb-1 block">{label}</label>
                   <form.Field name={`certifications[${i}].${key}` as never}>
                     {(field) => (
                       <input
@@ -513,7 +514,7 @@ export default function ResumeForm({ jobRole, focusField }: { jobRole: string; f
           </div>
         ))}
         <button type="button" onClick={() => addItem('certifications', { name: '', issuer: '', year: '' })}
-          className="btn-secondary w-full justify-center text-sm py-2">
+          className="btn btn-secondary w-full justify-center text-sm py-2">
           <Plus size={14} /> Add Certification
         </button>
       </Section>

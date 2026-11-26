@@ -11,6 +11,10 @@ Upload your resume → get a personalized technical interview → hear a realist
 |---|---|
 | **Resume parsing** | PDF and Word (.docx) extracted server-side |
 | **AI Interviewer "Aira"** | GPT-OSS 120B for live turns, Qwen 3.8 27B for analysis (Groq) |
+| **One question at a time** | A pre-generated, verified question plan; Aira never asks several questions in one turn |
+| **Per-answer evaluation** | Every answer is scored against a rubric, with explicit correction when it is wrong or incomplete |
+| **Question progress** | Live "Question X of Y" indicator and a verdict badge in the transcript |
+| **Voice + text answers** | Speak naturally, or type an answer from the transcript panel when a mic is unavailable |
 | **Realistic voice** | ElevenLabs → OpenAI TTS → gTTS (free fallback) |
 | **Speech-to-text** | Groq Whisper-large-v3 (free) or OpenAI Whisper |
 | **Real-time comms** | WebSocket (FastAPI) |
@@ -114,11 +118,12 @@ ai-interviewer/
 ## 🎛️ How the interview works
 
 1. **Upload resume** → backend extracts text, creates a session, extracts candidate info
-2. **WebSocket opens** → AI generates a personalized greeting from resume context
-3. **Auto recording** — silence detection listens when interviewer is done speaking
-4. **You speak** → audio sent to Whisper STT → text sent to the LLM → response spoken via TTS
-5. **Transcript panel** — every message from both sides is shown live
-6. **End call** → AI gives a warm closing statement → End screen
+2. **Question plan** → Aira prepares a small set of self-contained questions with reference answers, then a second model verifies them for correctness before the call
+3. **WebSocket opens** → Aira greets you and asks exactly one question
+4. **You answer** → speech-to-text (or the transcript text box) sends the answer to the evaluator
+5. **Aira evaluates** → the answer is scored against the rubric. Correct answers move on; wrong answers get the correct explanation before the next question. Vague answers get one focused probe
+6. **Progress** → the transcript shows a verdict/score badge and the header shows "Question X of Y"
+7. **End call** → the report uses the per-question evaluation record, not just the raw transcript
 
 ---
 

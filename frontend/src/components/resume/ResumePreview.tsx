@@ -1,5 +1,5 @@
-import { memo, useRef, useCallback } from 'react';
-import { useResume } from '../../contexts/ResumeContext';
+import { memo, useRef, useCallback, useDeferredValue } from 'react';
+import { useResumeDocument, useResumeMeta } from '../../contexts/ResumeContext';
 import { Mail, Phone, MapPin, Globe } from 'lucide-react';
 import type { Resume } from '../../types';
 
@@ -7,7 +7,7 @@ function Pf({ path, children, className }: { path: string; children: React.React
   return (
     <span
       data-field={path}
-      className={`cursor-pointer rounded-sm -mx-0.5 px-0.5 transition-colors hover:bg-amber-200/60 ${className || ''}`}
+      className={`cursor-pointer rounded-sm -mx-0.5 px-0.5 transition-colors hover:bg-amber-200 ${className || ''}`}
       title="Double-click to edit"
     >
       {children}
@@ -321,7 +321,7 @@ const ExecSection = memo(function ExecSection({ title, children }: { title: stri
     <div className="mb-4">
       <div className="flex items-center gap-3 mb-2">
         <h2 className="text-[10px] font-bold text-amber-700 uppercase tracking-[0.15em]">{title}</h2>
-        <div className="flex-1 h-px bg-gradient-to-r from-amber-300/60 to-transparent" />
+        <div className="flex-1 h-px bg-gradient-to-r from-amber-300 to-transparent" />
       </div>
       {children}
     </div>
@@ -335,7 +335,7 @@ const ExecutiveTemplate = memo(function ExecutiveTemplate({ resume }: { resume: 
       <div className="bg-slate-900 text-white px-8 pt-8 pb-6">
         <h1 className="text-2xl font-extrabold tracking-tight mb-1"><Pf path="personal_info.full_name">{pi.full_name || 'Your Name'}</Pf></h1>
         {pi.title && <p className="text-amber-300 text-sm font-medium tracking-wide mb-3"><Pf path="personal_info.title">{pi.title}</Pf></p>}
-        <div className="w-12 h-0.5 bg-amber-400/60 mb-3" />
+        <div className="w-12 h-0.5 bg-amber-400 mb-3" />
         <div className="flex flex-wrap gap-x-5 gap-y-1 text-slate-300 text-[10px]">
           {pi.email && <span><Pf path="personal_info.email">{pi.email}</Pf></span>}
           {pi.phone && <span><Pf path="personal_info.phone">{pi.phone}</Pf></span>}
@@ -354,7 +354,7 @@ const ExecutiveTemplate = memo(function ExecutiveTemplate({ resume }: { resume: 
           <ExecSection title="Core Competencies">
             <div className="flex flex-wrap gap-1.5">
               {resume.skills.map((s, i) => (
-                <Pf key={i} path={`skills[${i}]`}><span className="px-2.5 py-0.5 border border-amber-300 bg-amber-50/50 text-amber-800 rounded text-[10px] font-medium">{s}</span></Pf>
+                <Pf key={i} path={`skills[${i}]`}><span className="px-2.5 py-0.5 border border-amber-300 bg-amber-50 text-amber-800 rounded text-[10px] font-medium">{s}</span></Pf>
               ))}
             </div>
           </ExecSection>
@@ -636,7 +636,11 @@ const ProfessionalTemplate = memo(function ProfessionalTemplate({ resume }: { re
 });
 
 const ResumePreview = memo(function ResumePreview({ onFieldDoubleClick }: { onFieldDoubleClick?: (path: string) => void }) {
-  const { resume, template } = useResume();
+  const resume = useResumeDocument();
+  const { template } = useResumeMeta();
+  // Keep the editor responsive: the document re-renders at a lower priority
+  // than keystrokes while the user is typing.
+  const deferredResume = useDeferredValue(resume);
   const lastTapRef = useRef<{ field: string; time: number } | null>(null);
 
   const triggerField = useCallback((field: string) => {
@@ -666,17 +670,17 @@ const ResumePreview = memo(function ResumePreview({ onFieldDoubleClick }: { onFi
   return (
     <div
       id="resume-preview"
-      className="w-full shadow-xl rounded-xl overflow-hidden border border-gray-200"
+      className="w-full bg-white shadow-xl rounded-xl overflow-hidden border border-gray-200"
       style={{ minHeight: '842px', touchAction: 'manipulation' }}
       onDoubleClick={handleDblClick}
       onTouchStart={handleTouchStart}
     >
-      {template === 'minimal' && <MinimalTemplate resume={resume} />}
-      {template === 'corporate' && <CorporateTemplate resume={resume} />}
-      {template === 'creative' && <CreativeTemplate resume={resume} />}
-      {template === 'executive' && <ExecutiveTemplate resume={resume} />}
-      {template === 'modern' && <ModernTemplate resume={resume} />}
-      {template === 'professional' && <ProfessionalTemplate resume={resume} />}
+      {template === 'minimal' && <MinimalTemplate resume={deferredResume} />}
+      {template === 'corporate' && <CorporateTemplate resume={deferredResume} />}
+      {template === 'creative' && <CreativeTemplate resume={deferredResume} />}
+      {template === 'executive' && <ExecutiveTemplate resume={deferredResume} />}
+      {template === 'modern' && <ModernTemplate resume={deferredResume} />}
+      {template === 'professional' && <ProfessionalTemplate resume={deferredResume} />}
     </div>
   );
 });

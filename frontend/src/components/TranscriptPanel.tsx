@@ -1,5 +1,5 @@
-import { memo, useEffect, useRef, useCallback } from 'react';
-import { Bot, User, RotateCcw, ArrowRight } from 'lucide-react';
+import { memo, useEffect, useRef, useCallback, useState } from 'react';
+import { Bot, User, RotateCcw, ArrowRight, Send } from 'lucide-react';
 import type { Message } from '../types';
 
 interface TranscriptPanelProps {
@@ -10,14 +10,34 @@ interface TranscriptPanelProps {
   canRequestNext?: boolean;
   onRepeat?: () => void;
   onNext?: () => void;
+  onSendText?: (text: string) => void;
+}
+
+const VERDICT_LABEL: Record<string, string> = {
+  correct: 'Correct',
+  partially_correct: 'Partly correct',
+  incorrect: 'Needs correction',
+  vague: 'Too vague',
+  off_topic: 'Off topic',
+  dont_know: 'Answer taught',
+  skipped: 'Skipped',
+};
+
+function verdictTone(verdict: string): string {
+  if (verdict === 'correct') return 'good';
+  if (verdict === 'partially_correct') return 'warn';
+  if (verdict === 'vague' || verdict === 'off_topic') return 'warn';
+  if (verdict === 'incorrect') return 'bad';
+  return 'neutral';
 }
 
 const TranscriptPanel = memo(function TranscriptPanel({
   messages, visible, interimText,
-  canRequestRepeat, canRequestNext, onRepeat, onNext,
+  canRequestRepeat, canRequestNext, onRepeat, onNext, onSendText,
 }: TranscriptPanelProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const isAtBottomRef = useRef(true);
+  const [draft, setDraft] = useState('');
 
   const checkAtBottom = useCallback(() => {
     const el = scrollRef.current;
@@ -45,6 +65,14 @@ const TranscriptPanel = memo(function TranscriptPanel({
 
   if (!visible) return null;
 
+  const submitDraft = (event: React.FormEvent) => {
+    event.preventDefault();
+    const text = draft.trim();
+    if (!text || !onSendText) return;
+    onSendText(text);
+    setDraft('');
+  };
+
   return (
     <div className="transcript-panel">
       <div className="transcript-header">
@@ -68,14 +96,14 @@ const TranscriptPanel = memo(function TranscriptPanel({
               {m.speaker === 'interviewer' ? (
                 <div
                   className="transcript-avatar"
-                  style={{ background: 'rgba(79,142,247,0.18)', color: 'var(--accent)' }}
+                  style={{ background: 'hsl(var(--primary) / 0.14)', color: 'hsl(var(--primary))' }}
                 >
                   <Bot size={14} />
                 </div>
               ) : (
                 <div
                   className="transcript-avatar"
-                  style={{ background: 'rgba(48,217,134,0.15)', color: 'var(--green)' }}
+                  style={{ background: 'hsl(var(--success) / 0.14)', color: 'hsl(var(--success))' }}
                 >
                   <User size={14} />
                 </div>
@@ -86,6 +114,14 @@ const TranscriptPanel = memo(function TranscriptPanel({
                 {m.speaker === 'interviewer' ? 'Aira (AI)' : 'You'}
               </span>
               <p className="transcript-text">{m.text}</p>
+              {m.meta?.verdict && (
+                <div className={`transcript-eval transcript-eval--${verdictTone(m.meta.verdict)}`}>
+                  <span>{VERDICT_LABEL[m.meta.verdict] ?? 'Evaluated'}</span>
+                  {typeof m.meta.score === 'number' && (
+                    <span className="transcript-eval-score">{m.meta.score}/10</span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         ))}
@@ -93,7 +129,7 @@ const TranscriptPanel = memo(function TranscriptPanel({
         {interimText && (
           <div className="transcript-msg transcript-msg--user">
             <div className="transcript-avatar-wrap">
-              <div className="transcript-avatar" style={{ background: 'rgba(48,217,134,0.15)', color: 'var(--green)' }}>
+              <div className="transcript-avatar" style={{ background: 'hsl(var(--success) / 0.14)', color: 'hsl(var(--success))' }}>
                 <User size={14} />
               </div>
             </div>
@@ -104,6 +140,21 @@ const TranscriptPanel = memo(function TranscriptPanel({
           </div>
         )}
       </div>
+
+      {onSendText && (
+        <form className="transcript-compose" onSubmit={submitDraft}>
+          <input
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+            placeholder="Type an answer instead…"
+            aria-label="Type your answer"
+            autoComplete="off"
+          />
+          <button type="submit" disabled={!draft.trim()} aria-label="Send answer">
+            <Send size={14} />
+          </button>
+        </form>
+      )}
 
       {(canRequestRepeat || canRequestNext) && (
         <div className="transcript-actions">

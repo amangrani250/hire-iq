@@ -77,7 +77,7 @@ function Reveal({ children, delay = 0, className }: RevealProps) {
 
 function SessionPreview() {
   return (
-    <div className="relative">
+    <div className="relative min-w-0">
       <div
         className="dot-grid pointer-events-none absolute -inset-x-8 -inset-y-10 -z-0 opacity-70"
         aria-hidden="true"
@@ -182,8 +182,8 @@ export default function LandingPage() {
     <div className="overflow-hidden">
       {/* ── Hero ────────────────────────────────────────────────────────── */}
       <section className="relative">
-        <div className="container-page grid items-center gap-14 pb-20 pt-14 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 lg:pb-28 lg:pt-20">
-          <div>
+        <div className="container-page grid grid-cols-[minmax(0,1fr)] items-center gap-14 pb-20 pt-14 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:gap-16 lg:pb-28 lg:pt-20">
+          <div className="min-w-0">
             <motion.p
               className="eyebrow eyebrow-dot"
               initial={{ opacity: 0, y: 8 }}
@@ -194,7 +194,7 @@ export default function LandingPage() {
             </motion.p>
 
             <motion.h1
-              className="display mt-5 text-[clamp(2.9rem,7vw,4.9rem)] text-foreground"
+              className="display mt-5 text-[clamp(2.5rem,5.6vw,4.1rem)] text-foreground"
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.08, ease: EASE }}

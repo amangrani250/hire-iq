@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState, useEffectEvent } from 'react';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 
 export interface UseSpeechToTextReturn {
@@ -28,39 +28,38 @@ export function useSpeechToText(
   } = useSpeechRecognition();
 
   const speechEndTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const hasRecentSpeech = useRef(false);
   const lastFinalRef = useRef('');
-  const onFinalRef = useRef(onFinalTranscript);
-  const gateRefInner = useRef(gateRef);
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
-  useEffect(() => { onFinalRef.current = onFinalTranscript; }, [onFinalTranscript]);
-  useEffect(() => { gateRefInner.current = gateRef; }, [gateRef]);
+  // Reads the latest callback/gate without re-subscribing the effect.
+  const onFinal = useEffectEvent((text: string) => {
+    if (gateRef?.current) return;
+    onFinalTranscript(text);
+  });
 
   useEffect(() => {
     if (finalTranscript && finalTranscript !== lastFinalRef.current) {
       lastFinalRef.current = finalTranscript;
-      if (gateRefInner.current?.current) return;
-      hasRecentSpeech.current = true;
-      onFinalRef.current(finalTranscript);
+      onFinal(finalTranscript);
       resetTranscript();
     }
   }, [finalTranscript, resetTranscript]);
 
   useEffect(() => {
-    if (interimTranscript) {
-      hasRecentSpeech.current = true;
-      if (speechEndTimer.current) clearTimeout(speechEndTimer.current);
-      speechEndTimer.current = setTimeout(() => {
-        hasRecentSpeech.current = false;
-      }, SPEECH_END_TIMEOUT);
-    }
+    if (!interimTranscript) return;
+
+    setIsSpeaking(true);
+    if (speechEndTimer.current) clearTimeout(speechEndTimer.current);
+    speechEndTimer.current = setTimeout(() => setIsSpeaking(false), SPEECH_END_TIMEOUT);
   }, [interimTranscript]);
 
   useEffect(() => {
-    if (!listening) {
-      hasRecentSpeech.current = false;
-    }
+    if (!listening) setIsSpeaking(false);
   }, [listening]);
+
+  useEffect(() => () => {
+    if (speechEndTimer.current) clearTimeout(speechEndTimer.current);
+  }, []);
 
   const start = useCallback(() => {
     if (!browserSupportsSpeechRecognition) return;
@@ -79,18 +78,19 @@ export function useSpeechToText(
   const abort = useCallback(() => {
     SpeechRecognition.abortListening();
     resetTranscript();
-    hasRecentSpeech.current = false;
+    setIsSpeaking(false);
   }, [resetTranscript]);
 
   const release = useCallback(() => {
     SpeechRecognition.abortListening();
     resetTranscript();
+    setIsSpeaking(false);
     if (speechEndTimer.current) clearTimeout(speechEndTimer.current);
   }, [resetTranscript]);
 
   return {
     isListening: listening,
-    isSpeaking: hasRecentSpeech.current || !!interimTranscript,
+    isSpeaking,
     interimTranscript,
     supported: browserSupportsSpeechRecognition && isMicrophoneAvailable,
     start,

@@ -3,11 +3,10 @@
 The interface is built on one token set and one set of primitives. Pages compose
 patterns; they do not invent colours, type scales, or controls.
 
-The visual direction is deliberately editorial rather than "AI product": warm
-neutral surfaces, ink-like text, a single pine/emerald accent, Instrument Serif
-for display moments, Geist for product UI, and Geist Mono for data and labels.
-No gradient text, floating orbs, glass cards, emoji decoration, or rainbow icon
-grids.
+The visual direction is a modern product studio: cool neutral surfaces, near-black
+ink, a single indigo/violet accent gradient, Sora for display type, Inter for
+product UI, and JetBrains Mono for data and labels. Accent gradients are reserved
+for primary actions and one hero phrase — never for body text or body surfaces.
 
 ---
 
@@ -26,13 +25,13 @@ component is allowed to know which theme is active.
 
 | Role | Light | Dark | Used for |
 | --- | --- | --- | --- |
-| `background` / `foreground` | warm paper / ink | near-black / warm white | Page shell, body text |
-| `card` / `card-foreground` | white / ink | charcoal / warm white | Panels and raised surfaces |
-| `muted` / `muted-foreground` | stone / grey-green | charcoal / grey-green | Quiet fills, secondary text |
-| `border` / `input` | stone line / stronger line | soft line / stronger line | Dividers, form outlines |
-| `primary` / `primary-foreground` | pine / paper | mint / near-black | Primary action, focus energy |
-| `secondary` / `secondary-foreground` | stone / ink | charcoal / warm white | Quiet actions |
-| `accent` / `accent-foreground` | pale pine / deep pine | pine wash / mint | Selected and hovered states |
+| `background` / `foreground` | cool paper / ink | deep navy / near-white | Page shell, body text |
+| `card` / `card-foreground` | white / ink | navy panel / near-white | Panels and raised surfaces |
+| `muted` / `muted-foreground` | slate wash / slate | navy wash / slate | Quiet fills, secondary text |
+| `border` / `input` | slate line / stronger line | soft navy line / stronger line | Dividers, form outlines |
+| `primary` / `primary-foreground` | indigo / white | periwinkle / near-black | Primary action, focus energy |
+| `secondary` / `secondary-foreground` | slate / ink | navy / near-white | Quiet actions |
+| `accent` / `accent-foreground` | indigo wash / deep indigo | indigo wash / periwinkle | Selected and hovered states |
 | `success`, `warning`, `danger`, `info` | tuned for 4.5:1 text | tuned for dark surfaces | Feedback only |
 
 Rules:
@@ -41,12 +40,14 @@ Rules:
   product UI. Use semantic classes (`text-muted-foreground`, `bg-card`).
 - Never use white/black directly for UI chrome. The one exception is a resume
   document, which is paper and must stay light in both themes.
-- Borders do the structural work; shadows are quiet (`xs`–`lg`). No glow.
-- Colour carries meaning only for status. One accent colour, everywhere.
+- Borders do the structural work; shadows are quiet (`xs`–`lg`). Glows only mark
+  the speaking participant or a primary CTA.
+- Colour carries meaning only for status; the indigo/violet gradient is the one
+  brand signature.
 
-Tailwind maps every role in `tailwind.config.js`, so utilities are available as
-`bg-background`, `text-foreground`, `border-border`, `bg-primary/10`,
-`ring-ring/10`, and so on.
+Tailwind (v4, CSS-first) maps every role in the `@theme` blocks at the top of
+`src/index.css`, so utilities are available as `bg-background`,
+`text-foreground`, `border-border`, `bg-primary/10`, `ring-ring/10`, and so on.
 
 ---
 
@@ -54,10 +55,10 @@ Tailwind maps every role in `tailwind.config.js`, so utilities are available as
 
 | Token / class | Role |
 | --- | --- |
-| `font-sans` (Geist) | Product UI, body copy |
-| `font-display` (Geist) | Headings, metric values |
-| `font-serif` / `.display` (Instrument Serif) | Hero and editorial display lines |
-| `font-mono` (Geist Mono) | Eyebrows, status, timers, labels, data |
+| `font-sans` (Inter) | Product UI, body copy |
+| `font-display` (Sora) | Headings, metric values, hero display |
+| `.display` (Sora + accent gradient) | Hero and editorial display lines |
+| `font-mono` (JetBrains Mono) | Eyebrows, status, timers, labels, data |
 
 - Display: `clamp(2.9rem, 7vw, 4.9rem)`, line-height `0.98`, optical tracking.
 - Page title: `28–34px`, weight 600, tight tracking.

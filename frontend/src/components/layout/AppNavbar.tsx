@@ -50,7 +50,7 @@ export default function AppNavbar() {
   }, [open]);
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 h-nav border-b border-border bg-background/85 backdrop-blur-xl no-print">
+    <header className="fixed inset-x-0 top-0 z-50 h-nav border-b border-border/70 bg-background/75 backdrop-blur-2xl no-print">
       <div className="container-page flex h-full items-center justify-between gap-4">
         <div className="flex items-center gap-7">
           <Logo />
@@ -89,7 +89,7 @@ export default function AppNavbar() {
       {open && (
         <div
           id="mobile-navigation"
-          className="max-h-[calc(100dvh-var(--nav-height))] overflow-y-auto border-t border-border bg-background px-4 pb-4 pt-3 shadow-lg lg:hidden"
+          className="max-h-[calc(100dvh-var(--nav-height))] overflow-y-auto border-t border-border bg-popover px-4 pb-4 pt-3 shadow-lg lg:hidden"
         >
           <nav className="flex flex-col gap-0.5" aria-label="Mobile">
             {LINKS.map((link) => (
@@ -100,7 +100,7 @@ export default function AppNavbar() {
                   cn(
                     'flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium',
                     isActive
-                      ? 'bg-muted text-foreground'
+                      ? 'bg-accent text-accent-foreground'
                       : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                   )
                 }

@@ -10,6 +10,7 @@ import type { Message, Feedback } from '../types';
 interface LocationState {
   candidateName: string;
   transcript: Message[];
+  sessionId?: string;
 }
 
 const ease = [0.22, 1, 0.36, 1] as const;
@@ -30,7 +31,7 @@ export default function EndScreen() {
   useDocumentMeta('Interview Complete', 'Review your AI interview feedback and transcript');
   const location = useLocation();
   const navigate = useNavigate();
-  const { candidateName, transcript } = (location.state as LocationState) || {};
+  const { candidateName, transcript, sessionId } = (location.state as LocationState) || {};
 
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [loadingFeedback, setLoadingFeedback] = useState(false);
@@ -43,7 +44,7 @@ export default function EndScreen() {
       fetch(`${API_BASE}/api/interview-feedback`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transcript }),
+        body: JSON.stringify({ transcript, session_id: sessionId }),
       })
         .then((res) => res.json())
         .then((data) => {
@@ -55,7 +56,7 @@ export default function EndScreen() {
           setLoadingFeedback(false);
         });
     }
-  }, [transcript]);
+  }, [transcript, sessionId]);
 
   const handleRestart = () => navigate('/upload');
 
@@ -104,7 +105,7 @@ export default function EndScreen() {
       >
         <motion.div className="end-icon-wrap" variants={fadeUp} custom={0}>
           <motion.div animate={{ scale: [1, 1.15, 1] }} transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}>
-            <CheckCircle size={48} color="var(--green)" />
+            <CheckCircle size={48} color="var(--color-success)" />
           </motion.div>
         </motion.div>
 

@@ -1,12 +1,13 @@
 import { lazy, Suspense, type ComponentType, type LazyExoticComponent, type ReactNode } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { AnimatePresence, motion, type Variants } from 'framer-motion';
+import { AnimatePresence, MotionConfig, motion, type Variants } from 'framer-motion';
 import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ResumeProvider } from './contexts/ResumeContext';
 import { QueryProvider } from './providers/QueryProvider';
 import AppNavbar from './components/layout/AppNavbar';
 import Footer from './components/layout/Footer';
+import ErrorBoundary from './components/ui/ErrorBoundary';
 import { isFeatureEnabled } from './config/features';
 
 const LandingPage = lazy(() => import('./components/LandingPage'));
@@ -65,78 +66,82 @@ export default function App() {
   const isInterviewRoom = location.pathname.startsWith('/interview');
 
   return (
-    <QueryProvider>
-      <ThemeProvider>
-        <ResumeProvider>
-          <div className="flex min-h-dvh flex-col bg-background">
-            <a href="#main-content" className="skip-link">
-              Skip to content
-            </a>
+    <MotionConfig reducedMotion="user">
+      <QueryProvider>
+        <ThemeProvider>
+          <ResumeProvider>
+            <div className="flex min-h-dvh flex-col bg-background">
+              <a href="#main-content" className="skip-link">
+                Skip to content
+              </a>
 
-            {!isInterviewRoom && <AppNavbar />}
+              {!isInterviewRoom && <AppNavbar />}
 
-            <main
-              id="main-content"
-              className={`flex-1 ${isInterviewRoom ? '' : 'pt-nav'}`}
-            >
-              <AnimatePresence mode="wait" initial={false}>
-                <Routes location={location} key={location.pathname}>
-                  <Route
-                    path="/"
-                    element={
-                      <Suspense fallback={<PageSkeleton />}>
-                        <AnimatedPage>
-                          <LandingPage />
-                        </AnimatedPage>
-                      </Suspense>
-                    }
-                  />
-                  <Route path="/upload" element={<LazyRoute Component={UploadScreen} />} />
-                  <Route path="/interview" element={<LazyRoute Component={InterviewRoom} />} />
-                  <Route path="/end" element={<LazyRoute Component={EndScreen} />} />
-                  <Route path="/builder" element={<FeatureRoute path="/builder" Component={BuilderPage} />} />
-                  <Route path="/saved" element={<FeatureRoute path="/saved" Component={SavedPage} />} />
-                  <Route
-                    path="/tech-interview"
-                    element={<FeatureRoute path="/tech-interview" Component={TechInterviewSetup} />}
-                  />
-                  <Route path="/job-prep" element={<FeatureRoute path="/job-prep" Component={JobPrepPage} />} />
-                  <Route
-                    path="/job-roadmap"
-                    element={<FeatureRoute path="/job-roadmap" Component={JobRoadmapPage} />}
-                  />
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-              </AnimatePresence>
-            </main>
+              <main
+                id="main-content"
+                className={`flex-1 ${isInterviewRoom ? '' : 'pt-nav'}`}
+              >
+                <ErrorBoundary key={location.pathname}>
+                  <AnimatePresence mode="wait" initial={false}>
+                    <Routes location={location} key={location.pathname}>
+                    <Route
+                      path="/"
+                      element={
+                        <Suspense fallback={<PageSkeleton />}>
+                          <AnimatedPage>
+                            <LandingPage />
+                          </AnimatedPage>
+                        </Suspense>
+                      }
+                    />
+                    <Route path="/upload" element={<LazyRoute Component={UploadScreen} />} />
+                    <Route path="/interview" element={<LazyRoute Component={InterviewRoom} />} />
+                    <Route path="/end" element={<LazyRoute Component={EndScreen} />} />
+                    <Route path="/builder" element={<FeatureRoute path="/builder" Component={BuilderPage} />} />
+                    <Route path="/saved" element={<FeatureRoute path="/saved" Component={SavedPage} />} />
+                    <Route
+                      path="/tech-interview"
+                      element={<FeatureRoute path="/tech-interview" Component={TechInterviewSetup} />}
+                    />
+                    <Route path="/job-prep" element={<FeatureRoute path="/job-prep" Component={JobPrepPage} />} />
+                    <Route
+                      path="/job-roadmap"
+                      element={<FeatureRoute path="/job-roadmap" Component={JobRoadmapPage} />}
+                    />
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                  </Routes>
+                  </AnimatePresence>
+                </ErrorBoundary>
+              </main>
 
-            {!isInterviewRoom && <Footer />}
-          </div>
+              {!isInterviewRoom && <Footer />}
+            </div>
 
-          <Toaster
-            position="bottom-right"
-            gutter={10}
-            toastOptions={{
-              duration: 3200,
-              style: {
-                background: 'hsl(var(--popover))',
-                color: 'hsl(var(--popover-foreground))',
-                border: '1px solid hsl(var(--border))',
-                borderRadius: '10px',
-                padding: '10px 14px',
-                fontSize: '13px',
-                boxShadow: 'var(--shadow-popover)',
-              },
-              success: {
-                iconTheme: { primary: 'hsl(var(--success))', secondary: 'hsl(var(--popover))' },
-              },
-              error: {
-                iconTheme: { primary: 'hsl(var(--danger))', secondary: 'hsl(var(--popover))' },
-              },
-            }}
-          />
-        </ResumeProvider>
-      </ThemeProvider>
-    </QueryProvider>
+            <Toaster
+              position="bottom-right"
+              gutter={10}
+              toastOptions={{
+                duration: 3200,
+                style: {
+                  background: 'hsl(var(--popover))',
+                  color: 'hsl(var(--popover-foreground))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '10px',
+                  padding: '10px 14px',
+                  fontSize: '13px',
+                  boxShadow: 'var(--shadow-popover)',
+                },
+                success: {
+                  iconTheme: { primary: 'hsl(var(--success))', secondary: 'hsl(var(--popover))' },
+                },
+                error: {
+                  iconTheme: { primary: 'hsl(var(--danger))', secondary: 'hsl(var(--popover))' },
+                },
+              }}
+            />
+          </ResumeProvider>
+        </ThemeProvider>
+      </QueryProvider>
+    </MotionConfig>
   );
 }

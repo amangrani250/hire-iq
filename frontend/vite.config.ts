@@ -1,20 +1,22 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import { resolve } from 'path';
+import { fileURLToPath, URL } from 'node:url';
+
+const src = fileURLToPath(new URL('./src', import.meta.url));
 
 export default defineConfig({
   plugins: [react()],
   resolve: {
     extensions: ['.mjs', '.ts', '.tsx', '.js', '.jsx', '.json'],
     alias: {
-      '@': resolve(__dirname, 'src'),
-      '@types': resolve(__dirname, 'src/types'),
-      '@contexts': resolve(__dirname, 'src/contexts'),
-      '@hooks': resolve(__dirname, 'src/hooks'),
-      '@services': resolve(__dirname, 'src/services'),
-      '@utils': resolve(__dirname, 'src/utils'),
-      '@components': resolve(__dirname, 'src/components'),
-      '@pages': resolve(__dirname, 'src/pages'),
+      '@': src,
+      '@types': `${src}/types`,
+      '@contexts': `${src}/contexts`,
+      '@hooks': `${src}/hooks`,
+      '@services': `${src}/services`,
+      '@utils': `${src}/utils`,
+      '@components': `${src}/components`,
+      '@pages': `${src}/pages`,
     },
   },
   server: {
@@ -30,17 +32,38 @@ export default defineConfig({
       },
     },
   },
+  optimizeDeps: {
+    // CommonJS package with a nested default export.
+    needsInterop: ['react-use-websocket'],
+  },
   build: {
     outDir: 'build',
     sourcemap: false,
     target: 'es2022',
-    cssCodeSplit: false,
+    // The PDF exporter is intentionally a large, on-demand chunk.
+    chunkSizeWarningLimit: 1000,
     modulePreload: { polyfill: false },
-    rollupOptions: {
+    rolldownOptions: {
       output: {
         manualChunks(id: string) {
-          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom') || id.includes('node_modules/react-router')) return 'vendor';
-          if (id.includes('node_modules/framer-motion') || id.includes('node_modules/lucide-react')) return 'ui';
+          if (!id.includes('node_modules')) return;
+          if (
+            id.includes('node_modules/react/') ||
+            id.includes('node_modules/react-dom/') ||
+            id.includes('node_modules/react-router') ||
+            id.includes('node_modules/scheduler/')
+          ) {
+            return 'react';
+          }
+          if (id.includes('node_modules/@tanstack/')) return 'data';
+          if (
+            id.includes('node_modules/framer-motion/') ||
+            id.includes('node_modules/motion-dom/') ||
+            id.includes('node_modules/motion-utils/')
+          ) {
+            return 'motion';
+          }
+          if (id.includes('node_modules/lucide-react/')) return 'icons';
         },
       },
     },

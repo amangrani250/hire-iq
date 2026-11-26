@@ -52,25 +52,25 @@ export default function JobPrepPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      <div className="sticky top-0 z-30 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800">
+    <div className="min-h-screen">
+      <div className="sticky top-nav z-30 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 bg-gradient-to-br from-brand-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
               <Briefcase size={18} className="text-white" />
             </div>
             <div>
-              <h1 className="text-base font-bold text-gray-900 dark:text-white">Job Interview Prep</h1>
-              <p className="text-xs text-gray-500 dark:text-gray-400">AI-powered study roadmap ? interview</p>
+              <h1 className="text-base font-bold text-foreground">Job Interview Prep</h1>
+              <p className="text-xs text-muted-foreground">AI-powered study roadmap → interview</p>
             </div>
           </div>
           {isMobile ? (
             <div className="flex-1 max-w-[180px] ml-4">
-              <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1.5">
-                <span className="font-medium text-gray-900 dark:text-white">{steps[step - 1]}</span>
+              <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
+                <span className="font-medium text-foreground">{steps[step - 1]}</span>
                 <span>Step {step} of 3</span>
               </div>
-              <div className="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
                 <motion.div className="h-full bg-brand-500 rounded-full"
                   initial={false} animate={{ width: `${(step / 3) * 100}%` }}
                   transition={{ duration: 0.3, ease: 'easeInOut' }} />
@@ -84,13 +84,13 @@ export default function JobPrepPage() {
                 const isDone = step > idx;
                 return (
                   <div key={label} className="flex items-center gap-2">
-                    {i > 0 && <ChevronRight size={14} className="text-gray-300" />}
+                    {i > 0 && <ChevronRight size={14} className="text-muted-foreground/50" />}
                     <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all ${
-                      isActive ? 'bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300' : 'text-gray-400'
+                      isActive ? 'bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300' : 'text-muted-foreground'
                     }`}>
                       <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${
                         isDone ? 'bg-green-500 text-white' :
-                        isActive ? 'bg-brand-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-500'
+                        isActive ? 'bg-brand-500 text-white' : 'bg-muted text-muted-foreground'
                       }`}>
                         {isDone ? <Check size={10} /> : idx}
                       </span>
@@ -113,22 +113,22 @@ export default function JobPrepPage() {
                   className="inline-flex items-center gap-2 px-4 py-1.5 bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400 rounded-full text-sm font-medium mb-4 border border-brand-100 dark:border-brand-800/40">
                   <Sparkles size={14} /> AI-Powered Interview Coaching
                 </motion.div>
-                <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Which role are you targeting?</h2>
-                <p className="text-gray-500 dark:text-gray-400">Select a job or type your own. We'll build you a day-by-day study plan and AI interview.</p>
+                <h2 className="text-3xl font-bold text-foreground mb-2">Which role are you targeting?</h2>
+                <p className="text-muted-foreground">Select a job or type your own. We'll build you a day-by-day study plan and AI interview.</p>
               </div>
 
               <div className="relative mb-6">
-                <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search job titles…"
-                  className="w-full pl-11 pr-4 py-3.5 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 outline-none text-sm shadow-sm" />
+                  className="w-full pl-11 pr-4 py-3.5 rounded-2xl border border-border bg-card text-foreground focus:ring-2 focus:ring-brand-500 outline-none text-sm shadow-sm" />
               </div>
 
-              <div className="mb-6 p-4 bg-white dark:bg-gray-900 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">
-                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Or type a custom role</label>
+              <div className="mb-6 p-4 bg-card rounded-2xl border border-dashed border-border">
+                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Or type a custom role</label>
                 <input type="text" value={customJob} onChange={(e) => { setCustomJob(e.target.value); setSelectedJob(''); }}
                   placeholder="e.g. Blockchain Developer, Embedded Systems Engineer…"
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 outline-none text-sm" />
+                  className="w-full px-4 py-2.5 rounded-xl border border-border bg-muted text-foreground focus:ring-2 focus:ring-brand-500 outline-none text-sm" />
               </div>
 
               <div className="space-y-6">
@@ -136,7 +136,7 @@ export default function JobPrepPage() {
                   <div key={cat.category}>
                     <div className="flex items-center gap-2 mb-3">
                       <div className="p-1.5 rounded-lg" style={{ background: `${cat.color}20`, color: cat.color }}>{catIcons[cat.category]}</div>
-                      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">{cat.category}</h3>
+                      <h3 className="text-sm font-semibold text-foreground">{cat.category}</h3>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {cat.jobs.map((job) => (
@@ -144,7 +144,7 @@ export default function JobPrepPage() {
                           className={`px-4 py-2 rounded-xl text-sm font-medium border transition-all ${
                             selectedJob === job
                               ? 'border-brand-500 text-white shadow-md'
-                              : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-900 hover:border-brand-400 hover:text-brand-600 dark:hover:text-brand-400'
+                              : 'border-border text-muted-foreground bg-card hover:border-brand-400 hover:text-brand-600 dark:hover:text-brand-400'
                           }`} style={selectedJob === job ? { background: cat.color, borderColor: cat.color } : {}}>
                           {job}
                         </button>
@@ -170,25 +170,25 @@ export default function JobPrepPage() {
                 <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-full text-sm font-semibold mb-4 border border-green-100 dark:border-green-800/30">
                   <Briefcase size={14} /> {finalJob}
                 </div>
-                <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Configure your prep plan</h2>
-                <p className="text-gray-500 dark:text-gray-400">Tell us your level and how many days you have to prepare.</p>
+                <h2 className="text-3xl font-bold text-foreground mb-2">Configure your prep plan</h2>
+                <p className="text-muted-foreground">Tell us your level and how many days you have to prepare.</p>
               </div>
 
               <div className="grid gap-6 max-w-2xl mx-auto">
-                <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-100 dark:border-gray-800 shadow-sm">
-                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Your Experience Level</h3>
+                <div className="bg-card rounded-2xl p-6 border border-border shadow-sm">
+                  <h3 className="text-sm font-semibold text-foreground mb-4">Your Experience Level</h3>
                   <div className="space-y-3">
                     {[...EXPERIENCE_LEVELS].map((lvl) => (
                       <button key={lvl.value} onClick={() => setExperience(lvl.value)}
                         className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all text-left ${
                           experience === lvl.value
                             ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20'
-                            : 'border-gray-200 dark:border-gray-700 hover:border-brand-300 dark:hover:border-gray-600'
+                            : 'border-border hover:border-brand-300 dark:hover:border-border'
                         }`}>
                         <span className="text-2xl">{lvl.icon}</span>
                         <div className="flex-1">
-                          <div className={`font-semibold text-sm ${experience === lvl.value ? 'text-brand-700 dark:text-brand-300' : 'text-gray-700 dark:text-gray-300'}`}>{lvl.label}</div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{lvl.desc}</div>
+                          <div className={`font-semibold text-sm ${experience === lvl.value ? 'text-brand-700 dark:text-brand-300' : 'text-foreground'}`}>{lvl.label}</div>
+                          <div className="text-xs text-muted-foreground mt-0.5">{lvl.desc}</div>
                         </div>
                         {experience === lvl.value && (
                           <div className="w-5 h-5 rounded-full bg-brand-500 flex items-center justify-center"><div className="w-2 h-2 rounded-full bg-white" /></div>
@@ -198,15 +198,15 @@ export default function JobPrepPage() {
                   </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-100 dark:border-gray-800 shadow-sm">
-                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Preparation Duration</h3>
+                <div className="bg-card rounded-2xl p-6 border border-border shadow-sm">
+                  <h3 className="text-sm font-semibold text-foreground mb-4">Preparation Duration</h3>
                   <div className="grid grid-cols-3 gap-3">
                     {[...ROADMAP_DURATIONS].map((d) => (
                       <button key={d.value} onClick={() => setDuration(d.value)}
                         className={`flex flex-col items-center gap-1.5 p-4 rounded-xl border transition-all ${
                           duration === d.value
                             ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300'
-                            : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-brand-300'
+                            : 'border-border text-muted-foreground hover:border-brand-300'
                         }`}>
                         <Clock size={18} />
                         <span className="font-bold text-base">{d.label}</span>
@@ -232,7 +232,7 @@ export default function JobPrepPage() {
                       ? Change Role
                     </button>
                     <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} onClick={handleStart}
-                      className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white text-brand-700 text-sm font-bold transition-all hover:bg-gray-50 shadow-lg">
+                      className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white text-brand-700 text-sm font-bold transition-all hover:bg-muted shadow-lg">
                       Generate My Roadmap <ArrowRight size={16} />
                     </motion.button>
                   </div>

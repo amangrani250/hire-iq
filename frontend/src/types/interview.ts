@@ -1,7 +1,24 @@
+export type AnswerVerdict =
+  | 'correct'
+  | 'partially_correct'
+  | 'incorrect'
+  | 'vague'
+  | 'off_topic'
+  | 'dont_know'
+  | 'skipped';
+
+export interface MessageMeta {
+  verdict?: AnswerVerdict;
+  score?: number;
+  questionNumber?: number;
+  totalQuestions?: number;
+}
+
 export interface Message {
   speaker: 'interviewer' | 'candidate';
   text: string;
   ts: number;
+  meta?: MessageMeta;
 }
 
 export interface CandidateInfo {
@@ -74,6 +91,7 @@ export interface WebSocketMessage {
   data?: string;
   format?: string;
   message?: string;
+  meta?: MessageMeta;
 }
 
 export interface RoadmapDay {

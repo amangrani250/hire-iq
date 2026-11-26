@@ -1,18 +1,38 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
-import useWebSocket, { ReadyState } from 'react-use-websocket';
+import * as ReactUseWebSocket from 'react-use-websocket';
 import { API_BASE, WS_BASE, APP_CONFIG } from '../utils';
-import type { WebSocketMessage } from '../types';
+import type { MessageMeta, WebSocketMessage } from '../types';
+
+/*
+ * `react-use-websocket` is CommonJS with a nested default export. Depending on
+ * the bundler's CJS interop the hook can arrive as `module.default` or
+ * `module.default.default`, so resolve it defensively.
+ */
+const useWebSocket = (
+  typeof (ReactUseWebSocket as unknown as { default?: unknown }).default === 'function'
+    ? (ReactUseWebSocket as unknown as { default: unknown }).default
+    : (ReactUseWebSocket as unknown as { default?: { default?: unknown } }).default?.default
+) as typeof import('react-use-websocket').default;
+
+/** ReadyState.OPEN — kept as a literal so the enum import also survives interop. */
+const READY_STATE_OPEN = 1;
 
 interface UseInterviewSocketOptions {
   sessionId: string;
-  onTranscript: (speaker: string, text: string) => void;
+  onTranscript: (speaker: string, text: string, meta?: MessageMeta) => void;
   onInterviewEnded: () => void;
+}
+
+export interface QuestionProgress {
+  current: number;
+  total: number;
 }
 
 interface UseInterviewSocketReturn {
   wsReady: boolean;
   interviewerSpeaking: boolean;
   isThinking: boolean;
+  questionProgress: QuestionProgress | null;
   sendCandidateMessage: (text: string) => void;
   endInterview: () => void;
 }
@@ -25,6 +45,7 @@ export function useInterviewSocket({
   const [interviewerSpeaking, setInterviewerSpeaking] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
   const [useRestFallback, setUseRestFallback] = useState(false);
+  const [questionProgress, setQuestionProgress] = useState<QuestionProgress | null>(null);
 
   const audioQueueRef = useRef<Blob[]>([]);
   const isPlayingRef = useRef(false);
@@ -35,6 +56,11 @@ export function useInterviewSocket({
   const onInterviewEndedRef = useRef(onInterviewEnded);
   useEffect(() => { onTranscriptRef.current = onTranscript; }, [onTranscript]);
   useEffect(() => { onInterviewEndedRef.current = onInterviewEnded; }, [onInterviewEnded]);
+
+  const trackProgress = useCallback((meta?: MessageMeta) => {
+    if (!meta?.questionNumber || !meta?.totalQuestions) return;
+    setQuestionProgress({ current: meta.questionNumber, total: meta.totalQuestions });
+  }, []);
 
   const playNext = useCallback(() => {
     if (audioQueueRef.current.length === 0) {
@@ -103,7 +129,8 @@ export function useInterviewSocket({
       try {
         const msg: WebSocketMessage = JSON.parse(event.data);
         if (msg.type === 'transcript') {
-          onTranscriptRef.current?.(msg.speaker ?? '', msg.text ?? '');
+          trackProgress(msg.meta);
+          onTranscriptRef.current?.(msg.speaker ?? '', msg.text ?? '', msg.meta);
         } else if (msg.type === 'audio') {
           setIsThinking(false);
           enqueueAudio(msg.data ?? '');
@@ -125,7 +152,7 @@ export function useInterviewSocket({
     },
   });
 
-  const wsReady = readyState === ReadyState.OPEN;
+  const wsReady = Number(readyState) === READY_STATE_OPEN;
 
   /* REST Handlers */
   const handleRestResponse = useCallback(
@@ -138,17 +165,23 @@ export function useInterviewSocket({
           body: JSON.stringify({ session_id: sessionId, text }),
         });
         const data = await res.json();
-        if (data.text) {
-          onTranscriptRef.current?.(data.speaker, data.text);
-          enqueueAudio(data.audio);
+        const messages: Array<{ text?: string; meta?: MessageMeta }> =
+          Array.isArray(data.messages) && data.messages.length
+            ? data.messages
+            : [{ text: data.text, meta: data.meta }];
+        for (const message of messages) {
+          if (!message.text) continue;
+          trackProgress(message.meta);
+          onTranscriptRef.current?.('interviewer', message.text, message.meta);
         }
+        enqueueAudio(data.audio);
       } catch (err) {
         console.error('REST Interview Error:', err);
       } finally {
         setIsThinking(false);
       }
     },
-    [sessionId, enqueueAudio]
+    [sessionId, enqueueAudio, trackProgress]
   );
 
   useEffect(() => {
@@ -201,6 +234,7 @@ export function useInterviewSocket({
     wsReady: wsReady || useRestFallback,
     interviewerSpeaking,
     isThinking,
+    questionProgress,
     sendCandidateMessage,
     endInterview,
   };

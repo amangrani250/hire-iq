@@ -11,7 +11,7 @@ import { stopAllMediaTracks } from '../utils';
 import { InterviewProvider, useInterviewContext } from '../contexts/InterviewContext';
 import { LogoMark } from './layout/Logo';
 import toast from 'react-hot-toast';
-import type { CandidateInfo } from '../types';
+import type { CandidateInfo, Message } from '../types';
 
 interface LocationState {
   sessionId: string;
@@ -26,10 +26,10 @@ function LiveTimer() {
   return <span>{mm}:{ss}</span>;
 }
 
-function TypingDots() {
+function TypingDots({ label = 'Aira is typing' }: { label?: string }) {
   return (
     <div className="typing-dots">
-      <span className="typing-dots__label">Aira is typing</span>
+      <span className="typing-dots__label">{label}</span>
       <div className="typing-dots__group">
         {[0, 1, 2].map((i) => (
           <div key={i} className="typing-dots__dot" style={{ animationDelay: `${i * 0.2}s` }} />
@@ -68,8 +68,10 @@ function InterviewRoomInner({
   useEffect(() => { messagesRef.current = messages; }, [messages]);
 
   const onInterviewEnd = useCallback(() => {
-    navigate('/end', { state: { candidateName: candidate?.name, transcript: messagesRef.current } });
-  }, [navigate, candidate]);
+    navigate('/end', {
+      state: { candidateName: candidate?.name, transcript: messagesRef.current, sessionId },
+    });
+  }, [navigate, candidate, sessionId]);
 
   const [micOn, setMicOn] = useState(true);
   const [camOn, setCamOn] = useState(true);
@@ -79,12 +81,23 @@ function InterviewRoomInner({
 
   const interviewerSpeakingRef = useRef(false);
 
-  const onTranscript = useCallback((speaker: string, text: string) => {
-    addMessage({ speaker: speaker as 'interviewer' | 'candidate', text, ts: Date.now() });
+  const onTranscript = useCallback((speaker: string, text: string, meta?: Message['meta']) => {
+    addMessage({ speaker: speaker as 'interviewer' | 'candidate', text, ts: Date.now(), meta });
     setTypingIndicator(false);
+
+    if (meta?.verdict) {
+      const score = typeof meta.score === 'number' ? ` · ${meta.score}/10` : '';
+      if (meta.verdict === 'correct') {
+        toast.success(`Correct answer${score}`, { id: 'answer-eval', duration: 2200 });
+      } else if (meta.verdict === 'partially_correct') {
+        toast(`Partly correct${score}`, { id: 'answer-eval', icon: '⚠️', duration: 2600 });
+      } else {
+        toast.error(`Needs correction${score}`, { id: 'answer-eval', duration: 2800 });
+      }
+    }
   }, [addMessage]);
 
-  const { wsReady, interviewerSpeaking, isThinking, sendCandidateMessage, endInterview } =
+  const { wsReady, interviewerSpeaking, isThinking, questionProgress, sendCandidateMessage, endInterview } =
     useInterviewSocket({ sessionId, onTranscript, onInterviewEnded: onInterviewEnd });
 
   useEffect(() => {
@@ -137,6 +150,14 @@ function InterviewRoomInner({
     sendCandidateMessage(text);
   }, [requestNext, addMessage, sendCandidateMessage]);
 
+  const handleSendText = useCallback((text: string) => {
+    const clean = text.trim();
+    if (!clean) return;
+    addMessage({ speaker: 'candidate', text: clean, ts: Date.now() });
+    setTypingIndicator(true);
+    sendCandidateMessage(clean);
+  }, [addMessage, sendCandidateMessage]);
+
   const handleEndCall = () => {
     abortSTT();
     try { release(); } catch { /* ignore */ }
@@ -184,6 +205,11 @@ function InterviewRoomInner({
         <div className="room-header-center">
           <span className="room-label">Technical Interview</span>
           {candidate?.role && <span className="room-role-chip">{candidate.role}</span>}
+          {questionProgress && (
+            <span className="room-progress-chip">
+              Question {questionProgress.current} / {questionProgress.total}
+            </span>
+          )}
         </div>
         <div className="room-timer"><LiveTimer /></div>
       </header>
@@ -197,7 +223,9 @@ function InterviewRoomInner({
           </div>
 
           <div className="room-status-overlay">
-            {typingIndicator && <TypingDots />}
+            {(typingIndicator || isThinking || (wsReady && messages.length === 0)) && (
+              <TypingDots label={messages.length === 0 ? 'Aira is preparing your interview' : 'Aira is typing'} />
+            )}
             {isListening && micOn && (
               <div className="room-status-pill" style={{ background: interimTranscript ? 'rgba(247,80,80,0.7)' : 'rgba(247,80,80,0.85)' }}>
                 <div className="room-rec-dot" />{interimTranscript || 'Listening...'}
@@ -214,6 +242,7 @@ function InterviewRoomInner({
           canRequestNext={canRequestNext}
           onRepeat={handleRepeat}
           onNext={handleNext}
+          onSendText={handleSendText}
         />
       </div>
 

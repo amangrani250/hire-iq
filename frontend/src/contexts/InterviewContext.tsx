@@ -149,10 +149,8 @@ export function InterviewProvider({ children }: { children: ReactNode }) {
   }, [currentQuestion]);
 
   const canRequestNext = useMemo(() => {
-    if (currentQuestion === null) return false;
-    const lastMsg = state.messages[state.messages.length - 1];
-    return lastMsg !== undefined && lastMsg.speaker === 'candidate';
-  }, [currentQuestion, state.messages]);
+    return currentQuestion !== null;
+  }, [currentQuestion]);
 
   const requestRepeat = useCallback(() => {
     if (!canRequestRepeat) return null;
@@ -170,25 +168,36 @@ export function InterviewProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'RESET' });
   }, []);
 
-  return (
-    <InterviewContext
-      value={{
-        messages: state.messages,
-        questions: state.questions,
-        currentQuestion,
-        canRequestRepeat,
-        canRequestNext,
-        repeatLimitReached,
-        shortAnswerStreak: state.shortAnswerStreak,
-        addMessage,
-        requestRepeat,
-        requestNext,
-        reset,
-      }}
-    >
-      {children}
-    </InterviewContext>
+  const value = useMemo<InterviewContextValue>(
+    () => ({
+      messages: state.messages,
+      questions: state.questions,
+      currentQuestion,
+      canRequestRepeat,
+      canRequestNext,
+      repeatLimitReached,
+      shortAnswerStreak: state.shortAnswerStreak,
+      addMessage,
+      requestRepeat,
+      requestNext,
+      reset,
+    }),
+    [
+      state.messages,
+      state.questions,
+      state.shortAnswerStreak,
+      currentQuestion,
+      canRequestRepeat,
+      canRequestNext,
+      repeatLimitReached,
+      addMessage,
+      requestRepeat,
+      requestNext,
+      reset,
+    ]
   );
+
+  return <InterviewContext value={value}>{children}</InterviewContext>;
 }
 
 export function useInterviewContext(): InterviewContextValue {

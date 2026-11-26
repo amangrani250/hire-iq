@@ -41,8 +41,8 @@ export default function HomePage() {
         </p>
 
         <div className="flex items-center justify-center gap-4 animate-slide-up">
-          <Link to="/builder" className="btn-primary text-base px-8 py-3"><Wand2 size={18} /> Start Building Free</Link>
-          <Link to="/saved" className="btn-secondary text-base px-8 py-3">View Saved</Link>
+          <Link to="/builder" className="btn btn-primary text-base px-8 py-3"><Wand2 size={18} /> Start Building Free</Link>
+          <Link to="/saved" className="btn btn-secondary text-base px-8 py-3">View Saved</Link>
         </div>
 
         <div className="mt-20 relative mx-auto max-w-3xl">
@@ -100,7 +100,7 @@ export default function HomePage() {
       <section className="py-20 px-4 text-center">
         <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Ready to land your dream job?</h2>
         <p className="text-gray-500 dark:text-gray-400 mb-8">Create a professional resume in under 5 minutes.</p>
-        <Link to="/builder" className="btn-primary text-base px-8 py-3"><Wand2 size={18} /> Build My Resume Now</Link>
+        <Link to="/builder" className="btn btn-primary text-base px-8 py-3"><Wand2 size={18} /> Build My Resume Now</Link>
       </section>
 
       <footer className="border-t border-gray-100 dark:border-gray-800 py-8 text-center">

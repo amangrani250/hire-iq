@@ -55,8 +55,8 @@ export function buildTranscriptText(messages: Message[]): string {
 }
 
 export function getAtsColor(score: number): string {
-  if (score >= 80) return 'var(--green)';
-  if (score >= 60) return 'var(--amber)';
+  if (score >= 80) return 'var(--color-success)';
+  if (score >= 60) return 'var(--color-warning)';
   return 'var(--red)';
 }
 

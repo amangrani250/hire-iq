@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { useResume } from '../../contexts/ResumeContext';
+import { useResumeActions, useResumeMeta } from '../../contexts/ResumeContext';
 import type { TemplateType } from '../../types';
 
 const TEMPLATES: Array<{ id: TemplateType; label: string; desc: string }> = [
@@ -12,7 +12,8 @@ const TEMPLATES: Array<{ id: TemplateType; label: string; desc: string }> = [
 ];
 
 const TemplateSelector = memo(function TemplateSelector() {
-  const { template, setTemplate } = useResume();
+  const { template } = useResumeMeta();
+  const { setTemplate } = useResumeActions();
 
   return (
     <div>
@@ -22,10 +23,11 @@ const TemplateSelector = memo(function TemplateSelector() {
           <button
             key={t.id}
             onClick={() => setTemplate(t.id)}
+            aria-pressed={template === t.id}
             className={`p-3 rounded-xl border text-left transition-all duration-150 ${
               template === t.id
-                ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20'
-                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                ? 'border-primary bg-accent shadow-sm'
+                : 'border-border hover:border-primary/30 hover:bg-muted/40'
             }`}
           >
             <div className={`w-full h-8 rounded mb-2 flex flex-col justify-center gap-1 px-1 overflow-hidden ${
@@ -51,8 +53,8 @@ const TemplateSelector = memo(function TemplateSelector() {
                 'bg-gray-200 dark:bg-gray-700'
               }`} />
             </div>
-            <p className="text-xs font-medium text-gray-800 dark:text-gray-200">{t.label}</p>
-            <p className="text-xs text-gray-400 dark:text-gray-500">{t.desc}</p>
+            <p className="text-xs font-semibold text-foreground">{t.label}</p>
+            <p className="text-xs text-muted-foreground">{t.desc}</p>
           </button>
         ))}
       </div>

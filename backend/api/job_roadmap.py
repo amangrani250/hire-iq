@@ -8,6 +8,7 @@ from typing import List, Optional
 from core.config import settings, log
 from core.session import sessions
 from services.llm_service import call_llm
+from services.interview_engine import schedule_plan
 from utils.json_utils import extract_json
 
 router = APIRouter(default_response_class=ORJSONResponse)
@@ -144,6 +145,12 @@ Keep responses under 90 words. No markdown, no bullet points. Speak naturally li
                 "content": f"Hi, I'm ready for my {req.job_title} interview. I studied the following topics: {topics_str}.",
             }
         ],
+        "candidate": {
+            "name": "Candidate",
+            "role": req.job_title,
+            "skills": req.topics_studied[:6],
+            "years": req.experience_level,
+        },
         "stage": "greeting",
         "question_count": 0,
         "last_active": time.time(),
@@ -157,6 +164,7 @@ Keep responses under 90 words. No markdown, no bullet points. Speak naturally li
         req.job_title,
         topics_str[:80],
     )
+    schedule_plan(sessions[session_id])
 
     return {
         "session_id": session_id,

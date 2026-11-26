@@ -1,21 +1,26 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useSyncExternalStore } from 'react';
 
+function subscribeToQuery(query: string, onChange: () => void) {
+  const mq = window.matchMedia(query);
+  if (mq.addEventListener) mq.addEventListener('change', onChange);
+  else mq.addListener(onChange);
+
+  return () => {
+    if (mq.removeEventListener) mq.removeEventListener('change', onChange);
+    else mq.removeListener(onChange);
+  };
+}
+
+/**
+ * Subscribes to a media query through React's external store so the value is
+ * always in sync with the current query (no stale state after prop changes,
+ * no extra effect render pass).
+ */
 export function useMediaQuery(query: string): boolean {
-  const [matches, setMatches] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return window.matchMedia(query).matches;
-    }
-    return false;
-  });
+  const subscribe = useCallback((onChange: () => void) => subscribeToQuery(query, onChange), [query]);
+  const getSnapshot = useCallback(() => window.matchMedia(query).matches, [query]);
 
-  useEffect(() => {
-    const mq = window.matchMedia(query);
-    const handler = (e: MediaQueryListEvent) => setMatches(e.matches);
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
-  }, [query]);
-
-  return matches;
+  return useSyncExternalStore(subscribe, getSnapshot, () => false);
 }
 
 export function useIsMobile(): boolean {
