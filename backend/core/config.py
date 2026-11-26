@@ -21,6 +21,13 @@ class Settings(BaseSettings):
     MAX_RESUME_CHARS: int = 4000
     MAX_MESSAGE_LEN: int = 2000
 
+    # Coding lab execution. On Vercel the local runner is unavailable, so
+    # `auto` falls back to Judge0. Set CODE_EXECUTION_PROVIDER=local for offline dev.
+    CODE_EXECUTION_PROVIDER: str = "auto"
+    JUDGE0_URL: str = "https://ce.judge0.com"
+    JUDGE0_API_KEY: str = ""
+    JUDGE0_RAPIDAPI_HOST: str = ""
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     @property

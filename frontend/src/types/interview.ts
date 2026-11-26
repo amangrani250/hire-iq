@@ -21,6 +21,54 @@ export interface Message {
   meta?: MessageMeta;
 }
 
+export type ProctorFlagType =
+  | 'absent'
+  | 'looking_away'
+  | 'off_center'
+  | 'multiple_faces'
+  | 'phone'
+  | 'too_close'
+  | 'too_far'
+  | 'camera_off';
+
+export interface ProctorFlag {
+  id: string;
+  type: ProctorFlagType;
+  label: string;
+  startedAt: number;
+  durationMs: number;
+  severity: 'warning' | 'critical';
+}
+
+export interface AttentionStats {
+  focusScore: number;
+  focusedMs: number;
+  awayMs: number;
+  absentMs: number;
+  totalMs: number;
+}
+
+export type VirtualBackgroundId = 'none' | 'blur' | 'office' | 'lounge' | 'study' | 'studio';
+
+export type FocusStatus =
+  | 'initializing'
+  | 'focused'
+  | 'looking_away'
+  | 'off_center'
+  | 'absent'
+  | 'multiple_faces'
+  | 'phone'
+  | 'too_close'
+  | 'too_far'
+  | 'camera_off'
+  | 'unavailable';
+
+export interface AttentionState {
+  status: FocusStatus;
+  label: string;
+  tone: 'good' | 'warn' | 'bad' | 'neutral';
+}
+
 export interface CandidateInfo {
   name: string;
   role: string;

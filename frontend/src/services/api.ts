@@ -1,10 +1,10 @@
 import axios, { type AxiosInstance, type AxiosError } from 'axios';
+import { API_BASE } from '../utils/constants';
 import type { GenerateResumeResponse, ImproveSectionResponse, GenerateResumePayload, ImproveSectionPayload } from '../types';
 import type { TemplateType } from '../types';
 
 const api: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_URL
-    || 'http://localhost:8000/api',
+  baseURL: `${API_BASE.replace(/\/$/, '')}/api`,
   timeout: 30000,
   headers: { 'Content-Type': 'application/json' },
 });

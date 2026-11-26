@@ -124,13 +124,23 @@ async def interview_websocket(websocket: WebSocket, session_id: str):
 
             elif msg_type == "end_interview":
                 summary = evaluation_summary(session)
+                proctor_events = session.get("proctor_events", [])
+                proctor_lines = ""
+                if proctor_events:
+                    proctor_lines = "\n".join(
+                        f"- {event.get('label', event.get('type', 'flag'))}: "
+                        f"{round(float(event.get('durationMs', 0)) / 1000)}s"
+                        for event in proctor_events[-20:]
+                        if isinstance(event, dict)
+                    )
                 feedback_prompt = (
                     "Based on this interview conversation and the per-question evaluation "
                     "record below, provide a brief, warm closing message (2-3 sentences) "
                     "telling the candidate one strength and one thing to revisit. "
                     "Sound like a real human interviewer wrapping up a call. "
                     "Do not ask a question.\n\n"
-                    f"PER-QUESTION EVALUATION:\n{summary}"
+                    f"PER-QUESTION EVALUATION:\n{summary}\n\n"
+                    f"PROCTORING FLAGS:\n{proctor_lines or 'None recorded.'}"
                 )
                 messages = [system_msg] + session["history"] + [
                     {"role": "user", "content": feedback_prompt}
@@ -150,6 +160,13 @@ async def interview_websocket(websocket: WebSocket, session_id: str):
 
                 await safe_send({"type": "interview_ended"})
                 break
+
+            elif msg_type == "proctor_event":
+                event = data.get("event")
+                if isinstance(event, dict):
+                    events = session.setdefault("proctor_events", [])
+                    events.append(event)
+                    session["proctor_events"] = events[-100:]
 
             elif msg_type == "ping":
                 await safe_send({"type": "pong"})

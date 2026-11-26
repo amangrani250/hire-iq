@@ -10,6 +10,7 @@ from api.rest import router as rest_router
 from api.ws import router as ws_router
 from api.resume.resume import router as resume_router
 from api.job_roadmap import router as job_roadmap_router
+from api.coding import router as coding_router
 
 
 @asynccontextmanager
@@ -42,3 +43,4 @@ app.include_router(rest_router)
 app.include_router(ws_router)
 app.include_router(resume_router, prefix="/api", tags=["resume"])
 app.include_router(job_roadmap_router)
+app.include_router(coding_router)

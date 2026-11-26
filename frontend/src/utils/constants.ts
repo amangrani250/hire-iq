@@ -1,5 +1,6 @@
 export const API_BASE = (() => {
-  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
+  const configured = (import.meta.env.VITE_API_URL || '').trim().replace(/\/$/, '');
+  if (configured) return configured;
   return window.location.hostname === 'localhost'
     ? 'http://localhost:8000'
     : 'https://hire-iq-backend-eight.vercel.app';

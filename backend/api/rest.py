@@ -337,6 +337,26 @@ class TranscriptMessage(BaseModel):
 class FeedbackRequest(BaseModel):
     transcript: List[TranscriptMessage]
     session_id: str | None = None
+    proctor_events: List[dict] = []
+
+
+def _proctor_summary(events: list[dict]) -> str:
+    if not events:
+        return "No attention flags were recorded."
+    counts: dict[str, int] = {}
+    durations: dict[str, float] = {}
+    for event in events:
+        label = str(event.get("label") or event.get("type") or "Attention flag")
+        counts[label] = counts.get(label, 0) + 1
+        try:
+            durations[label] = durations.get(label, 0.0) + float(event.get("durationMs") or 0) / 1000
+        except (TypeError, ValueError):
+            durations[label] = durations.get(label, 0.0)
+    lines = [
+        f"- {label}: {count} time(s), {durations.get(label, 0):.0f}s total"
+        for label, count in sorted(counts.items(), key=lambda item: durations.get(item[0], 0), reverse=True)
+    ]
+    return "\n".join(lines)
 
 
 @router.post("/api/interview-feedback")
@@ -349,26 +369,29 @@ async def get_interview_feedback(req: FeedbackRequest):
         }
 
     text_transcript = "\n".join([f"{m.speaker}: {m.text}" for m in req.transcript])
-    summary = ""
-    if req.session_id and req.session_id in sessions:
-        summary = evaluation_summary(sessions[req.session_id])
+    session = sessions.get(req.session_id) if req.session_id else None
+    summary = evaluation_summary(session) if session else ""
+    proctor_events = req.proctor_events or (session.get("proctor_events") if session else []) or []
+    proctor_summary = _proctor_summary(proctor_events)
 
     prompt = [
         {
             "role": "system",
             "content": (
-                "You are an expert technical interviewer evaluator. Analyze the following interview transcript "
-                "and the per-question evaluation record. Return ONLY a valid JSON object, no extra markdown text, "
-                "with these keys: 'good_points' (string summarizing strengths), "
+                "You are an expert technical interviewer evaluator. Analyze the following interview transcript, "
+                "the per-question evaluation record, and the proctoring signals. Return ONLY a valid JSON object, "
+                "no extra markdown text, with these keys: 'good_points' (string summarizing strengths), "
                 "'bad_points' (string summarizing weaknesses), "
                 "'improvements' (string with actionable advice). "
-                "Be specific, reference the candidate's actual answers, and do not invent strengths."
+                "Be specific, reference the candidate's actual answers, and do not invent strengths. "
+                "If proctoring flags exist, mention them constructively in bad_points or improvements."
             ),
         },
         {
             "role": "user",
             "content": (
                 f"PER-QUESTION EVALUATION RECORD:\n{summary or 'Not available.'}\n\n"
+                f"PROCTORING SIGNALS:\n{proctor_summary}\n\n"
                 f"TRANSCRIPT:\n{text_transcript[:10000]}"
             ),
         },
@@ -382,11 +405,29 @@ async def get_interview_feedback(req: FeedbackRequest):
     except Exception as e:
         log.error("Feedback LLM error: %s", e)
 
+    flag_note = ""
+    if proctor_events:
+        flag_note = f" Attention during the session: {proctor_summary.replace(chr(10), '; ')}."
     return {
-        "good_points": "You communicated your ideas clearly.",
-        "bad_points": "Unable to perform deep analysis at this time due to high server load.",
-        "improvements": "Practice breaking down your thoughts systematically.",
+        "good_points": "You communicated your ideas clearly." + (" The transcript shows some solid answers." if req.transcript else ""),
+        "bad_points": "Unable to perform a deep analysis at this time due to high server load." + flag_note,
+        "improvements": "Practice breaking down your thoughts systematically."
+        + (" Keep your face centred and maintain eye contact with the screen." if proctor_events else ""),
     }
+
+
+class ProctorEventRequest(BaseModel):
+    session_id: str
+    event: dict
+
+
+@router.post("/api/interview/proctor")
+async def record_proctor_event(req: ProctorEventRequest):
+    if req.session_id in sessions and isinstance(req.event, dict):
+        events = sessions[req.session_id].setdefault("proctor_events", [])
+        events.append(req.event)
+        sessions[req.session_id]["proctor_events"] = events[-100:]
+    return {"status": "ok"}
 
 
 class InterviewMessageRequest(BaseModel):

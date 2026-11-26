@@ -1,7 +1,5 @@
-import { memo, useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef } from 'react';
 import { MicOff, Volume2 } from 'lucide-react';
-
-const VIDEO_CONSTRAINTS: MediaTrackConstraints = { facingMode: 'user' };
 
 export interface VideoTileProps {
   role: 'interviewer' | 'candidate';
@@ -12,6 +10,8 @@ export interface VideoTileProps {
   large?: boolean;
   avatarChar?: string;
   accentColor?: string;
+  stream?: MediaStream | null;
+  cameraReady?: boolean;
 }
 
 interface AvatarDisplayProps {
@@ -36,10 +36,11 @@ function VideoTile({
   large,
   avatarChar,
   accentColor,
+  stream,
+  cameraReady,
 }: VideoTileProps) {
   const color = accentColor || 'var(--color-primary)';
-  const [camFailed, setCamFailed] = useState(false);
-  const showCamera = role === 'candidate' && camOn && !camFailed;
+  const showCamera = role === 'candidate' && camOn && cameraReady && !!stream;
   const background =
     role === 'interviewer'
       ? 'radial-gradient(circle at 50% 20%, #1a2550 0%, #070c18 70%)'
@@ -53,7 +54,7 @@ function VideoTile({
     <div className={rootClass}>
       <div className="tile-media" style={{ background }}>
         {showCamera ? (
-          <NativeWebcam videoConstraints={VIDEO_CONSTRAINTS} onError={() => setCamFailed(true)} />
+          <ProcessedVideo stream={stream} />
         ) : (
           <AvatarDisplay
             char={avatarChar || name?.[0] || 'A'}
@@ -108,43 +109,19 @@ function AvatarDisplay({ char, color, speaking, role, name, showMeta }: AvatarDi
   );
 }
 
-/** Webcam element that aggressively manages track destruction. */
-function NativeWebcam({ videoConstraints, onError }: { videoConstraints?: MediaTrackConstraints; onError?: () => void }) {
+/** The processed canvas stream (virtual background + recording feed). */
+function ProcessedVideo({ stream }: { stream: MediaStream }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
 
   useEffect(() => {
-    let mounted = true;
-
-    const initCamera = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: videoConstraints || true,
-          audio: false,
-        });
-        if (!mounted) {
-          stream.getTracks().forEach((track) => track.stop());
-          return;
-        }
-        streamRef.current = stream;
-        if (videoRef.current) videoRef.current.srcObject = stream;
-      } catch (err) {
-        console.error('Failed to grab camera:', err);
-        if (mounted) onError?.();
-      }
-    };
-
-    initCamera();
-
+    const video = videoRef.current;
+    if (!video) return undefined;
+    video.srcObject = stream;
+    video.play().catch(() => undefined);
     return () => {
-      mounted = false;
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((track) => track.stop());
-        streamRef.current = null;
-      }
-      if (videoRef.current) videoRef.current.srcObject = null;
+      if (video.srcObject === stream) video.srcObject = null;
     };
-  }, [videoConstraints]);
+  }, [stream]);
 
   return (
     <video
@@ -153,7 +130,6 @@ function NativeWebcam({ videoConstraints, onError }: { videoConstraints?: MediaT
       playsInline
       muted
       className="tile-video"
-      style={{ transform: 'scaleX(-1)' }}
     />
   );
 }

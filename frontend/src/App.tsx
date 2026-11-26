@@ -19,6 +19,7 @@ const SavedPage = lazy(() => import('./pages/SavedPage'));
 const TechInterviewSetup = lazy(() => import('./pages/TechInterviewSetup'));
 const JobPrepPage = lazy(() => import('./pages/JobPrepPage'));
 const JobRoadmapPage = lazy(() => import('./pages/JobRoadmapPage'));
+const CodingLabPage = lazy(() => import('./pages/CodingLabPage'));
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
@@ -107,6 +108,10 @@ export default function App() {
                     <Route
                       path="/job-roadmap"
                       element={<FeatureRoute path="/job-roadmap" Component={JobRoadmapPage} />}
+                    />
+                    <Route
+                      path="/coding-lab"
+                      element={<FeatureRoute path="/coding-lab" Component={CodingLabPage} />}
                     />
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Routes>

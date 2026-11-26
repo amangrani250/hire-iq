@@ -4,14 +4,20 @@ import VideoTile from './VideoTile';
 import TranscriptPanel from './TranscriptPanel';
 import ControlBar from './ControlBar';
 import { useInterviewSocket } from '../hooks/useInterviewSocket';
+import { useInterviewMedia } from '../hooks/useInterviewMedia';
+import { DEFAULT_BACKGROUND } from '../lib/backgrounds';
 import { useDocumentMeta } from '../hooks/useDocumentMeta';
 import { useInterval } from '../hooks/useInterval';
 import { useSpeechToText } from '../hooks/useSpeechToText';
-import { stopAllMediaTracks } from '../utils';
 import { InterviewProvider, useInterviewContext } from '../contexts/InterviewContext';
 import { LogoMark } from './layout/Logo';
 import toast from 'react-hot-toast';
-import type { CandidateInfo, Message } from '../types';
+import type {
+  CandidateInfo,
+  Message,
+  ProctorFlag,
+  VirtualBackgroundId,
+} from '../types';
 
 interface LocationState {
   sessionId: string;
@@ -67,19 +73,41 @@ function InterviewRoomInner({
   const messagesRef = useRef(messages);
   useEffect(() => { messagesRef.current = messages; }, [messages]);
 
-  const onInterviewEnd = useCallback(() => {
-    navigate('/end', {
-      state: { candidateName: candidate?.name, transcript: messagesRef.current, sessionId },
-    });
-  }, [navigate, candidate, sessionId]);
-
   const [micOn, setMicOn] = useState(true);
   const [camOn, setCamOn] = useState(true);
   const [transcriptOpen, setTranscriptOpen] = useState(false);
   const [candidateSpeaking, setCandidateSpeaking] = useState(false);
   const [typingIndicator, setTypingIndicator] = useState(false);
+  const [background, setBackground] = useState<VirtualBackgroundId>(DEFAULT_BACKGROUND);
 
   const interviewerSpeakingRef = useRef(false);
+  const proctorSenderRef = useRef<(flag: ProctorFlag) => void>(() => {});
+  const finishedRef = useRef(false);
+
+  const media = useInterviewMedia({
+    camOn,
+    micOn,
+    background,
+    candidateName: candidate?.name || 'Candidate',
+    sessionId,
+    onProctorFlag: (flag) => proctorSenderRef.current(flag),
+  });
+  const { stopRecording, attachTtsAudio, flags: proctorFlags, stats: attentionStats } = media;
+
+  const finishInterview = useCallback(async () => {
+    if (finishedRef.current) return;
+    finishedRef.current = true;
+    const bundle = await stopRecording();
+    navigate('/end', {
+      state: {
+        candidateName: candidate?.name,
+        transcript: messagesRef.current,
+        sessionId,
+        proctorFlags: bundle?.flags ?? proctorFlags,
+        attentionStats: bundle?.stats ?? attentionStats,
+      },
+    });
+  }, [stopRecording, navigate, candidate, sessionId, proctorFlags, attentionStats]);
 
   const onTranscript = useCallback((speaker: string, text: string, meta?: Message['meta']) => {
     addMessage({ speaker: speaker as 'interviewer' | 'candidate', text, ts: Date.now(), meta });
@@ -97,8 +125,26 @@ function InterviewRoomInner({
     }
   }, [addMessage]);
 
-  const { wsReady, interviewerSpeaking, isThinking, questionProgress, sendCandidateMessage, endInterview } =
-    useInterviewSocket({ sessionId, onTranscript, onInterviewEnded: onInterviewEnd });
+  const { wsReady, interviewerSpeaking, isThinking, questionProgress, sendCandidateMessage, sendProctorEvent, endInterview } =
+    useInterviewSocket({
+      sessionId,
+      onTranscript,
+      onInterviewEnded: finishInterview,
+      onAudioElement: attachTtsAudio,
+    });
+
+  useEffect(() => {
+    proctorSenderRef.current = sendProctorEvent;
+  }, [sendProctorEvent]);
+
+  useEffect(() => {
+    if (media.cameraError) {
+      toast.error('Camera unavailable — attention checks and virtual backgrounds are disabled.', {
+        id: 'camera-unavailable',
+        duration: 5000,
+      });
+    }
+  }, [media.cameraError]);
 
   useEffect(() => {
     interviewerSpeakingRef.current = interviewerSpeaking;
@@ -161,9 +207,8 @@ function InterviewRoomInner({
   const handleEndCall = () => {
     abortSTT();
     try { release(); } catch { /* ignore */ }
-    try { stopAllMediaTracks(); } catch { /* ignore */ }
     endInterview();
-    onInterviewEnd();
+    void finishInterview();
   };
 
   const handleToggleMic = () => {
@@ -172,13 +217,7 @@ function InterviewRoomInner({
   };
 
   const handleToggleCam = () => {
-    setCamOn((v) => {
-      const next = !v;
-      if (!next) {
-        try { stopAllMediaTracks(); } catch { /* ignore */ }
-      }
-      return next;
-    });
+    setCamOn((v) => !v);
   };
 
   useEffect(() => {
@@ -186,7 +225,6 @@ function InterviewRoomInner({
     return () => {
       try { abortSTT(); } catch { /* ignore */ }
       try { release(); } catch { /* ignore */ }
-      try { stopAllMediaTracks(); } catch { /* ignore */ }
     };
   }, []);
 
@@ -210,16 +248,42 @@ function InterviewRoomInner({
               Question {questionProgress.current} / {questionProgress.total}
             </span>
           )}
+          <span className={`room-focus-chip room-focus-chip--${media.attention.tone}`}>
+            <span className="room-focus-dot" />
+            {media.attention.label}
+          </span>
+          {proctorFlags.length > 0 && (
+            <span className="room-flag-chip">
+              {proctorFlags.length} flag{proctorFlags.length === 1 ? '' : 's'}
+            </span>
+          )}
         </div>
-        <div className="room-timer"><LiveTimer /></div>
+        <div className="room-timer">
+          {media.recordingState === 'recording' && (
+            <span className="room-rec-chip">
+              <span className="room-rec-chip-dot" />
+              REC
+            </span>
+          )}
+          <LiveTimer />
+        </div>
       </header>
 
       <div className="room-main">
         <div className="room-video-area">
           <VideoTile role="interviewer" name={interviewerName} speaking={interviewerSpeaking} large avatarChar="A" accentColor="hsl(var(--primary))" />
           <div className="room-small-tiles">
-            <VideoTile role="candidate" name={candidateName} camOn={camOn} speaking={candidateSpeaking} muted={!micOn}
-              avatarChar={candidateName[0]} accentColor="hsl(var(--success))" />
+            <VideoTile
+              role="candidate"
+              name={candidateName}
+              camOn={camOn}
+              speaking={candidateSpeaking}
+              muted={!micOn}
+              avatarChar={candidateName[0]}
+              accentColor="hsl(var(--success))"
+              stream={media.previewStream}
+              cameraReady={media.videoReady && !media.cameraError}
+            />
           </div>
 
           <div className="room-status-overlay">
@@ -252,6 +316,10 @@ function InterviewRoomInner({
         transcriptOpen={transcriptOpen} toggleTranscript={handleToggleTranscript}
         onEndCall={handleEndCall}
         recording={isListening} wsReady={wsReady}
+        background={background}
+        onBackgroundChange={setBackground}
+        effectsReady={media.effectsReady}
+        effectsError={media.effectsError}
       />
     </div>
   );

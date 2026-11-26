@@ -1,6 +1,8 @@
-import type { ReactNode } from 'react';
-import { Mic, MicOff, MessageSquare, PhoneOff, Video, VideoOff } from 'lucide-react';
+import { useState, type ReactNode } from 'react';
+import { Image as ImageIcon, Mic, MicOff, MessageSquare, PhoneOff, Video, VideoOff } from 'lucide-react';
 import { cn } from '../lib/cn';
+import BackgroundPicker from './BackgroundPicker';
+import type { VirtualBackgroundId } from '../types';
 
 export interface ControlBarProps {
   micOn: boolean;
@@ -12,6 +14,10 @@ export interface ControlBarProps {
   onEndCall: () => void;
   recording: boolean;
   wsReady: boolean;
+  background: VirtualBackgroundId;
+  onBackgroundChange: (value: VirtualBackgroundId) => void;
+  effectsReady: boolean;
+  effectsError: boolean;
 }
 
 interface CtrlBtnProps {
@@ -35,7 +41,13 @@ export default function ControlBar({
   onEndCall,
   recording,
   wsReady,
+  background,
+  onBackgroundChange,
+  effectsReady,
+  effectsError,
 }: ControlBarProps) {
+  const [backgroundOpen, setBackgroundOpen] = useState(false);
+
   return (
     <div className="ctrl-bar">
       <div className="ctrl-status">
@@ -66,6 +78,22 @@ export default function ControlBar({
           tone={transcriptOpen ? 'primary' : null}
           onClick={toggleTranscript}
         />
+        <div className="relative">
+          <CtrlBtn
+            icon={<ImageIcon size={19} />}
+            label="Background"
+            tone={background !== 'none' ? 'primary' : null}
+            onClick={() => setBackgroundOpen((open) => !open)}
+          />
+          <BackgroundPicker
+            open={backgroundOpen}
+            value={background}
+            effectsReady={effectsReady}
+            effectsError={effectsError}
+            onChange={onBackgroundChange}
+            onClose={() => setBackgroundOpen(false)}
+          />
+        </div>
       </div>
 
       <button type="button" className="ctrl-end-btn" onClick={onEndCall} aria-label="End interview">
@@ -87,6 +115,7 @@ function CtrlBtn({ icon, label, tone, onClick, badge }: CtrlBtnProps) {
       )}
       onClick={onClick}
       title={label}
+      aria-label={label}
       aria-pressed={tone ? true : undefined}
     >
       <span className="relative">

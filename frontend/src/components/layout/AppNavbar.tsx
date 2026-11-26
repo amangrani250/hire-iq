@@ -15,6 +15,7 @@ const NAV_LABELS: Record<string, string> = {
   '/saved': 'Saved',
   '/job-prep': 'Job prep',
   '/job-roadmap': 'Roadmap',
+  '/coding-lab': 'Code Lab',
 };
 
 const LINKS = [

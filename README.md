@@ -15,10 +15,14 @@ Upload your resume → get a personalized technical interview → hear a realist
 | **Per-answer evaluation** | Every answer is scored against a rubric, with explicit correction when it is wrong or incomplete |
 | **Question progress** | Live "Question X of Y" indicator and a verdict badge in the transcript |
 | **Voice + text answers** | Speak naturally, or type an answer from the transcript panel when a mic is unavailable |
+| **Attention proctoring** | MediaPipe FaceLandmarker tracks presence, gaze, head pose, distance, extra faces, and phones, with a flag report |
+| **Virtual backgrounds** | Teams-style office, lounge, study, studio, and blur backgrounds rendered locally |
+| **Downloadable recording** | The candidate's processed camera plus both voices is recorded and downloadable as MP4 (WebM fallback) |
 | **Realistic voice** | ElevenLabs → OpenAI TTS → gTTS (free fallback) |
 | **Speech-to-text** | Groq Whisper-large-v3 (free) or OpenAI Whisper |
 | **Real-time comms** | WebSocket (FastAPI) |
 | **Video call UI** | React — Zoom-style tiles, controls, transcript panel |
+| **Integrated Coding Lab** | Language-aware CodeMirror IDE, real judge, warm-ups, and Aira review |
 | **Auto voice activity** | Silence detection starts/stops recording automatically |
 
 ---
@@ -94,24 +98,89 @@ docker-compose up --build
 ```
 ai-interviewer/
 ├── backend/
-│   ├── main.py              ← FastAPI app, WebSocket, TTS, STT, LLM
-│   ├── requirements.txt
-│   └── .env.example
+│   ├── main.py                  ← FastAPI app and router wiring
+│   ├── api/
+│   │   ├── rest.py              ← Resume, interview, feedback endpoints
+│   │   ├── ws.py                ← Live interview WebSocket
+│   │   ├── coding.py            ← Coding Lab catalog, judge, AI review
+│   │   └── job_roadmap.py
+│   ├── services/
+│   │   ├── code_runner.py       ← Sandboxed local compile/run judge
+│   │   ├── coding_challenges.py ← Challenges, starters, warm-ups
+│   │   └── llm_service.py       ← Task-routed LLM calls + fallbacks
+│   └── requirements.txt
 └── frontend/
-    ├── public/index.html
+    ├── index.html
     └── src/
-        ├── App.js           ← Screen router
+        ├── App.tsx
         ├── components/
-        │   ├── UploadScreen.js    ← Resume drop zone
-        │   ├── InterviewRoom.js   ← Zoom-style call UI
-        │   ├── VideoTile.js       ← Participant tiles
-        │   ├── TranscriptPanel.js ← Live captions
-        │   ├── ControlBar.js      ← Mic/cam/end controls
-        │   └── EndScreen.js       ← Post-interview screen
-        └── hooks/
-            ├── useAudioRecorder.js   ← VAD + MediaRecorder
-            └── useInterviewSocket.js ← WebSocket + audio queue
+        │   ├── coding/CodeEditor.tsx
+        │   ├── UploadScreen.tsx
+        │   ├── InterviewRoom.tsx
+        │   └── EndScreen.tsx
+        ├── pages/
+        │   ├── CodingLabPage.tsx
+        │   ├── BuilderPage.tsx
+        │   └── JobRoadmapPage.tsx
+        └── hooks/ · contexts/ · services/
 ```
+
+---
+
+## 🚀 Deploying to Vercel
+
+This repo is designed to run as **two Vercel projects**:
+
+### Frontend project
+
+- Root directory: `frontend`
+- Framework preset: **Vite**
+- Build command: `npm run build`
+- Output directory: `build` (already configured in `frontend/vercel.json`)
+- Environment variable:
+  ```text
+  VITE_API_URL=https://your-backend.vercel.app
+  ```
+
+### Backend project
+
+- Root directory: `backend`
+- Framework preset: **FastAPI / Other**
+- Environment variables:
+  ```text
+  GROQ_API_KEY=...
+  CODE_EXECUTION_PROVIDER=auto
+  JUDGE0_URL=https://ce.judge0.com
+  ```
+- `auto` uses the local compiler on your machine and **Judge0 CE on Vercel**, because Vercel functions cannot host arbitrary compilers or runtimes.
+- For higher rate limits or private execution, point `JUDGE0_URL` at a self-hosted Judge0 instance. For RapidAPI, also set `JUDGE0_API_KEY` and `JUDGE0_RAPIDAPI_HOST`.
+- Vercel serverless functions do not support long-lived WebSockets. The interview room has a REST fallback, but for reliable real-time interviews run the backend on a stateful host (Railway/Render/Fly) and set `VITE_API_URL` to it.
+
+The Coding Lab is fully HTTP-based, so it works on Vercel with Judge0.
+
+---
+
+## 🧑‍💻 Coding Lab
+
+Open **Code Lab** in the navigation (`/coding-lab`).
+
+1. Choose an available runtime — Python, JavaScript, TypeScript, or Java. The catalog only enables runtimes that are installed on the backend host.
+2. Pick a difficulty and challenge (Pair Sum, Balanced Brackets, or Merge Intervals).
+3. Aira asks warm-up questions about requirements, testing, debugging, and engineering judgment.
+4. Solve the challenge in a CodeMirror 6 editor with language highlighting, autosave, and keyboard shortcuts.
+5. **Run** executes the visible samples; **Submit** runs the full hidden suite.
+6. Inspect per-test input, expected output, actual output, stderr, and compile errors.
+7. Ask Aira for a senior-level review covering correctness, complexity, edge cases, and next steps.
+
+API endpoints:
+
+```text
+GET  /api/coding/catalog
+POST /api/coding/run
+POST /api/coding/review
+```
+
+The judge uses the local toolchain during development and Judge0 CE on Vercel. Replace the remote provider with an isolated container/job worker if you need stronger isolation or higher throughput for a public multi-tenant service.
 
 ---
 
@@ -123,7 +192,20 @@ ai-interviewer/
 4. **You answer** → speech-to-text (or the transcript text box) sends the answer to the evaluator
 5. **Aira evaluates** → the answer is scored against the rubric. Correct answers move on; wrong answers get the correct explanation before the next question. Vague answers get one focused probe
 6. **Progress** → the transcript shows a verdict/score badge and the header shows "Question X of Y"
-7. **End call** → the report uses the per-question evaluation record, not just the raw transcript
+7. **Proctoring** → MediaPipe checks the face, gaze, distance, extra people, phones, and camera state. Flags appear live and in the final report
+8. **Recording** → the processed camera feed and a mix of the candidate mic and Aira's voice are recorded locally. Download the MP4 (or WebM) from the end screen
+9. **End call** → the report uses the per-question evaluation record, not just the raw transcript
+
+### Recording and proctoring notes
+
+- MediaPipe models and WASM run **locally in the browser**; video is not uploaded for analysis.
+- The virtual background picker offers Office, Lounge, Study, Studio, Blur, and None.
+- Recording starts automatically in the interview room. The header shows a `REC` indicator.
+- Chromium browsers record **WebM (VP9 + Opus)**; MP4 is used only when WebM is unavailable.
+- Headphones are recommended so Aira's voice is not picked up twice by the room mic.
+- The last recording is stored in IndexedDB and offered as a download on the end screen.
+- Attention flags include: left the frame, looking away, off centre, multiple faces, phone detected, too close/far, and camera turned off.
+- The MediaPipe WASM runtime and models are bundled under `frontend/public/mediapipe` and `frontend/public/models`, so the first interview works offline after the page assets load. They add roughly 24 MB to the frontend build.
 
 ---
 
@@ -138,6 +220,10 @@ ai-interviewer/
 | `GROQ_MODEL_FEEDBACK` | `openai/gpt-oss-120b` | Closing message + feedback report |
 | `GROQ_FALLBACK_MODELS` | `openai/gpt-oss-120b,qwen/qwen3.8-27b,openai/gpt-oss-20b` | Automatic fallbacks |
 | `GROQ_STT_MODEL` | `whisper-large-v3` | Speech-to-text model |
+| `CODE_EXECUTION_PROVIDER` | `auto` | `local` on dev, `judge0` on Vercel |
+| `JUDGE0_URL` | `https://ce.judge0.com` | Judge0 API base URL |
+| `JUDGE0_API_KEY` | — | Optional Judge0/RapidAPI key |
+| `JUDGE0_RAPIDAPI_HOST` | — | Set when using Judge0 through RapidAPI |
 
 ### Model routing
 
@@ -153,7 +239,7 @@ If a model is retired or unavailable, the backend automatically tries
 `openai/gpt-oss-120b` → `qwen/qwen3.8-27b` → `openai/gpt-oss-20b`.
 | `OPENAI_API_KEY` | — | Optional fallback |
 | `ELEVENLABS_API_KEY` | — | Better voice quality |
-| `REACT_APP_API_URL` | `http://localhost:8000` | Backend URL for frontend |
+| `VITE_API_URL` | `http://localhost:8000` | Backend URL for frontend |
 
 ---
 
@@ -170,8 +256,10 @@ If a model is retired or unavailable, the backend automatically tries
 ## 🛠️ Tech Stack
 
 **Backend:** Python 3.15+, FastAPI, WebSockets, pypdf, python-docx, httpx  
-**Frontend:** React 18, Lucide React  
+**Frontend:** React 19, Vite 8, TypeScript, Tailwind CSS 4, CodeMirror 6, Lucide React  
 **AI:** GPT-OSS 120B for live interviews, Qwen 3.8 27B for resume analysis/writing, Groq Whisper for STT, gTTS  
+**Vision:** MediaPipe Tasks Vision (FaceLandmarker, ImageSegmenter, ObjectDetector)  
+**Media:** MediaRecorder + Web Audio + canvas capture (local MP4/WebM recording)  
 **Protocols:** REST (resume upload), WebSocket (real-time interview)
 
 ---
@@ -182,7 +270,7 @@ If a model is retired or unavailable, the backend automatically tries
 → Allow microphone permissions in browser. Chrome/Edge work best.
 
 **CORS errors?**  
-→ Make sure backend is running on port 8000. Check `REACT_APP_API_URL` in frontend.
+→ Make sure backend is running on port 8000. Check `VITE_API_URL` in frontend.
 
 **No audio from interviewer?**  
 → Check your API key. The gTTS fallback is installed with the backend requirements.

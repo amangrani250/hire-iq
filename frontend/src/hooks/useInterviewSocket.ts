@@ -1,7 +1,7 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import * as ReactUseWebSocket from 'react-use-websocket';
 import { API_BASE, WS_BASE, APP_CONFIG } from '../utils';
-import type { MessageMeta, WebSocketMessage } from '../types';
+import type { MessageMeta, ProctorFlag, WebSocketMessage } from '../types';
 
 /*
  * `react-use-websocket` is CommonJS with a nested default export. Depending on
@@ -21,6 +21,7 @@ interface UseInterviewSocketOptions {
   sessionId: string;
   onTranscript: (speaker: string, text: string, meta?: MessageMeta) => void;
   onInterviewEnded: () => void;
+  onAudioElement?: (audio: HTMLAudioElement) => void;
 }
 
 export interface QuestionProgress {
@@ -34,6 +35,7 @@ interface UseInterviewSocketReturn {
   isThinking: boolean;
   questionProgress: QuestionProgress | null;
   sendCandidateMessage: (text: string) => void;
+  sendProctorEvent: (event: ProctorFlag) => void;
   endInterview: () => void;
 }
 
@@ -41,6 +43,7 @@ export function useInterviewSocket({
   sessionId,
   onTranscript,
   onInterviewEnded,
+  onAudioElement,
 }: UseInterviewSocketOptions): UseInterviewSocketReturn {
   const [interviewerSpeaking, setInterviewerSpeaking] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
@@ -54,8 +57,10 @@ export function useInterviewSocket({
 
   const onTranscriptRef = useRef(onTranscript);
   const onInterviewEndedRef = useRef(onInterviewEnded);
+  const onAudioElementRef = useRef(onAudioElement);
   useEffect(() => { onTranscriptRef.current = onTranscript; }, [onTranscript]);
   useEffect(() => { onInterviewEndedRef.current = onInterviewEnded; }, [onInterviewEnded]);
+  useEffect(() => { onAudioElementRef.current = onAudioElement; }, [onAudioElement]);
 
   const trackProgress = useCallback((meta?: MessageMeta) => {
     if (!meta?.questionNumber || !meta?.totalQuestions) return;
@@ -75,6 +80,7 @@ export function useInterviewSocket({
     const blob = audioQueueRef.current.shift()!;
     const url = URL.createObjectURL(blob);
     const audio = new Audio(url);
+    onAudioElementRef.current?.(audio);
     currentAudioRef.current = audio;
 
     audio.onended = () => {
@@ -202,6 +208,21 @@ export function useInterviewSocket({
     [wsReady, sendJsonMessage, handleRestResponse]
   );
 
+  const sendProctorEvent = useCallback(
+    (event: ProctorFlag) => {
+      if (wsReady) {
+        sendJsonMessage({ type: 'proctor_event', event });
+        return;
+      }
+      void fetch(`${API_BASE}/api/interview/proctor`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: sessionId, event }),
+      }).catch(() => undefined);
+    },
+    [wsReady, sendJsonMessage, sessionId]
+  );
+
   const endInterview = useCallback(async () => {
     intentionallyClosed.current = true;
     stopAllAudio();
@@ -236,6 +257,7 @@ export function useInterviewSocket({
     isThinking,
     questionProgress,
     sendCandidateMessage,
+    sendProctorEvent,
     endInterview,
   };
 }

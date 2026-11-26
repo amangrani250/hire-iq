@@ -43,6 +43,13 @@ const features: Feature[] = [
     description: 'Step-by-step job roadmap',
     enabled: true,
   },
+  {
+    key: 'coding-lab',
+    label: 'Code Lab',
+    path: '/coding-lab',
+    description: 'Language-aware coding interview with a live judge',
+    enabled: true,
+  },
 ];
 
 export function getEnabledFeatures(): Feature[] {
